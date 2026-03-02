@@ -402,7 +402,7 @@ export default function TablaDetallePage() {
       {/* Table — scrollable for large datasets */}
       <div ref={tableRef} className="bi-card overflow-hidden overflow-x-auto max-h-[70vh] overflow-y-auto">
         <table className="w-full text-[10px]">
-          <thead>
+          <thead className="sticky top-0 z-10">
             {drillLevel === "linea" ? (
               <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
                 <th className="w-6 px-1 py-2"></th>
