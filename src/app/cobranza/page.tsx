@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { PageTabs } from "@/components/page-tabs"
 import { PageFooter } from "@/components/page-footer"
 import { PeriodFilter } from "@/components/period-filter"
 import { Cylinder } from "@/components/cylinder"
+import { getRamos, getRankedAseguradoras } from "@/lib/queries"
 
 function fmt(v: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(v)
@@ -44,9 +45,6 @@ const RAMOS = [
   { nombre: "Vida", pnEfectuada: 59636744, polizas: 4202 },
   { nombre: "Otros", pnEfectuada: 8013999, polizas: 545 },
 ]
-const TOTAL_PN = RAMOS.reduce((s, r) => s + r.pnEfectuada, 0)
-const TOTAL_POL = RAMOS.reduce((s, r) => s + r.polizas, 0)
-
 const RAMO_COLORS = ["#E62800", "#041224", "#CCD1D3", "#6B7280", "#E5E7E9"]
 
 const COMPANIES = [
@@ -80,12 +78,66 @@ function PctBadge({ val, base }: { val: number; base: number }) {
 }
 
 export default function CobranzaPage() {
+  const [year, setYear] = useState("2026")
+  const [periodos, setPeriodos] = useState<number[]>([2])
+  const [ramos, setRamos] = useState(RAMOS)
+  const [companies, setCompanies] = useState(COMPANIES)
+
   useEffect(() => { document.title = "Aseguradoras | CLK BI Dashboard" }, [])
-  const handleFilterChange = useCallback((_year: string, _periodos: number[]) => {
-    // Will be connected to data fetching when Supabase queries are ready
+
+  const handleFilterChange = useCallback((newYear: string, newPeriodos: number[]) => {
+    setYear(newYear)
+    setPeriodos(newPeriodos)
   }, [])
 
-  const compTotals = COMPANIES.reduce((a, c) => ({
+  const periodo = periodos[0] ?? 2
+
+  // Load ramos from Supabase when filters change
+  useEffect(() => {
+    let cancelled = false
+    getRamos(periodo, year).then(data => {
+      if (cancelled || !data) return
+      // Merge real primaNeta with SEED polizas as fallback
+      const merged = data.map(d => {
+        const seed = RAMOS.find(s => d.ramo.includes(s.nombre) || s.nombre.includes(d.ramo))
+        return {
+          nombre: d.ramo,
+          pnEfectuada: d.primaNeta,
+          polizas: d.polizas || seed?.polizas || 0,
+        }
+      })
+      if (merged.length > 0) setRamos(merged)
+    })
+    return () => { cancelled = true }
+  }, [periodo, year])
+
+  // Load aseguradoras from Supabase when filters change
+  useEffect(() => {
+    let cancelled = false
+    getRankedAseguradoras(periodo, year).then(data => {
+      if (cancelled || !data) return
+      // Merge real primaNeta with SEED for convenio/comparison columns
+      const merged = data.map(d => {
+        const seed = COMPANIES.find(s => s.nombre === d.aseguradora)
+        return {
+          nombre: d.aseguradora,
+          primaNeta: d.primaNeta,
+          convenio: seed?.convenio ?? 0,
+          pnAA: seed?.pnAA ?? 0,
+          pendiente: seed?.pendiente ?? 0,
+          pnCia: seed?.pnCia ?? 0,
+          difCia: seed?.difCia ?? 0,
+        }
+      })
+      if (merged.length > 0) setCompanies(merged)
+    })
+    return () => { cancelled = true }
+  }, [periodo, year])
+
+  const totalPN = ramos.reduce((s, r) => s + r.pnEfectuada, 0)
+  const totalPOL = ramos.reduce((s, r) => s + r.polizas, 0)
+
+  const compTotals = companies.reduce((a, c) => ({
     primaNeta: a.primaNeta + c.primaNeta, convenio: a.convenio + c.convenio,
     pnAA: a.pnAA + c.pnAA, pendiente: a.pendiente + c.pendiente,
     pnCia: a.pnCia + c.pnCia, difCia: a.difCia + c.difCia,
@@ -160,31 +212,31 @@ export default function CobranzaPage() {
           <thead>
             <tr className="bg-[#041224] border-b-2 border-b-[#E62800]">
               <th className="text-left px-3 py-2 font-semibold text-white text-xs">Resumen por ramo</th>
-              {RAMOS.map(r => <th key={r.nombre} className="text-right px-3 py-2 font-semibold text-white text-xs">{r.nombre}</th>)}
+              {ramos.map(r => <th key={r.nombre} className="text-right px-3 py-2 font-semibold text-white text-xs">{r.nombre}</th>)}
               <th className="text-right px-3 py-2 font-semibold text-white text-xs">Total</th>
             </tr>
           </thead>
           <tbody>
             <tr className="border-b border-[#E5E7E9] hover:bg-[#FFF5F5] transition-colors">
               <td className="px-3 py-2 text-xs font-medium text-[#041224]">PN efectuada</td>
-              {RAMOS.map(r => <td key={r.nombre} className="px-3 py-2 text-right text-xs font-medium">{fmt(r.pnEfectuada)}</td>)}
-              <td className="px-3 py-2 text-right text-xs font-bold">{fmt(TOTAL_PN)}</td>
+              {ramos.map(r => <td key={r.nombre} className="px-3 py-2 text-right text-xs font-medium">{fmt(r.pnEfectuada)}</td>)}
+              <td className="px-3 py-2 text-right text-xs font-bold">{fmt(totalPN)}</td>
             </tr>
             <tr className="border-b border-[#E5E7E9] bg-[#F9F9F9] hover:bg-[#FFF5F5] transition-colors">
               <td className="px-3 py-2 text-xs font-medium text-[#041224]">% PN efectuada</td>
-              {RAMOS.map(r => <td key={r.nombre} className="px-3 py-2 text-right text-xs text-[#6B7280]">{((r.pnEfectuada / TOTAL_PN) * 100).toFixed(2)}%</td>)}
+              {ramos.map(r => <td key={r.nombre} className="px-3 py-2 text-right text-xs text-[#6B7280]">{totalPN > 0 ? ((r.pnEfectuada / totalPN) * 100).toFixed(2) : 0}%</td>)}
               <td className="px-3 py-2 text-right text-xs font-bold">100%</td>
             </tr>
             <tr className="hover:bg-[#FFF5F5] transition-colors">
               <td className="px-3 py-2 text-xs font-medium text-[#041224]">No. pólizas</td>
-              {RAMOS.map(r => <td key={r.nombre} className="px-3 py-2 text-right text-xs font-medium">{new Intl.NumberFormat("es-MX").format(r.polizas)}</td>)}
-              <td className="px-3 py-2 text-right text-xs font-bold">{new Intl.NumberFormat("es-MX").format(TOTAL_POL)}</td>
+              {ramos.map(r => <td key={r.nombre} className="px-3 py-2 text-right text-xs font-medium">{new Intl.NumberFormat("es-MX").format(r.polizas)}</td>)}
+              <td className="px-3 py-2 text-right text-xs font-bold">{new Intl.NumberFormat("es-MX").format(totalPOL)}</td>
             </tr>
             {/* TOTAL row */}
             <tr className="bg-[#041224] text-white">
               <td className="px-3 py-2.5 text-xs font-bold">Total</td>
-              {RAMOS.map(r => <td key={r.nombre} className="px-3 py-2.5 text-right text-xs font-bold">{fmt(r.pnEfectuada)}</td>)}
-              <td className="px-3 py-2.5 text-right text-xs font-bold">{fmt(TOTAL_PN)}</td>
+              {ramos.map(r => <td key={r.nombre} className="px-3 py-2.5 text-right text-xs font-bold">{fmt(r.pnEfectuada)}</td>)}
+              <td className="px-3 py-2.5 text-right text-xs font-bold">{fmt(totalPN)}</td>
             </tr>
           </tbody>
         </table>
@@ -200,11 +252,11 @@ export default function CobranzaPage() {
               const r = 70, cx = 100, cy = 100
               const circ = 2 * Math.PI * r
               let offset = 0
-              return RAMOS.map((ramo, i) => {
-                const p = (ramo.pnEfectuada / TOTAL_PN) * circ
+              return ramos.map((ramo, i) => {
+                const p = totalPN > 0 ? (ramo.pnEfectuada / totalPN) * circ : 0
                 const el = (
                   <circle key={ramo.nombre} cx={cx} cy={cy} r={r} fill="none"
-                    stroke={RAMO_COLORS[i]} strokeWidth={40}
+                    stroke={RAMO_COLORS[i % RAMO_COLORS.length]} strokeWidth={40}
                     strokeDasharray={`${p} ${circ - p}`}
                     strokeDashoffset={-offset}
                     transform={`rotate(-90 ${cx} ${cy})`} />
@@ -216,11 +268,11 @@ export default function CobranzaPage() {
           </svg>
           {/* Legend */}
           <div className="flex flex-col gap-2">
-            {RAMOS.map((r, i) => (
+            {ramos.map((r, i) => (
               <div key={r.nombre} className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: RAMO_COLORS[i] }} />
+                <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: RAMO_COLORS[i % RAMO_COLORS.length] }} />
                 <span className="text-xs text-[#041224] font-medium">{r.nombre}</span>
-                <span className="text-xs text-[#6B7280]">{((r.pnEfectuada / TOTAL_PN) * 100).toFixed(1)}%</span>
+                <span className="text-xs text-[#6B7280]">{totalPN > 0 ? ((r.pnEfectuada / totalPN) * 100).toFixed(1) : 0}%</span>
               </div>
             ))}
           </div>
@@ -247,7 +299,7 @@ export default function CobranzaPage() {
               </tr>
             </thead>
             <tbody>
-              {COMPANIES.map((c, idx) => {
+              {companies.map((c, idx) => {
                 const difConv = c.primaNeta - c.convenio
                 const difAA = c.primaNeta - c.pnAA
                 const isQualitas = c.nombre === "QUÁLITAS"

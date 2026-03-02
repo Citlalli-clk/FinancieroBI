@@ -508,6 +508,36 @@ export async function getCompromisos(anio: number, mes: number): Promise<Comprom
 }
 
 /**
+ * Fetch prima neta grouped by ramo (RamosNombre) + row count as polizas proxy
+ */
+export async function getRamos(
+  periodo?: number,
+  año?: string
+): Promise<{ ramo: string; primaNeta: number; polizas: number }[] | null> {
+  try {
+    let query = supabase
+      .from("dashboard_data")
+      .select("RamosNombre, PrimaNeta, TCPago, Descuento, FLiquidacion")
+    if (periodo) query = query.eq("Periodo", periodo)
+    if (año) query = query.ilike("FLiquidacion", `%/${año.slice(2)} %`)
+    const { data, error } = await query
+    if (error || !data?.length) return null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = data as any[]
+    const grouped: Record<string, { prima: number; count: number }> = {}
+    for (const row of rows) {
+      const ramo = (row.RamosNombre as string) || "Otros"
+      if (!grouped[ramo]) grouped[ramo] = { prima: 0, count: 0 }
+      grouped[ramo].prima += calcPrima(row)
+      grouped[ramo].count += 1
+    }
+    return Object.entries(grouped)
+      .map(([ramo, d]) => ({ ramo, primaNeta: Math.round(d.prima), polizas: d.count }))
+      .sort((a, b) => b.primaNeta - a.primaNeta)
+  } catch { return null }
+}
+
+/**
  * Get available periodos from dashboard_data
  */
 export async function getPeriodos(): Promise<number[] | null> {
