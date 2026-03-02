@@ -75,13 +75,42 @@ export default function CorporatePage() {
   const goBack = () => {
     if (crumbs.length === 0) return
     const prev = crumbs[crumbs.length - 1]
-    setCrumbs(c => c.slice(0, -1))
-    if (prev.level === "gerencia") {
-      setDrillLevel("gerencia"); setSel({})
-      getGerencias(LINEA, periodo, year).then(data => setRows((data ?? []).map(d => ({ name: d.gerencia, primaNeta: d.primaNeta }))))
-    } else {
-      setDrillLevel(prev.level)
+    const newCrumbs = crumbs.slice(0, -1)
+    setCrumbs(newCrumbs)
+    setLoading(true)
+
+    // Reconstruct sel from remaining crumbs
+    const levels: DrillLevel[] = ["gerencia", "vendedor", "grupo", "cliente", "poliza"]
+    const selKeys = ["gerencia", "vendedor", "grupo", "cliente"] as const
+    const newSel: typeof sel = {}
+    for (const c of newCrumbs) {
+      const li = levels.indexOf(c.level)
+      if (li >= 0 && li < selKeys.length) {
+        (newSel as Record<string, string>)[selKeys[li]] = c.label
+      }
     }
+    setSel(newSel)
+
+    const reload = async () => {
+      try {
+        if (prev.level === "gerencia") {
+          const data = await getGerencias(LINEA, periodo, year)
+          setRows((data ?? []).map(d => ({ name: d.gerencia, primaNeta: d.primaNeta })))
+        } else if (prev.level === "vendedor") {
+          const data = await getVendedores(newSel.gerencia!, LINEA, periodo, year)
+          setRows((data ?? []).map(d => ({ name: d.vendedor, primaNeta: d.primaNeta })))
+        } else if (prev.level === "grupo") {
+          const data = await getGrupos(newSel.vendedor!, newSel.gerencia!, LINEA, periodo, year)
+          setRows((data ?? []).map(d => ({ name: d.grupo, primaNeta: d.primaNeta })))
+        } else if (prev.level === "cliente") {
+          const data = await getClientes(newSel.grupo!, newSel.vendedor!, newSel.gerencia!, LINEA, periodo, year)
+          setRows((data ?? []).map(d => ({ name: d.cliente, primaNeta: d.primaNeta })))
+        }
+      } catch { setRows([]) }
+      setDrillLevel(prev.level)
+      setLoading(false)
+    }
+    reload()
   }
 
   const levelLabels: Record<DrillLevel, string> = { gerencia: "Gerencia", vendedor: "Vendedor", grupo: "Grupo", cliente: "Cliente", poliza: "Póliza" }
@@ -141,10 +170,18 @@ export default function CorporatePage() {
         </div>
       </div>
 
+      {/* Row count for large datasets */}
+      {drillLevel !== "poliza" && filteredRows.length >= 30 && (
+        <div className="text-[10px] text-[#888] mb-1">{filteredRows.length} registros encontrados — desplazar para ver más</div>
+      )}
+      {drillLevel === "poliza" && filteredPolizas.length >= 30 && (
+        <div className="text-[10px] text-[#888] mb-1">{filteredPolizas.length} pólizas encontradas — desplazar para ver más</div>
+      )}
+
       {/* Table */}
-      <div ref={tableRef} className="bi-card overflow-hidden overflow-x-auto">
+      <div ref={tableRef} className="bi-card overflow-hidden overflow-x-auto max-h-[70vh] overflow-y-auto">
         <table className="w-full text-[10px]">
-          <thead>
+          <thead className="sticky top-0 z-10">
             {drillLevel === "poliza" ? (
               <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
                 <th className="text-left px-2 py-2 font-semibold">Documento</th>
