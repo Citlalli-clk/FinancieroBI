@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { ChevronRight, ChevronLeft, Search, Download } from "lucide-react"
 import { PageTabs } from "@/components/page-tabs"
 import { PageFooter } from "@/components/page-footer"
+import { PeriodFilter } from "@/components/period-filter"
 import { getLineasNegocio, getGerencias, getVendedores, getGrupos, getClientes, getPolizas, getRankedVendedores, getRankedAseguradoras, globalSearch, getLastDataDate } from "@/lib/queries"
 import type { SearchResult } from "@/lib/queries"
 import type { PolizaRow } from "@/lib/queries"
@@ -14,10 +15,7 @@ function fmt(v: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 }
 
-const MESES: Record<string, number> = {
-  Enero: 1, Febrero: 2, Marzo: 3, Abril: 4, Mayo: 5, Junio: 6,
-  Julio: 7, Agosto: 8, Septiembre: 9, Octubre: 10, Noviembre: 11, Diciembre: 12,
-}
+const MESES_LABELS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
 interface LineaFull {
   linea: string; primaNeta: number; presupuesto: number; diferencia: number; pctDifPpto: number; pnAnioAnt: number; difYoY: number; pctDifYoY: number; pendiente: number
@@ -42,12 +40,16 @@ interface DrillRow { name: string; primaNeta: number; presupuesto: number | null
 
 export default function TablaDetallePage() {
   const [year, setYear] = useState("2026")
-  const [month, setMonth] = useState("Febrero")
+  const [periodos, setPeriodos] = useState<number[]>([2])
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
-  const [compareMode, setCompareMode] = useState<"yoy" | "mom" | "qoq" | "ytd">("yoy")
+
+  const handleFilterChange = useCallback((newYear: string, newPeriodos: number[]) => {
+    setYear(newYear)
+    setPeriodos(newPeriodos)
+  }, [])
 
   // Drill state
   const [drillLevel, setDrillLevel] = useState<DrillLevel>("linea")
@@ -104,7 +106,8 @@ export default function TablaDetallePage() {
   const tableRef = useRef<HTMLDivElement>(null)
   useEffect(() => { document.title = "Tabla detalle | CLK BI Dashboard" }, [])
   useEffect(() => { getLastDataDate().then(d => setLastDataDate(d)) }, [])
-  const periodo = MESES[month] ?? 2
+  // Use first selected period for queries (multi-period queries use first as primary)
+  const periodo = periodos[0] ?? 2
 
   // Load líneas - ALWAYS use SEED as stable base (Power BI reference)
   // This prevents flicker when Supabase returns partial data
@@ -266,18 +269,13 @@ export default function TablaDetallePage() {
   const rowTotal = filteredRows.reduce((s, r) => s + r.primaNeta, 0)
   const polizaTotal = filteredPolizas.reduce((s, p) => s + p.primaNeta, 0)
 
-  // Compare mode labels
-  const compareLabels = {
-    yoy: { col: "PN año anterior *", difCol: "Dif PN año ant", pctCol: "% Dif PN AA" },
-    mom: { col: "PN mes anterior", difCol: "Dif PN mes ant", pctCol: "% Dif mes ant" },
-    qoq: { col: "PN trim. anterior", difCol: "Dif PN trim ant", pctCol: "% Dif trim ant" },
-    ytd: { col: "YTD año anterior", difCol: "Dif YTD", pctCol: "% Dif YTD" },
-  }
-  const cmpLabel = compareLabels[compareMode]
+  // Fixed column labels (removed compare mode)
+  const cmpLabel = { col: "PN año anterior *", difCol: "Dif PN año ant", pctCol: "% Dif PN AA" }
 
   const handleExcelExport = () => {
     const levelName = levelLabels[drillLevel]
-    const filename = `CLK_PrimaNetaCobrada_${levelName.replace(/\s/g, "")}_${year}${month}.xlsx`
+    const periodoLabel = periodos.map(p => MESES_LABELS[p - 1]).join("-")
+    const filename = `CLK_PrimaNetaCobrada_${levelName.replace(/\s/g, "")}_${year}_${periodoLabel}.xlsx`
 
     if (drillLevel === "linea") {
       exportExcel(
@@ -305,7 +303,8 @@ export default function TablaDetallePage() {
 
   const handlePDFExport = () => {
     if (!tableRef.current) return
-    const filters = `${month} ${year} | Nivel: ${levelLabels[drillLevel]} | ${crumbs.map(c => c.label).join(" > ") || "Todas las líneas"}`
+    const periodoLabelPDF = periodos.map(p => MESES_LABELS[p - 1]).join(", ")
+    const filters = `${periodoLabelPDF} ${year} | Nivel: ${levelLabels[drillLevel]} | ${crumbs.map(c => c.label).join(" > ") || "Todas las líneas"}`
     exportPDF(tableRef.current, "Prima Neta Cobrada", filters)
   }
 
@@ -348,27 +347,7 @@ export default function TablaDetallePage() {
 
       {/* Filter bar */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
-        <div className="flex items-center gap-1 text-xs">
-          <label htmlFor="td-year" className="text-gray-500 font-medium">Año</label>
-          <select id="td-year" name="year" value={year} onChange={e => setYear(e.target.value)} className="border border-[#E5E7EB] rounded px-1.5 py-0.5 text-xs bg-white">
-            <option>2026</option><option>2025</option><option>2024</option>
-          </select>
-        </div>
-        <div className="flex items-center gap-1 text-xs">
-          <label htmlFor="td-month" className="text-gray-500 font-medium">Mes</label>
-          <select id="td-month" name="month" value={month} onChange={e => setMonth(e.target.value)} className="border border-[#E5E7EB] rounded px-1.5 py-0.5 text-xs bg-white">
-            {Object.keys(MESES).map(m => <option key={m}>{m}</option>)}
-          </select>
-        </div>
-        <div className="flex items-center gap-1 text-xs">
-          <label htmlFor="td-compare" className="text-gray-500 font-medium">Comparar</label>
-          <select id="td-compare" name="compare" value={compareMode} onChange={e => setCompareMode(e.target.value as typeof compareMode)} className="border border-[#E5E7EB] rounded px-1.5 py-0.5 text-xs bg-white">
-            <option value="yoy">Vs Año Anterior</option>
-            <option value="mom">Vs Mes Anterior</option>
-            <option value="qoq">Vs Trimestre Anterior</option>
-            <option value="ytd">YTD vs YTD</option>
-          </select>
-        </div>
+        <PeriodFilter onFilterChange={handleFilterChange} />
         <div className="relative ml-auto">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <input
@@ -533,7 +512,7 @@ export default function TablaDetallePage() {
                       ? "Datos en integración" 
                       : drillLevel === "vendedor" 
                       ? "Sin vendedores registrados para esta gerencia" 
-                      : `Sin datos para ${month} ${year}`}
+                      : `Sin datos para este periodo ${year}`}
                   </td></tr>
                 ) : filteredRows.map((r, idx) => {
                   const nextLevel: DrillLevel | null =

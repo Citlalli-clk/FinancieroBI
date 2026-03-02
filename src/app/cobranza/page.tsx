@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useCallback } from "react"
 import { PageTabs } from "@/components/page-tabs"
 import { PageFooter } from "@/components/page-footer"
+import { PeriodFilter } from "@/components/period-filter"
 import { Cylinder } from "@/components/cylinder"
 
 function fmt(v: number) {
@@ -80,6 +81,9 @@ function PctBadge({ val, base }: { val: number; base: number }) {
 
 export default function CobranzaPage() {
   useEffect(() => { document.title = "Aseguradoras | CLK BI Dashboard" }, [])
+  const handleFilterChange = useCallback((_year: string, _periodos: number[]) => {
+    // Will be connected to data fetching when Supabase queries are ready
+  }, [])
 
   const compTotals = COMPANIES.reduce((a, c) => ({
     primaNeta: a.primaNeta + c.primaNeta, convenio: a.convenio + c.convenio,
@@ -92,17 +96,10 @@ export default function CobranzaPage() {
       <PageTabs />
 
       {/* Title + simplified filters */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
         <h1 className="text-base font-bold text-[#041224]">Aseguradoras</h1>
-        <div className="flex items-center gap-2 text-xs">
-          <select id="cob-year" name="cob-year" className="border border-[#E5E7E9] rounded px-2.5 py-1.5 bg-white text-[#041224]"><option>2026</option><option>2025</option></select>
-          <select id="cob-month" name="cob-month" className="border border-[#E5E7E9] rounded px-2.5 py-1.5 bg-white text-[#041224]">
-            <option>Enero</option><option>Febrero</option><option>Marzo</option><option>Abril</option>
-            <option>Mayo</option><option>Junio</option><option>Julio</option><option>Agosto</option>
-            <option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
-          </select>
-          <select id="cob-linea" name="cob-linea" className="border border-[#E5E7E9] rounded px-2.5 py-1.5 bg-white text-[#041224]"><option>Línea de negocio</option></select>
-          <select id="cob-ramo" name="cob-ramo" className="border border-[#E5E7E9] rounded px-2.5 py-1.5 bg-white text-[#041224]"><option>Ramo</option></select>
+        <div className="flex items-center gap-2 text-xs flex-wrap">
+          <PeriodFilter onFilterChange={handleFilterChange} />
           <span className="text-xs text-[#CCD1D3] ml-2">Actualizado: 27/02/2026</span>
         </div>
       </div>

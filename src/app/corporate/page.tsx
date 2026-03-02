@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { ChevronRight, ChevronLeft, Search, Download } from "lucide-react"
 import { PageTabs } from "@/components/page-tabs"
 import { PageFooter } from "@/components/page-footer"
+import { PeriodFilter } from "@/components/period-filter"
 import { getGerencias, getVendedores, getGrupos, getClientes, getPolizas } from "@/lib/queries"
 import type { PolizaRow } from "@/lib/queries"
 import { exportExcel, exportPDF } from "@/lib/export"
@@ -12,10 +13,7 @@ function fmt(v: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 }
 
-const MESES: Record<string, number> = {
-  Enero: 1, Febrero: 2, Marzo: 3, Abril: 4, Mayo: 5, Junio: 6,
-  Julio: 7, Agosto: 8, Septiembre: 9, Octubre: 10, Noviembre: 11, Diciembre: 12,
-}
+const MESES_LABELS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
 const LINEA = "Corporate" // Pre-filtered
 
@@ -24,7 +22,7 @@ interface SimpleRow { name: string; primaNeta: number }
 
 export default function CorporatePage() {
   const [year, setYear] = useState("2026")
-  const [month, setMonth] = useState("Febrero")
+  const [periodos, setPeriodos] = useState<number[]>([2])
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const [drillLevel, setDrillLevel] = useState<DrillLevel>("gerencia")
@@ -35,7 +33,11 @@ export default function CorporatePage() {
   const tableRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { document.title = "Corporate | CLK BI Dashboard" }, [])
-  const periodo = MESES[month] ?? 2
+  const handleFilterChange = useCallback((newYear: string, newPeriodos: number[]) => {
+    setYear(newYear)
+    setPeriodos(newPeriodos)
+  }, [])
+  const periodo = periodos[0] ?? 2
 
   // Load gerencias (entry level for Corporate)
   useEffect(() => {
@@ -92,7 +94,7 @@ export default function CorporatePage() {
   const polizaTotal = filteredPolizas.reduce((s, p) => s + p.primaNeta, 0)
 
   const handleExcelExport = () => {
-    const filename = `CLK_Corporate_${levelLabels[drillLevel]}_${year}${month}.xlsx`
+    const filename = `CLK_Corporate_${levelLabels[drillLevel]}_${year}_P${periodos.join("-")}.xlsx`
     if (drillLevel === "poliza") {
       exportExcel(filteredPolizas.map(p => ({ "Documento": p.documento, "Aseguradora": p.aseguradora, "Ramo": p.ramo, "Prima": p.primaNeta })), ["Documento","Aseguradora","Ramo","Prima"], ["Documento","Aseguradora","Ramo","Prima"], filename)
     } else {
@@ -132,12 +134,7 @@ export default function CorporatePage() {
 
       {/* Filters */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
-        <select id="corp-year" name="corp-year" value={year} onChange={e => setYear(e.target.value)} className="border border-[#E5E7EB] rounded px-2 py-1 text-xs bg-white">
-          <option>2026</option><option>2025</option><option>2024</option>
-        </select>
-        <select id="corp-month" name="corp-month" value={month} onChange={e => setMonth(e.target.value)} className="border border-[#E5E7EB] rounded px-2 py-1 text-xs bg-white">
-          {Object.keys(MESES).map(m => <option key={m}>{m}</option>)}
-        </select>
+        <PeriodFilter onFilterChange={handleFilterChange} />
         <div className="relative ml-auto">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <input id="corp-search" name="corp-search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." className="pl-7 pr-3 py-1 border border-[#E5E7EB] rounded text-xs w-44 bg-white" />
@@ -187,7 +184,7 @@ export default function CorporatePage() {
             ) : (
               <>
                 {filteredRows.length === 0 ? (
-                  <tr><td colSpan={3} className="px-3 py-8 text-center text-[#888]">Sin datos para {month} {year}</td></tr>
+                  <tr><td colSpan={3} className="px-3 py-8 text-center text-[#888]">Sin datos para este periodo {year}</td></tr>
                 ) : filteredRows.map((r, idx) => {
                   const nextLevel: DrillLevel | null = drillLevel === "gerencia" ? "vendedor" : drillLevel === "vendedor" ? "grupo" : drillLevel === "grupo" ? "cliente" : drillLevel === "cliente" ? "poliza" : null
                   const selKey = drillLevel === "gerencia" ? "gerencia" : drillLevel === "vendedor" ? "vendedor" : drillLevel === "grupo" ? "grupo" : drillLevel === "cliente" ? "cliente" : null

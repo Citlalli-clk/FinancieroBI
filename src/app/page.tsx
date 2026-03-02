@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { SEED_LINEAS, SEED_PRESUPUESTO, SEED_FX, getTipoCambio } from "@/lib/queries"
 import type { FxRates } from "@/lib/queries"
 import { Gauge } from "@/components/gauge"
+import { PeriodFilter } from "@/components/period-filter"
 import { BarChart, Bar, XAxis, YAxis, LabelList, Tooltip } from "recharts"
 
 function fmt(v: number) {
@@ -38,10 +39,11 @@ function Tabs() {
 }
 
 export default function Home() {
-  const [year, setYear] = useState("2025")
-  const [month, setMonth] = useState("Febrero")
   const [fx, setFx] = useState<FxRates>(SEED_FX)
   const [ready, setReady] = useState(false)
+  const handleFilterChange = useCallback((_year: string, _periodos: number[]) => {
+    // Filter state managed by PeriodFilter — SEED data is static for tacómetro
+  }, [])
 
   const lineas = SEED_LINEAS
 
@@ -70,13 +72,7 @@ export default function Home() {
       {/* Header */}
       <div className="flex justify-between items-center border-b pb-1.5 mb-1.5">
         <Tabs />
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">Año</span>
-          <select id="year" name="year" value={year} onChange={e => setYear(e.target.value)} className="border rounded px-1.5 py-0.5 text-xs">{["2025","2026"].map(y => <option key={y}>{y}</option>)}</select>
-          <span className="text-xs text-gray-500">Mes</span>
-          <select id="month" name="month" value={month} onChange={e => setMonth(e.target.value)} className="border rounded px-1.5 py-0.5 text-xs">{["Febrero","Enero","Marzo"].map(m => <option key={m}>{m}</option>)}</select>
-          <button className="p-1 hover:bg-gray-100 rounded"><svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button>
-        </div>
+        <PeriodFilter onFilterChange={handleFilterChange} defaultYear="2025" defaultMonth={2} />
       </div>
 
       {/* Title */}
