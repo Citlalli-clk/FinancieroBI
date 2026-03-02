@@ -82,36 +82,34 @@ export default function Home() {
       <div className="flex gap-2 justify-between flex-1 overflow-hidden">
         {/* Left side: Gauge + KPIs + Tipo de Cambio */}
         <div className="w-[calc(50%-6px)] flex flex-col">
-          {/* Tacómetro */}
-          <div className="flex items-center justify-center border-b pb-1">
-            <div className="w-full max-w-[400px]">
+          {/* Tacómetro — large, prominent */}
+          <div className="flex items-center justify-center flex-1">
+            <div className="w-full max-w-[440px]">
               <Gauge value={total / 1e6} prevYear={totalAA / 1e6} budget={totalPpto / 1e6} />
             </div>
           </div>
 
-          {/* KPIs + Tipo Cambio */}
-          <div className="flex flex-col gap-2 pt-2 flex-1">
-            <div className="bg-[#FDF6EC] rounded border-l-4 border-red-500 px-3 py-2">
-              <p className="text-xs text-gray-800">Cumplimiento del presupuesto</p>
-              <p className="text-2xl font-bold text-gray-900">{cumpl}%</p>
+          {/* KPI Cards — 2 squares side by side */}
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <div className="bg-[#FDF6EC] rounded-lg border border-orange-200 p-3 text-center aspect-[4/3] flex flex-col items-center justify-center">
+              <p className="text-[11px] text-gray-600 mb-1">Cumplimiento del presupuesto</p>
+              <p className="text-3xl font-bold text-gray-900">{cumpl}%</p>
             </div>
-
-            <div className="bg-[#22c55e] rounded px-3 py-2">
-              <p className="text-xs text-white/90">Crecimiento vs año anterior</p>
-              <p className="text-2xl font-bold text-white flex items-center gap-1">
+            <div className="bg-[#22c55e] rounded-lg p-3 text-center aspect-[4/3] flex flex-col items-center justify-center">
+              <p className="text-[11px] text-white/80 mb-1">Crecimiento vs año anterior</p>
+              <p className="text-3xl font-bold text-white flex items-center justify-center gap-1">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 6.414l-3.293 3.293a1 1 0 01-1.414 0z" clipRule="evenodd"/></svg>
                 {crec}%
               </p>
             </div>
+          </div>
 
-            <div className="mt-auto">
-              <div className="bg-white border rounded shadow-sm w-full">
-                <div className="bg-gray-800 text-white text-[11px] font-bold px-3 py-1.5 text-center">Tipo de cambio</div>
-                <div className="px-3 py-2 text-xs flex justify-around">
-                  <div className="text-center"><span className="text-blue-600 font-medium block">Dólar</span><span className="font-bold text-base">${fx.usd.toFixed(2)}</span></div>
-                  <div className="text-center border-l pl-3"><span className="text-gray-500 block">Peso Dom.</span><span className="font-bold text-base">${fx.dop.toFixed(2)}</span></div>
-                </div>
-              </div>
+          {/* Tipo de cambio — compact bottom */}
+          <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-gray-800 text-white text-[11px] font-bold px-3 py-1 text-center">Tipo de cambio</div>
+            <div className="px-3 py-1.5 text-xs flex justify-around">
+              <div className="text-center"><span className="text-blue-600 font-medium block">Dólar</span><span className="font-bold text-base">${fx.usd.toFixed(2)}</span></div>
+              <div className="text-center border-l pl-3"><span className="text-gray-500 block">Peso Dom.</span><span className="font-bold text-base">${fx.dop.toFixed(2)}</span></div>
             </div>
           </div>
         </div>
