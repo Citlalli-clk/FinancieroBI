@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Lato', system-ui, sans-serif;
+  background: #F0F0F0;
+  color: #353535;
+}
+
+/* Floating card style — matches Power BI original */
+.bi-card {
+  background: #FFFFFF;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
