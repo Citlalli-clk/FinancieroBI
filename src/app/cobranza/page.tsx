@@ -92,8 +92,8 @@ export default function CobranzaPage() {
       <PageTabs />
 
       {/* Title + simplified filters */}
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-bold text-[#041224]">Aseguradoras</h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-base font-bold text-[#041224]">Aseguradoras</h1>
         <div className="flex items-center gap-2 text-xs">
           <select id="cob-year" name="cob-year" className="border border-[#E5E7E9] rounded px-2.5 py-1.5 bg-white text-[#041224]"><option>2026</option><option>2025</option></select>
           <select id="cob-month" name="cob-month" className="border border-[#E5E7E9] rounded px-2.5 py-1.5 bg-white text-[#041224]">
@@ -108,12 +108,12 @@ export default function CobranzaPage() {
       </div>
 
       {/* 3 Metric cards — equal height */}
-      <div className="grid grid-cols-3 gap-3 mb-5" style={{ minHeight: 280 }}>
+      <div className="grid grid-cols-3 gap-2 mb-3" style={{ minHeight: 240 }}>
         {/* Card 1 — Meta convenio */}
-        <div className="bg-white rounded-lg shadow-sm p-5 border border-[#E5E7E9] flex flex-col">
-          <p className="text-[#CCD1D3] text-[10px] font-bold uppercase tracking-wider mb-3">Meta convenio</p>
-          <DonutChart value={94.5} objetivo={90} color="#E62800" size={130} />
-          <div className="mt-3 space-y-1">
+        <div className="bg-white rounded-lg shadow-sm p-3 border border-[#E5E7E9] flex flex-col">
+          <p className="text-[#CCD1D3] text-[10px] font-bold uppercase tracking-wider mb-2">Meta convenio</p>
+          <DonutChart value={94.5} objetivo={90} color="#E62800" size={110} />
+          <div className="mt-2 space-y-1">
             <p className="text-[#E62800] text-sm font-bold">+6.40% vs 2025</p>
             <div className="flex justify-between text-xs text-[#041224]">
               <span>PN efectuada mensual</span><strong>$1,300M</strong>
@@ -125,10 +125,10 @@ export default function CobranzaPage() {
         </div>
 
         {/* Card 2 — Acumulado */}
-        <div className="bg-white rounded-lg shadow-sm p-5 border border-[#E5E7E9] flex flex-col">
-          <p className="text-[#CCD1D3] text-[10px] font-bold uppercase tracking-wider mb-3">Acumulado</p>
-          <DonutChart value={94.5} objetivo={90} color="#041224" size={130} />
-          <div className="mt-3 space-y-1">
+        <div className="bg-white rounded-lg shadow-sm p-3 border border-[#E5E7E9] flex flex-col">
+          <p className="text-[#CCD1D3] text-[10px] font-bold uppercase tracking-wider mb-2">Acumulado</p>
+          <DonutChart value={94.5} objetivo={90} color="#041224" size={110} />
+          <div className="mt-2 space-y-1">
             <p className="text-[#E62800] text-sm font-bold">+5.05% vs 2025</p>
             <div className="flex justify-between text-xs text-[#041224]">
               <span>Acumulado PN</span><strong>1,276.4 mill.</strong>
@@ -140,8 +140,8 @@ export default function CobranzaPage() {
         </div>
 
         {/* Card 3 — Meta anual con cilindro */}
-        <div className="bg-white rounded-lg shadow-sm p-5 border border-[#E5E7E9] flex flex-col items-center">
-          <p className="text-[#CCD1D3] text-[10px] font-bold uppercase tracking-wider mb-2 self-start">Meta anual</p>
+        <div className="bg-white rounded-lg shadow-sm p-3 border border-[#E5E7E9] flex flex-col items-center">
+          <p className="text-[#CCD1D3] text-[10px] font-bold uppercase tracking-wider mb-1 self-start">Meta anual</p>
           <p className="text-[#E62800] text-lg font-black mb-1">↑ 94.7%</p>
           <Cylinder value={1292820000} maxValue={2585640000} pct={94.7} objective={90} />
           <div className="mt-3 grid grid-cols-2 gap-x-4 text-center w-full">
@@ -158,8 +158,8 @@ export default function CobranzaPage() {
       </div>
 
       {/* Resumen por ramo */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-5">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-3">
+        <table className="w-full text-xs">
           <thead>
             <tr className="bg-[#041224] border-b-2 border-b-[#E62800]">
               <th className="text-left px-3 py-2 font-semibold text-white text-xs">Resumen por ramo</th>
@@ -194,7 +194,7 @@ export default function CobranzaPage() {
       </div>
 
       {/* Distribución por ramo — pie chart */}
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-5">
+      <div className="bg-white rounded-lg shadow-sm p-3 mb-3">
         <h2 className="text-xs font-bold text-[#041224] uppercase mb-3">Distribución por ramo</h2>
         <div className="flex items-center gap-6">
           {/* SVG Donut */}

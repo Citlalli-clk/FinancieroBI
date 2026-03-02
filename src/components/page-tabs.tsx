@@ -21,7 +21,7 @@ export function PageTabs({ alertCount }: PageTabsProps) {
   const pathname = usePathname()
 
   return (
-    <div className="flex items-center bg-white border-b border-[#E5E7E9] mb-3 -mx-3 -mt-3 px-3 lg:-mx-4 lg:-mt-4 lg:px-4">
+    <div className="flex items-center bg-white border-b border-[#E5E7E9] mb-2 -mx-3 -mt-3 px-3 lg:-mx-4 lg:-mt-4 lg:px-4">
       {TABS.map((tab, i) => {
         const active = pathname === tab.href
         const prevIsActive = i > 0 && pathname === TABS[i - 1].href

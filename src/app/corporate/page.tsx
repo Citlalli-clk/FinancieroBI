@@ -103,8 +103,8 @@ export default function CorporatePage() {
   return (
     <div>
       <PageTabs />
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <h1 className="text-base font-bold text-[#111] font-lato">Corporate — Prima neta cobrada</h1>
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
+        <h1 className="text-sm font-bold text-[#111] font-lato">Corporate — Prima neta cobrada</h1>
         <div className="flex items-center gap-1.5">
           <button onClick={handleExcelExport} className="flex items-center gap-1 px-2.5 py-1.5 rounded text-[11px] font-medium border border-[#041224] text-[#041224] hover:bg-[#F5F5F5]">
             <Download className="w-3 h-3" /> Excel
@@ -114,7 +114,7 @@ export default function CorporatePage() {
 
       {/* Breadcrumb */}
       {crumbs.length > 0 && (
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-2">
           <button onClick={goBack} className="flex items-center gap-1 text-xs text-[#041224] hover:text-[#E62800] font-medium">
             <ChevronLeft className="w-4 h-4" /> Atrás
           </button>
@@ -131,7 +131,7 @@ export default function CorporatePage() {
       )}
 
       {/* Filters */}
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
         <select id="corp-year" name="corp-year" value={year} onChange={e => setYear(e.target.value)} className="border border-[#E5E7EB] rounded px-2 py-1 text-xs bg-white">
           <option>2026</option><option>2025</option><option>2024</option>
         </select>

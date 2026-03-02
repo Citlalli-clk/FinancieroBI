@@ -314,8 +314,8 @@ export default function TablaDetallePage() {
       <PageTabs alertCount={alertCount} />
 
       {/* Title + export buttons */}
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <h1 className="text-base font-bold text-[#111] font-lato">Prima neta cobrada</h1>
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
+        <h1 className="text-sm font-bold text-[#111] font-lato">Prima neta cobrada</h1>
         <div className="flex items-center gap-1.5">
           <button onClick={handleExcelExport} className="flex items-center gap-1 px-2.5 py-1.5 rounded text-[11px] font-medium border border-[#041224] text-[#041224] hover:bg-[#F5F5F5] transition-colors">
             <Download className="w-3 h-3" /> Excel
@@ -328,7 +328,7 @@ export default function TablaDetallePage() {
 
       {/* Breadcrumb */}
       {crumbs.length > 0 && (
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           <button onClick={goBack} className="flex items-center gap-1 text-xs text-[#041224] hover:text-[#E62800] transition-colors font-medium">
             <ChevronLeft className="w-4 h-4" /> Atrás
           </button>
@@ -347,22 +347,22 @@ export default function TablaDetallePage() {
       )}
 
       {/* Filter bar */}
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <div className="flex items-center gap-1.5 text-xs">
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
+        <div className="flex items-center gap-1 text-xs">
           <label htmlFor="td-year" className="text-gray-500 font-medium">Año</label>
-          <select id="td-year" name="year" value={year} onChange={e => setYear(e.target.value)} className="border border-[#E5E7EB] rounded px-2 py-1 text-xs bg-white">
+          <select id="td-year" name="year" value={year} onChange={e => setYear(e.target.value)} className="border border-[#E5E7EB] rounded px-1.5 py-0.5 text-xs bg-white">
             <option>2026</option><option>2025</option><option>2024</option>
           </select>
         </div>
-        <div className="flex items-center gap-1.5 text-xs">
+        <div className="flex items-center gap-1 text-xs">
           <label htmlFor="td-month" className="text-gray-500 font-medium">Mes</label>
-          <select id="td-month" name="month" value={month} onChange={e => setMonth(e.target.value)} className="border border-[#E5E7EB] rounded px-2 py-1 text-xs bg-white">
+          <select id="td-month" name="month" value={month} onChange={e => setMonth(e.target.value)} className="border border-[#E5E7EB] rounded px-1.5 py-0.5 text-xs bg-white">
             {Object.keys(MESES).map(m => <option key={m}>{m}</option>)}
           </select>
         </div>
-        <div className="flex items-center gap-1.5 text-xs">
+        <div className="flex items-center gap-1 text-xs">
           <label htmlFor="td-compare" className="text-gray-500 font-medium">Comparar</label>
-          <select id="td-compare" name="compare" value={compareMode} onChange={e => setCompareMode(e.target.value as typeof compareMode)} className="border border-[#E5E7EB] rounded px-2 py-1 text-xs bg-white">
+          <select id="td-compare" name="compare" value={compareMode} onChange={e => setCompareMode(e.target.value as typeof compareMode)} className="border border-[#E5E7EB] rounded px-1.5 py-0.5 text-xs bg-white">
             <option value="yoy">Vs Año Anterior</option>
             <option value="mom">Vs Mes Anterior</option>
             <option value="qoq">Vs Trimestre Anterior</option>
@@ -591,7 +591,7 @@ export default function TablaDetallePage() {
 
       {/* Rankings — only visible at linea level */}
       {drillLevel === "linea" && (topVendedores.length > 0 || topAseguradoras.length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-2">
           {/* RANKING VENDEDORES */}
           {topVendedores.length > 0 && (
             <div className="bi-card p-3">
