@@ -109,39 +109,51 @@ export default function TablaDetallePage() {
   // Use first selected period for queries (multi-period queries use first as primary)
   const periodo = periodos[0] ?? 2
 
-  // Load líneas - ALWAYS use SEED as stable base (Power BI reference)
-  // This prevents flicker when Supabase returns partial data
+  // Load líneas from Supabase, merge with SEED for budget/comparison columns
   useEffect(() => {
     let cancelled = false
-    
-    // Reset drill state but keep lineas as SEED to prevent flicker
+
+    // Reset drill state
     setDrillLevel("linea")
     setCrumbs([])
     setSel({})
-    setLineas(SEED) // Always show SEED immediately
-    setLoading(false) // Don't show loading since SEED is always available
-    
-    // Optionally try to get real data and merge with SEED
-    // Only update if we get ALL 5 líneas
+    setLoading(true)
+
     const load = async () => {
       try {
         const result = await getLineasNegocio(periodo, year)
-        if (!cancelled && result && result.length >= 5) {
-          // Only use real data if it has all 5 líneas
-          setLineas(result.map(r => {
+        if (cancelled) return
+        if (result && result.length > 0) {
+          // Merge real primaNeta with SEED presupuesto/comparison data
+          const merged: LineaFull[] = result.map(r => {
             const seed = SEED.find(s => s.linea === r.linea)
-            return seed ? { ...seed, primaNeta: r.primaNeta } : {
-              linea: r.linea, primaNeta: r.primaNeta, presupuesto: 0, diferencia: 0,
-              pctDifPpto: 0, pnAnioAnt: 0, difYoY: 0, pctDifYoY: 0, pendiente: 0
+            const pn = r.primaNeta
+            const ppto = seed?.presupuesto ?? 0
+            const pnAA = seed?.pnAnioAnt ?? 0
+            const dif = ppto > 0 ? pn - ppto : 0
+            const pctDif = ppto > 0 ? Math.round((dif / ppto) * 1000) / 10 : 0
+            const difY = pnAA > 0 ? pn - pnAA : 0
+            const pctDifY = pnAA > 0 ? Math.round((difY / pnAA) * 10000) / 100 : 0
+            const pend = seed?.pendiente ?? 0
+            return {
+              linea: r.linea, primaNeta: pn, presupuesto: ppto, diferencia: dif,
+              pctDifPpto: pctDif, pnAnioAnt: pnAA, difYoY: difY, pctDifYoY: pctDifY, pendiente: pend,
             }
-          }))
+          })
+          setLineas(merged)
+        } else {
+          // Fallback to SEED if Supabase returns nothing
+          setLineas(SEED)
         }
-      } catch { /* SEED is already showing, no action needed */ }
+      } catch {
+        setLineas(SEED)
+      }
+      if (!cancelled) setLoading(false)
     }
-    
+
     load()
 
-    // Load rankings in parallel (these don't affect main table stability)
+    // Load rankings in parallel
     getRankedVendedores(periodo, year).then(v => {
       if (v && v.length > 0) {
         setTopVendedores(v.slice(0, 5))
