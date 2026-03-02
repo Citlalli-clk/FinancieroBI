@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { PageTabs } from "@/components/page-tabs"
 import { PageFooter } from "@/components/page-footer"
+import { PeriodFilter } from "@/components/period-filter"
 import { getCompromisos } from "@/lib/queries"
 import type { CompromisoRow } from "@/lib/queries"
 
@@ -25,16 +26,23 @@ function Semaforo({ pct }: { pct: number }) {
 }
 
 export default function CompromisosPage() {
-  const [year, setYear] = useState(2026)
-  const [month, setMonth] = useState(2)
+  const [year, setYear] = useState("2026")
+  const [periodos, setPeriodos] = useState<number[]>([2])
   const [data, setData] = useState<CompromisoRow[]>([])
   const [loading, setLoading] = useState(true)
 
+  const handleFilterChange = useCallback((newYear: string, newPeriodos: number[]) => {
+    setYear(newYear)
+    setPeriodos(newPeriodos)
+  }, [])
+
   useEffect(() => { document.title = "Compromisos | CLK BI Dashboard" }, [])
+
+  const month = periodos[0] ?? 2
 
   useEffect(() => {
     setLoading(true)
-    getCompromisos(year, month).then(r => {
+    getCompromisos(Number(year), month).then(r => {
       setData(r ?? [])
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -48,18 +56,9 @@ export default function CompromisosPage() {
     <div>
       <PageTabs />
 
-      <div className="flex items-center justify-between mb-3">
-        <h1 className="text-base font-bold text-[#111] font-lato">Compromisos de Venta</h1>
-        <div className="flex items-center gap-2">
-          <select id="comp-year" name="comp-year" value={year} onChange={e => setYear(Number(e.target.value))} className="border border-[#E5E7EB] rounded px-2 py-1 text-xs bg-white">
-            <option>2026</option><option>2025</option>
-          </select>
-          <select id="comp-month" name="comp-month" value={month} onChange={e => setMonth(Number(e.target.value))} className="border border-[#E5E7EB] rounded px-2 py-1 text-xs bg-white">
-            {["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"].map((m, i) => (
-              <option key={i+1} value={i+1}>{m}</option>
-            ))}
-          </select>
-        </div>
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-1">
+        <h1 className="text-sm font-bold text-[#111] font-lato">Compromisos de Venta</h1>
+        <PeriodFilter onFilterChange={handleFilterChange} />
       </div>
 
       <div className="bi-card overflow-hidden overflow-x-auto">
