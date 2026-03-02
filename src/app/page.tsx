@@ -67,14 +67,18 @@ export default function Home() {
       try {
         const result = await getLineasNegocio(periodo, year)
         if (cancelled || !result || result.length === 0) return
-        // Merge real primaNeta with SEED presupuesto/anioAnterior
-        const merged: LineaRow[] = result.map(r => {
-          const seed = SEED_LINEAS.find(s => s.nombre === r.linea)
+        // Start with ALL SEED lines, update primaNeta for lines found in Supabase
+        const merged: LineaRow[] = SEED_LINEAS.map(seed => {
+          const real = result.find(r => r.linea === seed.nombre)
           return {
-            nombre: r.linea,
-            primaNeta: r.primaNeta,
-            anioAnterior: seed?.anioAnterior ?? 0,
-            presupuesto: seed?.presupuesto ?? 0,
+            ...seed,
+            primaNeta: real ? real.primaNeta : seed.primaNeta,
+          }
+        })
+        // Add any new lines from Supabase not in SEED
+        result.forEach(r => {
+          if (!merged.find(m => m.nombre === r.linea)) {
+            merged.push({ nombre: r.linea, primaNeta: r.primaNeta, anioAnterior: 0, presupuesto: 0 })
           }
         })
         setLineas(merged)

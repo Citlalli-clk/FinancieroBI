@@ -84,7 +84,8 @@ export async function getLineasNegocio(periodo?: number, año?: string): Promise
     if (periodo) query = query.eq("Periodo", periodo)
     if (año) query = query.ilike("FLiquidacion", `%/${año.slice(2)} %`)
 
-    const { data, error } = await query
+    // Supabase default limit is 1000 — we need ALL rows for accurate aggregation
+    const { data, error } = await query.limit(50000)
     if (error || !data?.length) return null
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
