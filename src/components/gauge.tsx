@@ -14,16 +14,14 @@ export function Gauge({ value, prevYear = 88.9, budget = 129.5, clickable = true
   const [anim, setAnim] = useState(0)
   const raf = useRef(0)
 
-  // Scale EXACTLY like Power BI: Start from a round number below value, end above budget
-  const min = 60 // Fixed like Power BI
-  const max = 150 // Fixed like Power BI
-  
-  const pct = Math.max(0.02, Math.min(0.98, (value - min) / (max - min)))
-  const pyPct = Math.max(0, Math.min(1, (prevYear - min) / (max - min)))
-  const budPct = Math.max(0, Math.min(1, (budget - min) / (max - min)))
+  const min = 80, max = 150
+  const range = max - min
+  const pct = Math.max(0.01, Math.min(0.99, (value - min) / range))
+  const pyPct = Math.max(0, Math.min(1, (prevYear - min) / range))
+  const budPct = Math.max(0, Math.min(1, (budget - min) / range))
 
   useEffect(() => {
-    const dur = 1400, t0 = performance.now()
+    const dur = 1200, t0 = performance.now()
     const tick = (now: number) => {
       const p = Math.min((now - t0) / dur, 1)
       setAnim(pct * (1 - Math.pow(1 - p, 3)))
@@ -33,8 +31,9 @@ export function Gauge({ value, prevYear = 88.9, budget = 129.5, clickable = true
     return () => cancelAnimationFrame(raf.current)
   }, [pct])
 
-  const cx = 200, cy = 180
-  const ro = 155, ri = 105
+  // SVG geometry
+  const cx = 200, cy = 160
+  const ro = 120, ri = 92 // thinner arc band
   const startA = 150, sweepA = 240
 
   const toXY = (deg: number, r: number) => {
@@ -49,106 +48,89 @@ export function Gauge({ value, prevYear = 88.9, budget = 129.5, clickable = true
   }
 
   const p2a = (p: number) => startA + p * sweepA
-  const z1e = p2a(pyPct), z2e = p2a(budPct)
+
+  // 5 color segments across the arc
+  const segments = [
+    { from: 0, to: 0.2, color: "#16a34a" },      // green
+    { from: 0.2, to: 0.4, color: "#84cc16" },     // yellow-green
+    { from: 0.4, to: 0.6, color: "#eab308" },     // yellow
+    { from: 0.6, to: 0.8, color: "#f97316" },     // orange
+    { from: 0.8, to: 1.0, color: "#dc2626" },     // red
+  ]
 
   // Needle
   const na = p2a(anim)
   const nRad = (na * Math.PI) / 180
-  const nLen = ro + 5
-  const tip = { x: cx + nLen * Math.cos(nRad), y: cy + nLen * Math.sin(nRad) }
-  const bw = 4
+  const needleLen = ro + 4
+  const tip = { x: cx + needleLen * Math.cos(nRad), y: cy + needleLen * Math.sin(nRad) }
+  const bw = 3.5
   const b1 = { x: cx + bw * Math.cos(nRad + Math.PI / 2), y: cy + bw * Math.sin(nRad + Math.PI / 2) }
   const b2 = { x: cx - bw * Math.cos(nRad + Math.PI / 2), y: cy - bw * Math.sin(nRad + Math.PI / 2) }
 
-  // Scale marks every 5M like Power BI - positioned AROUND the arc
-  const scaleMarks: number[] = []
-  for (let v = min; v <= max; v += 5) {
-    scaleMarks.push(v)
-  }
+  // Scale labels
+  const scaleValues = [80, 90, 100, 110, 120, 130, 140, 150]
+
+  // Budget marker position
+  const budAngle = p2a(budPct)
 
   const GaugeContent = (
-    <div className={`w-full h-full flex flex-col items-center ${clickable ? 'cursor-pointer' : ''}`}>
-      <svg viewBox="0 0 400 240" className="w-full" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <linearGradient id="redZone" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#C53030" />
-            <stop offset="100%" stopColor="#E53E3E" />
-          </linearGradient>
-          <linearGradient id="yellowZone" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#D69E2E" />
-            <stop offset="100%" stopColor="#ECC94B" />
-          </linearGradient>
-          <linearGradient id="greenZone" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#38A169" />
-            <stop offset="100%" stopColor="#48BB78" />
-          </linearGradient>
-          <filter id="arcShadow">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.15" />
-          </filter>
-        </defs>
+    <svg viewBox="0 0 400 210" className="w-full max-w-[380px] mx-auto block">
+      {/* Background track */}
+      <path d={descArc(startA, startA + sweepA, ro + 1, ri - 1)} fill="#e5e7eb" />
 
-        {/* Background track */}
-        <path d={descArc(startA, startA + sweepA, ro + 2, ri - 2)} fill="#E8E8E8" filter="url(#arcShadow)" />
+      {/* Color segments */}
+      {segments.map((seg, i) => (
+        <path key={i} d={descArc(p2a(seg.from), p2a(seg.to), ro, ri)} fill={seg.color} />
+      ))}
 
-        {/* Colored zones - THICK like Power BI */}
-        <path d={descArc(startA, z1e, ro, ri)} fill="url(#redZone)" />
-        <path d={descArc(z1e, z2e, ro, ri)} fill="url(#yellowZone)" />
-        <path d={descArc(z2e, startA + sweepA, ro, ri)} fill="url(#greenZone)" />
-
-        {/* SCALE LABELS around arc - EXACTLY like Power BI */}
-        {scaleMarks.map((val, i) => {
-          const pctVal = (val - min) / (max - min)
-          const angle = p2a(pctVal)
-          const labelR = ro + 20
-          const pos = toXY(angle, labelR)
-          const isBudget = val === 130 // Closest to budget
-          const isPrevYear = val === 90 // Closest to prev year
-          
-          // Only show key values to avoid clutter: every 10M plus budget
-          const showLabel = val % 10 === 0 || val === 130
-          
-          return showLabel ? (
-            <text 
-              key={i}
-              x={pos.x} y={pos.y} 
-              fontSize="9" 
-              fill={isBudget ? "#276749" : isPrevYear ? "#C53030" : "#666"}
-              textAnchor="middle" 
-              dominantBaseline="middle"
-              fontWeight={isBudget ? "700" : "500"}
-            >
-              ${val}.0M
+      {/* Tick marks and labels */}
+      {scaleValues.map(val => {
+        const valPct = (val - min) / range
+        const angle = p2a(valPct)
+        const outerTick = toXY(angle, ro + 3)
+        const innerTick = toXY(angle, ro + 8)
+        const labelPos = toXY(angle, ro + 18)
+        return (
+          <g key={val}>
+            <line x1={outerTick.x} y1={outerTick.y} x2={innerTick.x} y2={innerTick.y} stroke="#6b7280" strokeWidth={1.5} />
+            <text x={labelPos.x} y={labelPos.y} fontSize="8" fill="#6b7280" textAnchor="middle" dominantBaseline="middle" fontWeight="500">
+              ${val}M
             </text>
-          ) : null
-        })}
+          </g>
+        )
+      })}
 
-        {/* Budget marker - GREEN like Power BI */}
-        {(() => {
-          const angle = p2a(budPct)
-          const pos = toXY(angle, ro + 22)
-          return (
-            <text x={pos.x} y={pos.y} fontSize="10" fill="#276749" textAnchor="middle" fontWeight="700">
-              ${budget}M
-            </text>
-          )
-        })()}
+      {/* Budget marker */}
+      {(() => {
+        const bPos = toXY(budAngle, ro + 26)
+        return (
+          <text x={bPos.x} y={bPos.y} fontSize="9" fill="#15803d" textAnchor="middle" dominantBaseline="middle" fontWeight="700">
+            Meta: ${budget.toFixed(1)}M
+          </text>
+        )
+      })()}
 
-        {/* Needle */}
-        <polygon points={`${tip.x},${tip.y} ${b1.x},${b1.y} ${b2.x},${b2.y}`} fill="#333" />
-        <circle cx={cx} cy={cy} r={10} fill="#555" />
-        <circle cx={cx} cy={cy} r={5} fill="#888" />
-      </svg>
-      
-      {/* Value BELOW gauge like Power BI - NO "de presupuesto" */}
-      <div className="text-center -mt-4">
-        <div className="text-4xl font-black text-gray-900">${value.toFixed(1)}M</div>
-      </div>
-    </div>
+      {/* Previous year marker line */}
+      {(() => {
+        const pyAngle = p2a(pyPct)
+        const pyOuter = toXY(pyAngle, ro + 2)
+        const pyInner = toXY(pyAngle, ri - 2)
+        return <line x1={pyOuter.x} y1={pyOuter.y} x2={pyInner.x} y2={pyInner.y} stroke="#1f2937" strokeWidth={2} strokeDasharray="4 2" />
+      })()}
+
+      {/* Needle */}
+      <polygon points={`${tip.x},${tip.y} ${b1.x},${b1.y} ${b2.x},${b2.y}`} fill="#1f2937" />
+      <circle cx={cx} cy={cy} r={8} fill="#374151" />
+      <circle cx={cx} cy={cy} r={4} fill="#6b7280" />
+
+      {/* Value text centered */}
+      <text x={cx} y={cy + 36} fontSize="28" fontWeight="900" fill="#111827" textAnchor="middle">${value.toFixed(1)}M</text>
+      <text x={cx} y={cy + 50} fontSize="9" fill="#9ca3af" textAnchor="middle">Prima neta cobrada</text>
+    </svg>
   )
 
   if (clickable) {
-    return <Link href="/tabla-detalle" className="block w-full h-full">{GaugeContent}</Link>
+    return <Link href="/tabla-detalle" className="block">{GaugeContent}</Link>
   }
-  
   return GaugeContent
 }

@@ -1,10 +1,11 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { SEED_LINEAS, SEED_PRESUPUESTO, SEED_FX, getTipoCambio } from "@/lib/queries"
 import type { FxRates } from "@/lib/queries"
+import { Gauge } from "@/components/gauge"
 import { BarChart, Bar, XAxis, YAxis, LabelList, Tooltip } from "recharts"
 
 function fmt(v: number) {
@@ -36,101 +37,12 @@ function Tabs() {
   )
 }
 
-function Gauge({ value, prevYear, budget }: { value: number; prevYear: number; budget: number }) {
-  const [anim, setAnim] = useState(0)
-  const raf = useRef(0)
-  
-  // Scale: $100M to $140M like Power BI
-  const scaleMin = 100, scaleMax = 140
-  const range = scaleMax - scaleMin // 40
-  
-  // Calculate positions on the gauge (0 to 1)
-  const valuePctGauge = Math.max(0.02, Math.min(0.98, (value - scaleMin) / range))
-  const pyPctGauge = Math.max(0, Math.min(0.99, (prevYear - scaleMin) / range))
-  const budPctGauge = Math.max(0, Math.min(0.99, (budget - scaleMin) / range))
-
-  useEffect(() => {
-    const dur = 1200, t0 = performance.now()
-    const tick = (now: number) => {
-      const p = Math.min((now - t0) / dur, 1)
-      setAnim(valuePctGauge * (1 - Math.pow(1 - p, 3)))
-      if (p < 1) raf.current = requestAnimationFrame(tick)
-    }
-    raf.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf.current)
-  }, [valuePctGauge])
-
-  const cx = 200, cy = 165, ro = 135, ri = 90
-  const startA = 150, sweepA = 240
-  const toXY = (deg: number, r: number) => ({ x: cx + r * Math.cos(deg * Math.PI / 180), y: cy + r * Math.sin(deg * Math.PI / 180) })
-  const arc = (s: number, e: number, rO: number, rI: number) => {
-    const p1 = toXY(s, rO), p2 = toXY(e, rO), p3 = toXY(e, rI), p4 = toXY(s, rI)
-    return `M${p1.x},${p1.y} A${rO},${rO} 0 ${e - s > 180 ? 1 : 0} 1 ${p2.x},${p2.y} L${p3.x},${p3.y} A${rI},${rI} 0 ${e - s > 180 ? 1 : 0} 0 ${p4.x},${p4.y} Z`
-  }
-  const p2a = (p: number) => startA + p * sweepA
-  // Zone boundaries: RED = start → prevYear, YELLOW = prevYear → budget, GREEN = budget → end
-  // Ensure red zone is always visible (minimum 8% of arc)
-  const redPct = Math.max(0.08, pyPctGauge)
-  const z1 = p2a(redPct), z2 = p2a(budPctGauge)
-  const na = p2a(anim), nRad = na * Math.PI / 180
-  const tip = { x: cx + (ro + 10) * Math.cos(nRad), y: cy + (ro + 10) * Math.sin(nRad) }
-  const b1 = { x: cx + 7 * Math.cos(nRad + Math.PI/2), y: cy + 7 * Math.sin(nRad + Math.PI/2) }
-  const b2 = { x: cx - 7 * Math.cos(nRad + Math.PI/2), y: cy - 7 * Math.sin(nRad + Math.PI/2) }
-
-  // Labels around arc - Scale $100M to $140M
-  const labels = [
-    { val: 100, pct: 0.01 },
-    { val: 105, pct: 5/40 },
-    { val: 110, pct: 10/40 },
-    { val: 115, pct: 15/40 },
-    { val: 120, pct: 20/40 },
-    { val: budget, pct: (budget - scaleMin)/range, isBudget: true },
-    { val: 130, pct: 30/40 },
-    { val: 135, pct: 35/40 },
-    { val: 140, pct: 0.99 },
-  ]
-
-  return (
-    <Link href="/tabla-detalle" className="block">
-      <svg viewBox="0 0 400 230" className="w-full">
-        <defs>
-          <linearGradient id="gaugeRed" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#DC2626"/><stop offset="100%" stopColor="#EF4444"/></linearGradient>
-          <linearGradient id="gaugeYellow" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#F59E0B"/><stop offset="100%" stopColor="#FCD34D"/></linearGradient>
-          <linearGradient id="gaugeGreen" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#16A34A"/><stop offset="100%" stopColor="#4ADE80"/></linearGradient>
-        </defs>
-        {/* Background */}
-        <path d={arc(startA, startA + sweepA, ro + 3, ri - 3)} fill="#E5E7EB"/>
-        {/* RED zone: start to prevYear */}
-        <path d={arc(startA, z1, ro, ri)} fill="url(#gaugeRed)"/>
-        {/* YELLOW zone: prevYear to budget */}
-        <path d={arc(z1, z2, ro, ri)} fill="url(#gaugeYellow)"/>
-        {/* GREEN zone: budget to end */}
-        <path d={arc(z2, startA + sweepA, ro, ri)} fill="url(#gaugeGreen)"/>
-        {/* Scale labels */}
-        {labels.map(l => {
-          const a = p2a(l.pct)
-          const pos = toXY(a, l.isBudget ? ro + 28 : ro + 20)
-          return <text key={l.val} x={pos.x} y={pos.y} fontSize={l.isBudget ? 12 : 9} fill={l.isBudget ? "#15803D" : "#4B5563"} textAnchor="middle" dominantBaseline="middle" fontWeight={l.isBudget ? 700 : 500}>{l.isBudget ? `$${l.val.toFixed(1)}M ▼` : `$${l.val.toFixed(1)}M`}</text>
-        })}
-        {/* Needle */}
-        <polygon points={`${tip.x},${tip.y} ${b1.x},${b1.y} ${b2.x},${b2.y}`} fill="#1F2937"/>
-        <circle cx={cx} cy={cy} r={14} fill="#374151"/>
-        <circle cx={cx} cy={cy} r={7} fill="#6B7280"/>
-        {/* Value - centered below arc */}
-        <text x={cx} y={cy + 50} fontSize={34} fontWeight={900} fill="#111827" textAnchor="middle">${value.toFixed(1)}M</text>
-      </svg>
-    </Link>
-  )
-}
-
 export default function Home() {
   const [year, setYear] = useState("2025")
   const [month, setMonth] = useState("Febrero")
   const [fx, setFx] = useState<FxRates>(SEED_FX)
-  const [filter, setFilter] = useState("Grupo Click")
   const [ready, setReady] = useState(false)
-  
-  // FIXED: Use SEED data only - no Supabase overwrite to prevent flash/glitch
+
   const lineas = SEED_LINEAS
 
   useEffect(() => {
@@ -138,8 +50,7 @@ export default function Home() {
     const timer = setTimeout(() => setReady(true), 500)
     return () => clearTimeout(timer)
   }, [])
-  
-  // Only fetch tipo de cambio (stable, won't cause visual glitch)
+
   useEffect(() => { getTipoCambio().then(r => r && setFx(r)) }, [])
 
   const total = lineas.reduce((s, l) => s + l.primaNeta, 0)
@@ -173,31 +84,22 @@ export default function Home() {
 
       {/* Main Grid */}
       <div className="flex gap-3 justify-between flex-1 overflow-hidden">
-        {/* Left side: Filters + Gauge + KPIs + Tipo de Cambio */}
+        {/* Left side: Gauge + KPIs + Tipo de Cambio */}
         <div className="w-[calc(50%-8px)] flex flex-col">
-          {/* Filtros arriba */}
-          <div className="flex gap-1.5 mb-2">
-            {["Gobierno", "Grupo Click", "RD"].map(f => (
-              <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 text-[11px] rounded border ${filter === f ? "bg-white border-gray-400 font-semibold shadow-sm" : "bg-gray-50 border-gray-200 text-gray-600"}`}>{f}</button>
-            ))}
-          </div>
-          
-          {/* BLOQUE SUPERIOR - Tacómetro (50% altura) */}
-          <div className="h-1/2 flex items-center justify-center border-b pb-4">
-            <div className="w-full max-w-[400px]">
+          {/* BLOQUE SUPERIOR - Tacómetro */}
+          <div className="flex items-center justify-center border-b pb-2">
+            <div className="w-full max-w-[380px]">
               <Gauge value={total / 1e6} prevYear={totalAA / 1e6} budget={totalPpto / 1e6} />
             </div>
           </div>
 
-          {/* BLOQUE INFERIOR - KPIs + Tipo Cambio (50% altura) */}
-          <div className="h-1/2 flex flex-col gap-3 pt-4">
-            {/* Cumplimiento - beige con borde izquierdo rojo */}
+          {/* BLOQUE INFERIOR - KPIs + Tipo Cambio */}
+          <div className="flex flex-col gap-3 pt-3 flex-1">
             <div className="bg-[#FDF6EC] rounded border-l-4 border-red-500 p-4">
               <p className="text-sm text-gray-800">Cumplimiento del presupuesto</p>
               <p className="text-3xl font-bold text-gray-900">{cumpl}%</p>
             </div>
 
-            {/* Crecimiento - verde con texto blanco */}
             <div className="bg-[#22c55e] rounded p-4">
               <p className="text-sm text-white/90">Crecimiento vs año anterior</p>
               <p className="text-3xl font-bold text-white flex items-center gap-1">
@@ -206,7 +108,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Tipo de Cambio - ancho completo */}
             <div className="mt-auto">
               <div className="bg-white border rounded shadow-sm w-full">
                 <div className="bg-gray-800 text-white text-[12px] font-bold px-4 py-2 text-center">Tipo de cambio</div>
@@ -219,9 +120,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right side: Table + Chart — 50/50 vertical split */}
+        {/* Right side: Table + Chart */}
         <div className="w-[calc(50%-8px)] flex flex-col gap-1.5 min-h-0">
-          {/* Table */}
           <div className="flex-1 bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden flex flex-col">
             <table className="w-full h-full text-[12px]">
               <thead className="bg-[#041224] text-white">
@@ -261,7 +161,7 @@ export default function Home() {
             </table>
           </div>
 
-          {/* Chart — 50/50 with table */}
+          {/* Chart */}
           <div className="flex-1 bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 flex flex-col min-h-0">
             <div className="flex gap-4 text-[11px] mb-1.5">
               <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#1e3a5f] rounded-sm"/><span className="text-gray-700 font-medium">PN Efectuada</span></div>
