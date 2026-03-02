@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { SEED_LINEAS, SEED_PRESUPUESTO, SEED_FX, getTipoCambio } from "@/lib/queries"
-import type { FxRates } from "@/lib/queries"
+import { SEED_LINEAS, SEED_PRESUPUESTO, SEED_FX, getTipoCambio, getLineasNegocio } from "@/lib/queries"
+import type { FxRates, LineaRow } from "@/lib/queries"
 import { Gauge } from "@/components/gauge"
 import { PeriodFilter } from "@/components/period-filter"
 import { BarChart, Bar, XAxis, YAxis, LabelList, Tooltip } from "recharts"
@@ -41,11 +41,16 @@ function Tabs() {
 export default function Home() {
   const [fx, setFx] = useState<FxRates>(SEED_FX)
   const [ready, setReady] = useState(false)
-  const handleFilterChange = useCallback((_year: string, _periodos: number[]) => {
-    // Filter state managed by PeriodFilter — SEED data is static for tacómetro
+  const [year, setYear] = useState("2025")
+  const [periodos, setPeriodos] = useState<number[]>([2])
+  const [lineas, setLineas] = useState<LineaRow[]>(SEED_LINEAS)
+
+  const handleFilterChange = useCallback((newYear: string, newPeriodos: number[]) => {
+    setYear(newYear)
+    setPeriodos(newPeriodos)
   }, [])
 
-  const lineas = SEED_LINEAS
+  const periodo = periodos[0] ?? 2
 
   useEffect(() => {
     document.title = "Tacómetro | CLK BI Dashboard"
@@ -55,11 +60,37 @@ export default function Home() {
 
   useEffect(() => { getTipoCambio().then(r => r && setFx(r)) }, [])
 
+  // Load real data from Supabase when filters change
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const result = await getLineasNegocio(periodo, year)
+        if (cancelled || !result || result.length === 0) return
+        // Merge real primaNeta with SEED presupuesto/anioAnterior
+        const merged: LineaRow[] = result.map(r => {
+          const seed = SEED_LINEAS.find(s => s.nombre === r.linea)
+          return {
+            nombre: r.linea,
+            primaNeta: r.primaNeta,
+            anioAnterior: seed?.anioAnterior ?? 0,
+            presupuesto: seed?.presupuesto ?? 0,
+          }
+        })
+        setLineas(merged)
+      } catch {
+        // Keep current lineas (SEED or previous data)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [periodo, year])
+
   const total = lineas.reduce((s, l) => s + l.primaNeta, 0)
   const totalPpto = lineas.reduce((s, l) => s + l.presupuesto, 0) || SEED_PRESUPUESTO
   const totalAA = lineas.reduce((s, l) => s + l.anioAnterior, 0)
   const cumpl = Math.round((total / totalPpto) * 100)
-  const crec = Math.round(((total - totalAA) / totalAA) * 1000) / 10
+  const crec = totalAA > 0 ? Math.round(((total - totalAA) / totalAA) * 1000) / 10 : 0
 
   const chartData = [...lineas].sort((a, b) => a.primaNeta - b.primaNeta).map(l => ({
     name: l.nombre.replace('Click ', '').replace('Cartera ', ''),
