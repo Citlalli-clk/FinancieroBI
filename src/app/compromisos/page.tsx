@@ -5,7 +5,7 @@ import { PageTabs } from "@/components/page-tabs"
 import { PeriodFilter } from "@/components/period-filter"
 import { getCompromisos, getRankedVendedores } from "@/lib/queries"
 import type { CompromisoRow } from "@/lib/queries"
-import { BarChart, Bar, XAxis, YAxis, Tooltip, LabelList, Cell } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, Tooltip, LabelList, Cell, ResponsiveContainer } from "recharts"
 
 function fmt(v: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
@@ -83,7 +83,7 @@ export default function CompromisosPage() {
   const totalActual = data.reduce((s, r) => s + r.primaActual, 0)
   const totalPct = totalMeta > 0 ? Math.round((totalActual / totalMeta) * 1000) / 10 : 0
 
-  const barData = [...data].sort((a, b) => b.primaActual - a.primaActual).map(r => ({
+  const barData = [...data].sort((a, b) => a.primaActual - b.primaActual).map(r => ({
     name: surname(r.vendedor),
     fullName: r.vendedor,
     value: r.primaActual,
@@ -112,13 +112,14 @@ export default function CompromisosPage() {
           <PeriodFilter onFilterChange={handleFilterChange} />
         </div>
 
-        {/* Content area — viewport minus header */}
-        <div className="flex flex-1 min-h-0 max-h-[calc(100vh-70px)] mt-1 gap-2">
+        {/* 3 stacked blocks */}
+        <div className="flex flex-col gap-1 flex-1 min-h-0 max-h-[calc(100vh-70px)] mt-1">
 
-          {/* LEFT COLUMN (45%) */}
-          <div className="flex flex-col gap-1.5" style={{ flex: '45 1 0%' }}>
-            {/* Compromisos table */}
-            <div className="bg-white border border-gray-200 rounded overflow-hidden">
+          {/* BLOCK 1: Compromisos (~40%) */}
+          <div className="flex gap-1 min-h-0" style={{ flex: '40 1 0%' }}>
+            {/* Table (~55%) */}
+            <div className="bg-white border border-gray-200 rounded p-1 overflow-hidden" style={{ flex: '55 1 0%' }}>
+              <p className="text-[8px] font-bold text-[#041224] mb-0.5">Compromisos</p>
               <table className="w-full text-[7px]">
                 <thead>
                   <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
@@ -126,15 +127,15 @@ export default function CompromisosPage() {
                     <th className="text-right px-1 py-[1px] text-[8px] font-semibold">Meta</th>
                     <th className="text-right px-1 py-[1px] text-[8px] font-semibold">Prima Neta</th>
                     <th className="text-right px-1 py-[1px] text-[8px] font-semibold">%</th>
-                    <th className="text-center px-1 py-[1px] text-[8px] font-semibold">Semáforo</th>
+                    <th className="text-center px-1 py-[1px] text-[8px] font-semibold">Sem.</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr><td colSpan={5} className="px-1 py-2 text-center text-gray-400 text-[7px]">Cargando...</td></tr>
                   ) : data.length === 0 ? (
-                    <tr><td colSpan={5} className="px-1 py-2 text-center text-[#888] text-[7px]">Sin compromisos registrados</td></tr>
-                  ) : data.map((r, idx) => (
+                    <tr><td colSpan={5} className="px-1 py-2 text-center text-[#888] text-[7px]">Sin compromisos</td></tr>
+                  ) : data.slice(0, 10).map((r, idx) => (
                     <tr key={r.vendedor} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${idx % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"}`}>
                       <td className="px-1 py-[1px] font-medium text-[#111]">{r.vendedor}</td>
                       <td className="px-1 py-[1px] text-right text-gray-500">{fmt(r.meta)}</td>
@@ -155,198 +156,142 @@ export default function CompromisosPage() {
                 </tbody>
               </table>
             </div>
-
-            {/* Bar chart — all vendedores by prima neta */}
-            <div className="bg-white border border-gray-200 rounded p-1.5 flex-1 min-h-0 flex items-end">
+            {/* Chart (~45%) */}
+            <div className="bg-white border border-gray-200 rounded p-1 overflow-hidden flex items-center" style={{ flex: '45 1 0%' }}>
               {ready && barData.length > 0 && (
-                <BarChart
-                  width={440}
-                  height={100}
-                  data={barData}
-                  margin={{ top: 5, right: 5, bottom: 30, left: 5 }}
-                >
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 6 }}
-                    interval={0}
-                    angle={-45}
-                    textAnchor="end"
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload || !payload[0]) return null
-                      const d = payload[0].payload as { fullName: string; value: number; pct: number }
-                      return (
-                        <div className="bg-white border border-gray-200 rounded px-2 py-1 shadow text-[10px]">
-                          <p className="font-semibold">{d.fullName}</p>
-                          <p>Prima Neta: {fmt(d.value)}</p>
-                          <p>Avance: <span style={{ color: semaforoColor(d.pct) }}>{d.pct}%</span></p>
-                        </div>
-                      )
-                    }}
-                  />
-                  <Bar dataKey="value" radius={[2, 2, 0, 0]} barSize={14}>
-                    {barData.map((entry, idx) => (
-                      <Cell key={idx} fill={entry.color} />
-                    ))}
-                    <LabelList
-                      dataKey="value"
-                      position="top"
-                      formatter={(v: unknown) => fmtShort(Number(v))}
-                      style={{ fontSize: 6, fill: '#333', fontWeight: 600 }}
+                <ResponsiveContainer width="100%" height="95%">
+                  <BarChart layout="vertical" data={barData} margin={{ top: 2, right: 35, bottom: 2, left: 5 }}>
+                    <XAxis type="number" hide />
+                    <YAxis type="category" dataKey="name" width={55} tick={{ fontSize: 7 }} axisLine={false} tickLine={false} />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload || !payload[0]) return null
+                        const d = payload[0].payload as { fullName: string; value: number; pct: number }
+                        return (
+                          <div className="bg-white border border-gray-200 rounded px-2 py-1 shadow text-[10px]">
+                            <p className="font-semibold">{d.fullName}</p>
+                            <p>Prima: {fmt(d.value)}</p>
+                            <p>Avance: <span style={{ color: semaforoColor(d.pct) }}>{d.pct}%</span></p>
+                          </div>
+                        )
+                      }}
                     />
-                  </Bar>
-                </BarChart>
+                    <Bar dataKey="value" radius={[0, 3, 3, 0]} barSize={8}>
+                      {barData.map((entry, idx) => (
+                        <Cell key={idx} fill={entry.color} />
+                      ))}
+                      <LabelList dataKey="value" position="right" formatter={(v: unknown) => fmtShort(Number(v))} style={{ fontSize: 6, fill: '#333', fontWeight: 600 }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               )}
             </div>
           </div>
 
-          {/* RIGHT COLUMN (55%) */}
-          <div className="flex flex-col gap-1" style={{ flex: '55 1 0%' }}>
-
-            {/* TOP ROW — Top 5 Vendedores */}
-            <div className="flex-1 min-h-0 flex flex-col">
-              <p className="text-[8px] font-bold text-[#041224] mb-0.5">🏆 Top 5 Vendedores</p>
-              <div className="flex gap-1 flex-1 min-h-0">
-                {/* Mini table */}
-                <div className="bg-white border border-gray-200 rounded p-1 flex-1 min-h-0">
-                  <table className="w-full text-[7px]">
-                    <thead>
-                      <tr className="bg-[#041224] text-white border-b-2 border-b-[#2E7D32]">
-                        <th className="px-1 py-[1px] text-left font-semibold w-4">#</th>
-                        <th className="px-1 py-[1px] text-left font-semibold">Vendedor</th>
-                        <th className="px-1 py-[1px] text-right font-semibold">Prima Neta</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {topVendedores.map((v, i) => (
-                        <tr key={v.vendedor} className="bg-[#F1F8F1] border-b border-[#E5E7E9]">
-                          <td className="px-1 py-[1px] font-bold text-[#2E7D32]">{i + 1}</td>
-                          <td className="px-1 py-[1px]">{v.vendedor}</td>
-                          <td className="px-1 py-[1px] text-right font-medium">{fmt(v.primaNeta)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {/* Horizontal bar chart */}
-                <div className="bg-white border border-gray-200 rounded p-1 flex-1 min-h-0 flex items-center">
-                  {ready && topBarData.length > 0 && (
-                    <BarChart
-                      width={280}
-                      height={90}
-                      layout="vertical"
-                      data={topBarData}
-                      margin={{ top: 2, right: 40, bottom: 2, left: 5 }}
-                    >
-                      <XAxis type="number" hide />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        width={60}
-                        tick={{ fontSize: 7 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (!active || !payload || !payload[0]) return null
-                          const d = payload[0].payload as { fullName: string; value: number }
-                          return (
-                            <div className="bg-white border border-gray-200 rounded px-2 py-1 shadow text-[10px]">
-                              <p className="font-semibold">{d.fullName}</p>
-                              <p>Prima Neta: {fmt(d.value)}</p>
-                            </div>
-                          )
-                        }}
-                      />
-                      <Bar dataKey="value" fill="#2E7D32" radius={[0, 3, 3, 0]} barSize={10}>
-                        <LabelList
-                          dataKey="value"
-                          position="right"
-                          formatter={(v: unknown) => fmtShort(Number(v))}
-                          style={{ fontSize: 7, fill: '#2E7D32', fontWeight: 600 }}
-                        />
-                      </Bar>
-                    </BarChart>
-                  )}
-                </div>
-              </div>
+          {/* BLOCK 2: Top 5 (~30%) */}
+          <div className="flex gap-1 min-h-0" style={{ flex: '30 1 0%' }}>
+            {/* Table (~50%) */}
+            <div className="bg-white border border-gray-200 rounded p-1 overflow-hidden" style={{ flex: '50 1 0%' }}>
+              <p className="text-[8px] font-bold text-[#041224] mb-0.5">Top 5 Vendedores</p>
+              <table className="w-full text-[7px]">
+                <thead>
+                  <tr className="bg-[#041224] text-white border-b-2 border-b-[#2E7D32]">
+                    <th className="px-1 py-[1px] text-left font-semibold w-4">#</th>
+                    <th className="px-1 py-[1px] text-left font-semibold">Vendedor</th>
+                    <th className="px-1 py-[1px] text-right font-semibold">Prima Neta</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topVendedores.map((v, i) => (
+                    <tr key={v.vendedor} className="bg-[#F1F8F1] border-b border-[#E5E7E9]">
+                      <td className="px-1 py-[1px] font-bold text-[#2E7D32]">{i + 1}</td>
+                      <td className="px-1 py-[1px]">{v.vendedor}</td>
+                      <td className="px-1 py-[1px] text-right font-medium">{fmt(v.primaNeta)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-
-            {/* BOTTOM ROW — Bottom 5 Vendedores */}
-            <div className="flex-1 min-h-0 flex flex-col">
-              <p className="text-[8px] font-bold text-[#041224] mb-0.5">⬇️ Bottom 5 Vendedores</p>
-              <div className="flex gap-1 flex-1 min-h-0">
-                {/* Mini table */}
-                <div className="bg-white border border-gray-200 rounded p-1 flex-1 min-h-0">
-                  <table className="w-full text-[7px]">
-                    <thead>
-                      <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                        <th className="px-1 py-[1px] text-left font-semibold w-4">#</th>
-                        <th className="px-1 py-[1px] text-left font-semibold">Vendedor</th>
-                        <th className="px-1 py-[1px] text-right font-semibold">Prima Neta</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bottomVendedores.map((v, i) => (
-                        <tr key={v.vendedor} className="bg-[#FFF3F3] border-b border-[#E5E7E9]">
-                          <td className="px-1 py-[1px] font-bold text-[#E62800]">{i + 1}</td>
-                          <td className="px-1 py-[1px]">{v.vendedor}</td>
-                          <td className="px-1 py-[1px] text-right font-medium">{fmt(v.primaNeta)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {/* Horizontal bar chart */}
-                <div className="bg-white border border-gray-200 rounded p-1 flex-1 min-h-0 flex items-center">
-                  {ready && bottomBarData.length > 0 && (
-                    <BarChart
-                      width={280}
-                      height={90}
-                      layout="vertical"
-                      data={bottomBarData}
-                      margin={{ top: 2, right: 40, bottom: 2, left: 5 }}
-                    >
-                      <XAxis type="number" hide />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        width={60}
-                        tick={{ fontSize: 7 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (!active || !payload || !payload[0]) return null
-                          const d = payload[0].payload as { fullName: string; value: number }
-                          return (
-                            <div className="bg-white border border-gray-200 rounded px-2 py-1 shadow text-[10px]">
-                              <p className="font-semibold">{d.fullName}</p>
-                              <p>Prima Neta: {fmt(d.value)}</p>
-                            </div>
-                          )
-                        }}
-                      />
-                      <Bar dataKey="value" fill="#E62800" radius={[0, 3, 3, 0]} barSize={10}>
-                        <LabelList
-                          dataKey="value"
-                          position="right"
-                          formatter={(v: unknown) => fmtShort(Number(v))}
-                          style={{ fontSize: 7, fill: '#E62800', fontWeight: 600 }}
-                        />
-                      </Bar>
-                    </BarChart>
-                  )}
-                </div>
-              </div>
+            {/* Chart (~50%) */}
+            <div className="bg-white border border-gray-200 rounded p-1 overflow-hidden flex items-center" style={{ flex: '50 1 0%' }}>
+              {ready && topBarData.length > 0 && (
+                <ResponsiveContainer width="100%" height="95%">
+                  <BarChart layout="vertical" data={topBarData} margin={{ top: 2, right: 35, bottom: 2, left: 5 }}>
+                    <XAxis type="number" hide />
+                    <YAxis type="category" dataKey="name" width={55} tick={{ fontSize: 7 }} axisLine={false} tickLine={false} />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload || !payload[0]) return null
+                        const d = payload[0].payload as { fullName: string; value: number }
+                        return (
+                          <div className="bg-white border border-gray-200 rounded px-2 py-1 shadow text-[10px]">
+                            <p className="font-semibold">{d.fullName}</p>
+                            <p>Prima Neta: {fmt(d.value)}</p>
+                          </div>
+                        )
+                      }}
+                    />
+                    <Bar dataKey="value" fill="#2E7D32" radius={[0, 3, 3, 0]} barSize={8}>
+                      <LabelList dataKey="value" position="right" formatter={(v: unknown) => fmtShort(Number(v))} style={{ fontSize: 7, fill: '#2E7D32', fontWeight: 600 }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
-
           </div>
+
+          {/* BLOCK 3: Bottom 5 (~30%) */}
+          <div className="flex gap-1 min-h-0" style={{ flex: '30 1 0%' }}>
+            {/* Table (~50%) */}
+            <div className="bg-white border border-gray-200 rounded p-1 overflow-hidden" style={{ flex: '50 1 0%' }}>
+              <p className="text-[8px] font-bold text-[#041224] mb-0.5">Bottom 5 Vendedores</p>
+              <table className="w-full text-[7px]">
+                <thead>
+                  <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
+                    <th className="px-1 py-[1px] text-left font-semibold w-4">#</th>
+                    <th className="px-1 py-[1px] text-left font-semibold">Vendedor</th>
+                    <th className="px-1 py-[1px] text-right font-semibold">Prima Neta</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bottomVendedores.map((v, i) => (
+                    <tr key={v.vendedor} className="bg-[#FFF3F3] border-b border-[#E5E7E9]">
+                      <td className="px-1 py-[1px] font-bold text-[#E62800]">{i + 1}</td>
+                      <td className="px-1 py-[1px]">{v.vendedor}</td>
+                      <td className="px-1 py-[1px] text-right font-medium">{fmt(v.primaNeta)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Chart (~50%) */}
+            <div className="bg-white border border-gray-200 rounded p-1 overflow-hidden flex items-center" style={{ flex: '50 1 0%' }}>
+              {ready && bottomBarData.length > 0 && (
+                <ResponsiveContainer width="100%" height="95%">
+                  <BarChart layout="vertical" data={bottomBarData} margin={{ top: 2, right: 35, bottom: 2, left: 5 }}>
+                    <XAxis type="number" hide />
+                    <YAxis type="category" dataKey="name" width={55} tick={{ fontSize: 7 }} axisLine={false} tickLine={false} />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload || !payload[0]) return null
+                        const d = payload[0].payload as { fullName: string; value: number }
+                        return (
+                          <div className="bg-white border border-gray-200 rounded px-2 py-1 shadow text-[10px]">
+                            <p className="font-semibold">{d.fullName}</p>
+                            <p>Prima Neta: {fmt(d.value)}</p>
+                          </div>
+                        )
+                      }}
+                    />
+                    <Bar dataKey="value" fill="#E62800" radius={[0, 3, 3, 0]} barSize={8}>
+                      <LabelList dataKey="value" position="right" formatter={(v: unknown) => fmtShort(Number(v))} style={{ fontSize: 7, fill: '#E62800', fontWeight: 600 }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
