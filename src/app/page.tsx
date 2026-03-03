@@ -1,11 +1,10 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useState, useEffect, useCallback } from "react"
 import { SEED_LINEAS, SEED_PRESUPUESTO, getLineasNegocio } from "@/lib/queries"
 import type { LineaRow } from "@/lib/queries"
 import { Gauge } from "@/components/gauge"
+import { PageTabs } from "@/components/page-tabs"
 import { PeriodFilter } from "@/components/period-filter"
 import { BarChart, Bar, XAxis, YAxis, LabelList, Tooltip } from "recharts"
 
@@ -13,30 +12,6 @@ function fmt(v: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 }
 
-const TABS = [
-  { href: "/", label: "Tacómetro" },
-  { href: "/tabla-detalle", label: "Tabla detalle" },
-  { href: "/compromisos", label: "Vendedores" },
-  { href: "/internacional", label: "Internacional" },
-  { href: "/corporate", label: "Corporate" },
-  { href: "/cobranza", label: "Convenios" },
-]
-
-function Tabs() {
-  const pathname = usePathname()
-  return (
-    <div className="flex items-center">
-      {TABS.map((tab, i) => (
-        <React.Fragment key={tab.href}>
-          {i > 0 && <span className="text-gray-300 mx-2">|</span>}
-          <Link href={tab.href} className={`text-sm tracking-wide font-medium ${pathname === tab.href ? "text-gray-900 font-bold" : "text-gray-500 hover:text-gray-700"}`}>
-            {tab.label}
-          </Link>
-        </React.Fragment>
-      ))}
-    </div>
-  )
-}
 
 export default function Home() {
   const [ready, setReady] = useState(false)
@@ -104,7 +79,7 @@ export default function Home() {
       <div className="max-w-[1200px] mx-auto w-full flex flex-col flex-1">
         {/* Header */}
         <div className="flex justify-between items-center border-b pb-2 pt-5 w-full">
-          <Tabs />
+          <PageTabs />
           <PeriodFilter onFilterChange={handleFilterChange} defaultYear="2025" defaultMonth={2} />
         </div>
 
