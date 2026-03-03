@@ -74,7 +74,7 @@ export function Gauge({ value, prevYear = 88.9, budget = 129.5, clickable = true
   const budAngle = p2a(budPct)
 
   const GaugeContent = (
-    <svg viewBox="0 0 400 210" className="w-full max-w-[380px] mx-auto block">
+    <svg viewBox="0 0 400 210" className="w-full mx-auto block">
       {/* Background track */}
       <path d={descArc(startA, startA + sweepA, ro + 1, ri - 1)} fill="#e5e7eb" />
 

@@ -119,7 +119,7 @@ export default function Home() {
         <div className="w-[calc(50%-6px)] flex flex-col">
           {/* Tacómetro — fills available space */}
           <div className="flex items-center justify-center flex-1">
-            <div className="w-full max-w-[460px]">
+            <div className="w-full">
               <Gauge value={total / 1e6} prevYear={totalAA / 1e6} budget={totalPpto / 1e6} />
             </div>
           </div>
