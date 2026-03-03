@@ -5,7 +5,7 @@ import { PageTabs } from "@/components/page-tabs"
 import { PeriodFilter } from "@/components/period-filter"
 import { getCompromisos, getRankedVendedores } from "@/lib/queries"
 import type { CompromisoRow } from "@/lib/queries"
-import { BarChart, Bar, XAxis, YAxis, Tooltip, LabelList, Cell, ResponsiveContainer } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, LabelList, Cell } from "recharts"
 
 function fmt(v: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
@@ -34,9 +34,9 @@ function Semaforo({ pct }: { pct: number }) {
   const isRed = pct < 70
   return (
     <span className="inline-flex items-center gap-0.5">
-      <span className={`w-2 h-2 rounded-full inline-block border ${isRed ? "bg-[#E62800] border-[#B91C00] shadow-[0_0_3px_#E62800]" : "bg-[#E62800]/15 border-[#E5E7E9]"}`} />
-      <span className={`w-2 h-2 rounded-full inline-block border ${isYellow ? "bg-[#F5C518] border-[#D4A800] shadow-[0_0_3px_#F5C518]" : "bg-[#F5C518]/15 border-[#E5E7E9]"}`} />
-      <span className={`w-2 h-2 rounded-full inline-block border ${isGreen ? "bg-[#2E7D32] border-[#1B5E20] shadow-[0_0_3px_#2E7D32]" : "bg-[#2E7D32]/15 border-[#E5E7E9]"}`} />
+      <span className={`w-2.5 h-2.5 rounded-full inline-block border ${isRed ? "bg-[#E62800] border-[#B91C00] shadow-[0_0_3px_#E62800]" : "bg-[#E62800]/15 border-[#E5E7E9]"}`} />
+      <span className={`w-2.5 h-2.5 rounded-full inline-block border ${isYellow ? "bg-[#F5C518] border-[#D4A800] shadow-[0_0_3px_#F5C518]" : "bg-[#F5C518]/15 border-[#E5E7E9]"}`} />
+      <span className={`w-2.5 h-2.5 rounded-full inline-block border ${isGreen ? "bg-[#2E7D32] border-[#1B5E20] shadow-[0_0_3px_#2E7D32]" : "bg-[#2E7D32]/15 border-[#E5E7E9]"}`} />
     </span>
   )
 }
@@ -93,206 +93,153 @@ export default function CompromisosPage() {
 
   const topBarData = topVendedores.map(v => ({
     name: surname(v.vendedor),
-    fullName: v.vendedor,
     value: v.primaNeta,
   })).reverse()
 
   const bottomBarData = bottomVendedores.map(v => ({
     name: surname(v.vendedor),
-    fullName: v.vendedor,
     value: v.primaNeta,
   })).reverse()
 
+  const barChartWidth = 1160
+
   return (
-    <div className="h-screen bg-[#FAFAFA] px-3 py-2 flex flex-col overflow-hidden">
-      <div className="max-w-[1200px] mx-auto w-full flex flex-col flex-1 min-h-0">
-        {/* Header: tabs + filters */}
-        <div className="flex justify-between items-center border-b pb-2 pt-3 w-full">
+    <div className="min-h-screen bg-[#FAFAFA] px-3 py-4 flex flex-col">
+      <div className="max-w-[1200px] mx-auto w-full flex flex-col flex-1">
+        {/* Header */}
+        <div className="flex justify-between items-center border-b pb-2 pt-5 w-full">
           <PageTabs />
           <PeriodFilter onFilterChange={handleFilterChange} />
         </div>
 
-        {/* 3 stacked blocks */}
-        <div className="flex flex-col gap-1 flex-1 min-h-0 max-h-[calc(100vh-70px)] mt-1">
+        <h1 className="text-sm font-bold text-[#111] font-lato mt-3 mb-3">Vendedores — Compromisos</h1>
 
-          {/* BLOCK 1: Compromisos (~40%) */}
-          <div className="flex gap-1 min-h-0" style={{ flex: '40 1 0%' }}>
-            {/* Table (~55%) */}
-            <div className="bg-white border border-gray-200 rounded p-1 overflow-hidden" style={{ flex: '55 1 0%' }}>
-              <p className="text-[8px] font-bold text-[#041224] mb-0.5">Compromisos</p>
-              <table className="w-full text-[7px]">
-                <thead>
-                  <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                    <th className="text-left px-1 py-[1px] text-[8px] font-semibold">Vendedor</th>
-                    <th className="text-right px-1 py-[1px] text-[8px] font-semibold">Meta</th>
-                    <th className="text-right px-1 py-[1px] text-[8px] font-semibold">Prima Neta</th>
-                    <th className="text-right px-1 py-[1px] text-[8px] font-semibold">%</th>
-                    <th className="text-center px-1 py-[1px] text-[8px] font-semibold">Sem.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr><td colSpan={5} className="px-1 py-2 text-center text-gray-400 text-[7px]">Cargando...</td></tr>
-                  ) : data.length === 0 ? (
-                    <tr><td colSpan={5} className="px-1 py-2 text-center text-[#888] text-[7px]">Sin compromisos</td></tr>
-                  ) : data.slice(0, 10).map((r, idx) => (
-                    <tr key={r.vendedor} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${idx % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"}`}>
-                      <td className="px-1 py-[1px] font-medium text-[#111]">{r.vendedor}</td>
-                      <td className="px-1 py-[1px] text-right text-gray-500">{fmt(r.meta)}</td>
-                      <td className="px-1 py-[1px] text-right font-medium">{fmt(r.primaActual)}</td>
-                      <td className={`px-1 py-[1px] text-right font-medium ${r.pctAvance >= 90 ? "text-[#2E7D32]" : r.pctAvance >= 70 ? "text-[#F5C518]" : "text-[#E62800]"}`}>{r.pctAvance}%</td>
-                      <td className="px-1 py-[1px] text-center"><Semaforo pct={r.pctAvance} /></td>
-                    </tr>
-                  ))}
-                  {!loading && data.length > 0 && (
-                    <tr className="bg-[#041224] text-white">
-                      <td className="px-1 py-[1px] font-bold">Total</td>
-                      <td className="px-1 py-[1px] text-right font-bold">{fmt(totalMeta)}</td>
-                      <td className="px-1 py-[1px] text-right font-bold">{fmt(totalActual)}</td>
-                      <td className="px-1 py-[1px] text-right font-bold">{totalPct}%</td>
-                      <td className="px-1 py-[1px] text-center"><Semaforo pct={totalPct} /></td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {/* Chart (~45%) */}
-            <div className="bg-white border border-gray-200 rounded p-1 overflow-hidden flex items-center" style={{ flex: '45 1 0%' }}>
-              {ready && barData.length > 0 && (
-                <ResponsiveContainer width="100%" height="95%">
-                  <BarChart layout="vertical" data={barData} margin={{ top: 2, right: 35, bottom: 2, left: 5 }}>
-                    <XAxis type="number" hide />
-                    <YAxis type="category" dataKey="name" width={55} tick={{ fontSize: 7 }} axisLine={false} tickLine={false} />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (!active || !payload || !payload[0]) return null
-                        const d = payload[0].payload as { fullName: string; value: number; pct: number }
-                        return (
-                          <div className="bg-white border border-gray-200 rounded px-2 py-1 shadow text-[10px]">
-                            <p className="font-semibold">{d.fullName}</p>
-                            <p>Prima: {fmt(d.value)}</p>
-                            <p>Avance: <span style={{ color: semaforoColor(d.pct) }}>{d.pct}%</span></p>
-                          </div>
-                        )
-                      }}
-                    />
-                    <Bar dataKey="value" radius={[0, 3, 3, 0]} barSize={8}>
-                      {barData.map((entry, idx) => (
-                        <Cell key={idx} fill={entry.color} />
-                      ))}
-                      <LabelList dataKey="value" position="right" formatter={(v: unknown) => fmtShort(Number(v))} style={{ fontSize: 6, fill: '#333', fontWeight: 600 }} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+        {/* SECTION 1: Compromisos Table + sparkline bar chart */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+          <table className="w-full text-[9px]">
+            <thead>
+              <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
+                <th className="text-left px-2 py-1 text-[10px] font-semibold">Vendedor</th>
+                <th className="text-right px-2 py-1 text-[10px] font-semibold">Meta</th>
+                <th className="text-right px-2 py-1 text-[10px] font-semibold">Prima Neta</th>
+                <th className="text-right px-2 py-1 text-[10px] font-semibold">% Avance</th>
+                <th className="text-center px-2 py-1 text-[10px] font-semibold">Semáforo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={5} className="px-2 py-4 text-center text-gray-400 text-[9px]">Cargando...</td></tr>
+              ) : data.length === 0 ? (
+                <tr><td colSpan={5} className="px-2 py-4 text-center text-[#888] text-[9px]">Sin compromisos para este periodo</td></tr>
+              ) : data.slice(0, 10).map((r, idx) => (
+                <tr key={r.vendedor} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${idx % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"}`}>
+                  <td className="px-2 py-1 font-medium text-[#111]">{r.vendedor}</td>
+                  <td className="px-2 py-1 text-right text-gray-500">{fmt(r.meta)}</td>
+                  <td className="px-2 py-1 text-right font-medium">{fmt(r.primaActual)}</td>
+                  <td className={`px-2 py-1 text-right font-medium ${r.pctAvance >= 90 ? "text-[#2E7D32]" : r.pctAvance >= 70 ? "text-[#F5C518]" : "text-[#E62800]"}`}>{r.pctAvance}%</td>
+                  <td className="px-2 py-1 text-center"><Semaforo pct={r.pctAvance} /></td>
+                </tr>
+              ))}
+              {!loading && data.length > 0 && (
+                <tr className="bg-[#041224] text-white">
+                  <td className="px-2 py-1 font-bold">Total</td>
+                  <td className="px-2 py-1 text-right font-bold">{fmt(totalMeta)}</td>
+                  <td className="px-2 py-1 text-right font-bold">{fmt(totalActual)}</td>
+                  <td className="px-2 py-1 text-right font-bold">{totalPct}%</td>
+                  <td className="px-2 py-1 text-center"><Semaforo pct={totalPct} /></td>
+                </tr>
               )}
-            </div>
-          </div>
+            </tbody>
+          </table>
 
-          {/* BLOCK 2: Top 5 (~30%) */}
-          <div className="flex gap-1 min-h-0" style={{ flex: '30 1 0%' }}>
-            {/* Table (~50%) */}
-            <div className="bg-white border border-gray-200 rounded p-1 overflow-hidden" style={{ flex: '50 1 0%' }}>
-              <p className="text-[8px] font-bold text-[#041224] mb-0.5">Top 5 Vendedores</p>
-              <table className="w-full text-[7px]">
-                <thead>
-                  <tr className="bg-[#041224] text-white border-b-2 border-b-[#2E7D32]">
-                    <th className="px-1 py-[1px] text-left font-semibold w-4">#</th>
-                    <th className="px-1 py-[1px] text-left font-semibold">Vendedor</th>
-                    <th className="px-1 py-[1px] text-right font-semibold">Prima Neta</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {topVendedores.map((v, i) => (
-                    <tr key={v.vendedor} className="bg-[#F1F8F1] border-b border-[#E5E7E9]">
-                      <td className="px-1 py-[1px] font-bold text-[#2E7D32]">{i + 1}</td>
-                      <td className="px-1 py-[1px]">{v.vendedor}</td>
-                      <td className="px-1 py-[1px] text-right font-medium">{fmt(v.primaNeta)}</td>
-                    </tr>
+          {/* Sparkline bar chart below table */}
+          {ready && barData.length > 0 && (
+            <div className="mt-2 w-full overflow-hidden">
+              <BarChart width={barChartWidth} height={60} layout="vertical" data={barData} margin={{ top: 2, right: 50, bottom: 2, left: 5 }}>
+                <XAxis type="number" hide />
+                <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 8 }} axisLine={false} tickLine={false} />
+                <Bar dataKey="value" radius={[0, 2, 2, 0]} barSize={6}>
+                  {barData.map((entry, idx) => (
+                    <Cell key={idx} fill={entry.color} />
                   ))}
-                </tbody>
-              </table>
+                  <LabelList dataKey="value" position="right" formatter={(v: unknown) => fmtShort(Number(v))} style={{ fontSize: 7, fill: '#333', fontWeight: 600 }} />
+                </Bar>
+              </BarChart>
             </div>
-            {/* Chart (~50%) */}
-            <div className="bg-white border border-gray-200 rounded p-1 overflow-hidden flex items-center" style={{ flex: '50 1 0%' }}>
-              {ready && topBarData.length > 0 && (
-                <ResponsiveContainer width="100%" height="95%">
-                  <BarChart layout="vertical" data={topBarData} margin={{ top: 2, right: 35, bottom: 2, left: 5 }}>
-                    <XAxis type="number" hide />
-                    <YAxis type="category" dataKey="name" width={55} tick={{ fontSize: 7 }} axisLine={false} tickLine={false} />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (!active || !payload || !payload[0]) return null
-                        const d = payload[0].payload as { fullName: string; value: number }
-                        return (
-                          <div className="bg-white border border-gray-200 rounded px-2 py-1 shadow text-[10px]">
-                            <p className="font-semibold">{d.fullName}</p>
-                            <p>Prima Neta: {fmt(d.value)}</p>
-                          </div>
-                        )
-                      }}
-                    />
-                    <Bar dataKey="value" fill="#2E7D32" radius={[0, 3, 3, 0]} barSize={8}>
-                      <LabelList dataKey="value" position="right" formatter={(v: unknown) => fmtShort(Number(v))} style={{ fontSize: 7, fill: '#2E7D32', fontWeight: 600 }} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
-          {/* BLOCK 3: Bottom 5 (~30%) */}
-          <div className="flex gap-1 min-h-0" style={{ flex: '30 1 0%' }}>
-            {/* Table (~50%) */}
-            <div className="bg-white border border-gray-200 rounded p-1 overflow-hidden" style={{ flex: '50 1 0%' }}>
-              <p className="text-[8px] font-bold text-[#041224] mb-0.5">Bottom 5 Vendedores</p>
-              <table className="w-full text-[7px]">
-                <thead>
-                  <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                    <th className="px-1 py-[1px] text-left font-semibold w-4">#</th>
-                    <th className="px-1 py-[1px] text-left font-semibold">Vendedor</th>
-                    <th className="px-1 py-[1px] text-right font-semibold">Prima Neta</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bottomVendedores.map((v, i) => (
-                    <tr key={v.vendedor} className="bg-[#FFF3F3] border-b border-[#E5E7E9]">
-                      <td className="px-1 py-[1px] font-bold text-[#E62800]">{i + 1}</td>
-                      <td className="px-1 py-[1px]">{v.vendedor}</td>
-                      <td className="px-1 py-[1px] text-right font-medium">{fmt(v.primaNeta)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {/* Chart (~50%) */}
-            <div className="bg-white border border-gray-200 rounded p-1 overflow-hidden flex items-center" style={{ flex: '50 1 0%' }}>
-              {ready && bottomBarData.length > 0 && (
-                <ResponsiveContainer width="100%" height="95%">
-                  <BarChart layout="vertical" data={bottomBarData} margin={{ top: 2, right: 35, bottom: 2, left: 5 }}>
-                    <XAxis type="number" hide />
-                    <YAxis type="category" dataKey="name" width={55} tick={{ fontSize: 7 }} axisLine={false} tickLine={false} />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (!active || !payload || !payload[0]) return null
-                        const d = payload[0].payload as { fullName: string; value: number }
-                        return (
-                          <div className="bg-white border border-gray-200 rounded px-2 py-1 shadow text-[10px]">
-                            <p className="font-semibold">{d.fullName}</p>
-                            <p>Prima Neta: {fmt(d.value)}</p>
-                          </div>
-                        )
-                      }}
-                    />
-                    <Bar dataKey="value" fill="#E62800" radius={[0, 3, 3, 0]} barSize={8}>
-                      <LabelList dataKey="value" position="right" formatter={(v: unknown) => fmtShort(Number(v))} style={{ fontSize: 7, fill: '#E62800', fontWeight: 600 }} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
+          )}
         </div>
+
+        {/* SECTION 2: Top 5 + Bottom 5 side by side */}
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          {/* Left card: Top 5 */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+            <p className="text-[10px] font-bold text-[#041224] mb-1">Top 5 Vendedores</p>
+            <table className="w-full text-[9px]">
+              <thead>
+                <tr className="bg-[#041224] text-white border-b-2 border-b-[#2E7D32]">
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold w-6">#</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold">Vendedor</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold">Prima Neta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topVendedores.map((v, i) => (
+                  <tr key={v.vendedor} className={`border-b border-[#E5E7E9] ${i % 2 === 1 ? "bg-[#FAFAFA]" : "bg-[#F1F8F1]"}`}>
+                    <td className="px-2 py-1 font-bold text-[#2E7D32]">{i + 1}</td>
+                    <td className="px-2 py-1">{v.vendedor}</td>
+                    <td className="px-2 py-1 text-right font-medium">{fmt(v.primaNeta)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {ready && topBarData.length > 0 && (
+              <div className="mt-1 overflow-hidden">
+                <BarChart width={540} height={50} layout="vertical" data={topBarData} margin={{ top: 2, right: 45, bottom: 2, left: 5 }}>
+                  <XAxis type="number" hide />
+                  <YAxis type="category" dataKey="name" width={55} tick={{ fontSize: 8 }} axisLine={false} tickLine={false} />
+                  <Bar dataKey="value" fill="#2E7D32" radius={[0, 2, 2, 0]} barSize={6}>
+                    <LabelList dataKey="value" position="right" formatter={(v: unknown) => fmtShort(Number(v))} style={{ fontSize: 7, fill: '#2E7D32', fontWeight: 600 }} />
+                  </Bar>
+                </BarChart>
+              </div>
+            )}
+          </div>
+
+          {/* Right card: Bottom 5 */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+            <p className="text-[10px] font-bold text-[#041224] mb-1">Bottom 5 Vendedores</p>
+            <table className="w-full text-[9px]">
+              <thead>
+                <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold w-6">#</th>
+                  <th className="px-2 py-1 text-left text-[10px] font-semibold">Vendedor</th>
+                  <th className="px-2 py-1 text-right text-[10px] font-semibold">Prima Neta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bottomVendedores.map((v, i) => (
+                  <tr key={v.vendedor} className={`border-b border-[#E5E7E9] ${i % 2 === 1 ? "bg-[#FAFAFA]" : "bg-[#FFF3F3]"}`}>
+                    <td className="px-2 py-1 font-bold text-[#E62800]">{i + 1}</td>
+                    <td className="px-2 py-1">{v.vendedor}</td>
+                    <td className="px-2 py-1 text-right font-medium">{fmt(v.primaNeta)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {ready && bottomBarData.length > 0 && (
+              <div className="mt-1 overflow-hidden">
+                <BarChart width={540} height={50} layout="vertical" data={bottomBarData} margin={{ top: 2, right: 45, bottom: 2, left: 5 }}>
+                  <XAxis type="number" hide />
+                  <YAxis type="category" dataKey="name" width={55} tick={{ fontSize: 8 }} axisLine={false} tickLine={false} />
+                  <Bar dataKey="value" fill="#E62800" radius={[0, 2, 2, 0]} barSize={6}>
+                    <LabelList dataKey="value" position="right" formatter={(v: unknown) => fmtShort(Number(v))} style={{ fontSize: 7, fill: '#E62800', fontWeight: 600 }} />
+                  </Bar>
+                </BarChart>
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   )
