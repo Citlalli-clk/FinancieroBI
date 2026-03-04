@@ -40,11 +40,14 @@ export interface LineaRow {
 
 // Seed data — fallback when Supabase fails
 export const SEED_LINEAS: LineaRow[] = [
-  { nombre: "Vendedores", primaNeta: 72595322, anioAnterior: 64461188, presupuesto: 94524187 },
-  { nombre: "Aseguradoras", primaNeta: 25943097, anioAnterior: 24450735, presupuesto: 34962885 },
+  { nombre: "Click Franquicias", primaNeta: 72595322, anioAnterior: 64461188, presupuesto: 94524187 },
+  { nombre: "Click Promotoras", primaNeta: 25943097, anioAnterior: 24450735, presupuesto: 34962885 },
+  { nombre: "Corporate", primaNeta: 18200000, anioAnterior: 15800000, presupuesto: 22000000 },
+  { nombre: "Cartera Tradicional", primaNeta: 12400000, anioAnterior: 11200000, presupuesto: 15000000 },
+  { nombre: "Call Center", primaNeta: 8500000, anioAnterior: 7100000, presupuesto: 10000000 },
 ]
 
-export const SEED_PRESUPUESTO = 129487071
+export const SEED_PRESUPUESTO = 176487072
 
 export interface FxRates { usd: number; dop: number }
 export const SEED_FX: FxRates = { usd: 17.22, dop: 56.85 }
