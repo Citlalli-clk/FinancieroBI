@@ -265,7 +265,7 @@ export default function CobranzaPage() {
       <div className="bg-white rounded-xl shadow-md overflow-hidden mb-4">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-[#E62800]">
+            <tr className="bg-[#1a1a1a]">
               <th className="text-left px-3 py-2.5 font-semibold text-white text-base">Resumen por ramo</th>
               {ramos.map(r => <th key={r.nombre} className="text-center px-3 py-2.5 font-semibold text-white text-base">{r.nombre}</th>)}
               <th className="text-center px-3 py-2.5 font-semibold text-white text-base">Total</th>
@@ -288,7 +288,7 @@ export default function CobranzaPage() {
               <td className="px-3 py-2.5 text-center text-base font-bold">{new Intl.NumberFormat("es-MX").format(totalPOL)}</td>
             </tr>
             {/* TOTAL row */}
-            <tr className="bg-[#E62800] text-white">
+            <tr className="bg-[#1a1a1a] text-white">
               <td className="px-3 py-3 text-base font-bold">Total</td>
               {ramos.map(r => <td key={r.nombre} className="px-3 py-3 text-center text-base font-bold">{fmt(r.pnEfectuada)}</td>)}
               <td className="px-3 py-3 text-center text-base font-bold">{fmt(totalPN)}</td>
@@ -331,8 +331,8 @@ export default function CobranzaPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-separate border-spacing-0">
             <thead>
-              <tr className="bg-[#E62800]">
-                <th className="text-left px-3 py-3 font-semibold text-white min-w-[120px] sticky left-0 bg-[#E62800] z-10 cursor-pointer select-none" onClick={() => handleSort('nombre')}>Compania {sortKey === 'nombre' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+              <tr className="bg-[#1a1a1a]">
+                <th className="text-left px-3 py-3 font-semibold text-white min-w-[120px] sticky left-0 bg-[#1a1a1a] z-10 cursor-pointer select-none" onClick={() => handleSort('nombre')}>Compania {sortKey === 'nombre' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
                 <th className="text-center px-3 py-3 font-semibold text-white cursor-pointer select-none" onClick={() => handleSort('primaNeta')}>Prima neta {sortKey === 'primaNeta' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
                 <th className="text-center px-3 py-3 font-semibold text-white cursor-pointer select-none" onClick={() => handleSort('convenio')}>Convenio {sortKey === 'convenio' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
                 <th className="text-center px-3 py-3 font-semibold text-white">Diferencia</th>
@@ -372,8 +372,8 @@ export default function CobranzaPage() {
                 )
               })}
               {/* TOTAL */}
-              <tr className="bg-[#E62800] text-white">
-                <td className="px-3 py-3.5 font-bold sticky left-0 bg-[#E62800] z-10">TOTAL</td>
+              <tr className="bg-[#1a1a1a] text-white">
+                <td className="px-3 py-3.5 font-bold sticky left-0 bg-[#1a1a1a] z-10">TOTAL</td>
                 <td className="px-3 py-3.5 text-center font-bold tabular-nums">{fmt(compTotals.primaNeta)}</td>
                 <td className="px-3 py-3.5 text-center font-bold tabular-nums">{fmt(compTotals.convenio)}</td>
                 <td className="px-3 py-3.5 text-center font-bold tabular-nums">{fmt(compTotals.primaNeta - compTotals.convenio)}</td>
