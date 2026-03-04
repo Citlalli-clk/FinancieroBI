@@ -15,12 +15,12 @@ const COLORS = [
 ]
 
 export function Gauge({ value, clickable = true }: GaugeProps) {
-  const W = 500
-  const H = 310
+  const W = 600
+  const H = 380
   const cx = W / 2
-  const cy = 240
+  const cy = 290
 
-  const outerR = 200
+  const outerR = 240
   const innerR = outerR * 0.75 // 150
   const borderR = outerR + 10   // 210 — grey frame outside
   const borderInnerR = innerR - 6
@@ -158,7 +158,7 @@ export function Gauge({ value, clickable = true }: GaugeProps) {
         <text
           x={cx}
           y={cy + 48}
-          fontSize="36"
+          fontSize="42"
           fontWeight="900"
           fill="#111827"
           textAnchor="middle"

@@ -116,11 +116,11 @@ export default function Home() {
               <table className="w-full text-[11px]">
                 <thead className="bg-[#041224] text-white">
                   <tr>
-                    <th className="text-left px-1.5 py-1 text-[11px] font-bold">Línea</th>
-                    <th className="text-right px-1.5 py-1 text-[11px] font-bold">Prima Neta</th>
-                    <th className="text-right px-1.5 py-1 text-[11px] font-bold">Año Ant. *</th>
-                    <th className="text-right px-1.5 py-1 text-[11px] font-bold">Presupuesto</th>
-                    <th className="text-right px-1.5 py-1 text-[11px] font-bold">Diferencia</th>
+                    <th className="text-left px-1.5 py-0.5 text-[11px] font-bold">Línea</th>
+                    <th className="text-right px-1.5 py-0.5 text-[11px] font-bold">Prima Neta</th>
+                    <th className="text-right px-1.5 py-0.5 text-[11px] font-bold">Año Ant. *</th>
+                    <th className="text-right px-1.5 py-0.5 text-[11px] font-bold">Presupuesto</th>
+                    <th className="text-right px-1.5 py-0.5 text-[11px] font-bold">Diferencia</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -128,22 +128,22 @@ export default function Home() {
                     const diff = l.primaNeta - l.presupuesto
                     return (
                       <tr key={l.nombre} className={`cursor-pointer transition-colors hover:bg-blue-50 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/70"}`}>
-                        <td className="px-1.5 py-1 font-medium text-gray-800">{l.nombre}</td>
-                        <td className="px-1.5 py-1 text-right font-semibold text-gray-900">{fmt(l.primaNeta)}</td>
-                        <td className="px-1.5 py-1 text-right text-gray-500">{fmt(l.anioAnterior)}</td>
-                        <td className="px-1.5 py-1 text-right text-gray-500">{fmt(l.presupuesto)}</td>
-                        <td className={`px-1.5 py-1 text-right font-semibold ${diff < 0 ? "text-red-600" : "text-emerald-600"}`}>
+                        <td className="px-1.5 py-0.5 font-medium text-gray-800">{l.nombre}</td>
+                        <td className="px-1.5 py-0.5 text-right font-semibold text-gray-900">{fmt(l.primaNeta)}</td>
+                        <td className="px-1.5 py-0.5 text-right text-gray-500">{fmt(l.anioAnterior)}</td>
+                        <td className="px-1.5 py-0.5 text-right text-gray-500">{fmt(l.presupuesto)}</td>
+                        <td className={`px-1.5 py-0.5 text-right font-semibold ${diff < 0 ? "text-red-600" : "text-emerald-600"}`}>
                           {diff < 0 ? `(${fmt(Math.abs(diff))})` : fmt(diff)}
                         </td>
                       </tr>
                     )
                   })}
                   <tr className="bg-gray-100 font-bold border-t-2 border-gray-300">
-                    <td className="px-1.5 py-1 text-gray-900">Total</td>
-                    <td className="px-1.5 py-1 text-right text-gray-900">{fmt(total)}</td>
-                    <td className="px-1.5 py-1 text-right text-gray-700">{fmt(totalAA)}</td>
-                    <td className="px-1.5 py-1 text-right text-gray-700">{fmt(totalPpto)}</td>
-                    <td className={`px-1.5 py-1 text-right font-bold ${(total - totalPpto) < 0 ? "text-red-600" : "text-emerald-600"}`}>
+                    <td className="px-1.5 py-0.5 text-gray-900">Total</td>
+                    <td className="px-1.5 py-0.5 text-right text-gray-900">{fmt(total)}</td>
+                    <td className="px-1.5 py-0.5 text-right text-gray-700">{fmt(totalAA)}</td>
+                    <td className="px-1.5 py-0.5 text-right text-gray-700">{fmt(totalPpto)}</td>
+                    <td className={`px-1.5 py-0.5 text-right font-bold ${(total - totalPpto) < 0 ? "text-red-600" : "text-emerald-600"}`}>
                       {(total - totalPpto) < 0 ? `(${fmt(Math.abs(total - totalPpto))})` : fmt(total - totalPpto)}
                     </td>
                   </tr>
@@ -152,25 +152,25 @@ export default function Home() {
             </div>
 
             {/* Chart */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-2 py-1.5 flex flex-col h-[250px]">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-2 py-1.5 flex flex-col h-[140px]">
               <div className="flex gap-3 text-[11px] mb-1">
-                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#1e3a5f] rounded-sm"/><span className="text-gray-700 font-medium">PN Efectuada</span></div>
-                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#94a3b8] rounded-sm"/><span className="text-gray-700 font-medium">Presupuesto</span></div>
+                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#E62800] rounded-sm"/><span className="text-gray-700 font-medium">PN Efectuada</span></div>
+                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#041224] rounded-sm"/><span className="text-gray-700 font-medium">Presupuesto</span></div>
               </div>
               <div className="w-full max-w-[520px]">
                 {ready && chartData.length > 0 && (
-                    <BarChart width={500} height={215} layout="vertical" data={chartData} margin={{ top: 2, right: 45, left: 5, bottom: 2 }} barGap={1}>
-                      <XAxis type="number" domain={[0, 80]} ticks={[0, 20, 40, 60, 80]} tickFormatter={v => `$${v}M`} tick={{ fontSize: 10 }} axisLine={{ stroke: '#E5E7EB' }}/>
-                      <YAxis type="category" dataKey="name" width={75} tick={{ fontSize: 10 }} axisLine={false} tickLine={false}/>
+                    <BarChart width={500} height={115} layout="vertical" data={chartData} margin={{ top: 2, right: 45, left: 5, bottom: 2 }} barGap={1}>
+                      <XAxis type="number" domain={[0, 80]} ticks={[0, 20, 40, 60, 80]} tickFormatter={v => `$${v}M`} tick={{ fontSize: 9 }} axisLine={{ stroke: '#E5E7EB' }}/>
+                      <YAxis type="category" dataKey="name" width={75} tick={{ fontSize: 9 }} axisLine={false} tickLine={false}/>
                       <Tooltip
-                        contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.08)', fontSize: 12 }}
+                        contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.08)', fontSize: 11 }}
                         formatter={(value?: number) => [`$${value ?? 0}M`, '']}
                       />
-                      <Bar dataKey="pn" fill="#1e3a5f" radius={[0, 3, 3, 0]} barSize={18} isAnimationActive={true} animationDuration={800}>
-                        <LabelList dataKey="pn" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 10, fill: '#1e3a5f', fontWeight: 600 }}/>
+                      <Bar dataKey="pn" fill="#E62800" radius={[0, 3, 3, 0]} barSize={12} isAnimationActive={true} animationDuration={800}>
+                        <LabelList dataKey="pn" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 9, fill: '#E62800', fontWeight: 600 }}/>
                       </Bar>
-                      <Bar dataKey="pp" fill="#94a3b8" radius={[0, 3, 3, 0]} barSize={18} isAnimationActive={true} animationDuration={800}>
-                        <LabelList dataKey="pp" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 10, fill: '#64748b' }}/>
+                      <Bar dataKey="pp" fill="#041224" radius={[0, 3, 3, 0]} barSize={12} isAnimationActive={true} animationDuration={800}>
+                        <LabelList dataKey="pp" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 9, fill: '#041224' }}/>
                       </Bar>
                     </BarChart>
                 )}
