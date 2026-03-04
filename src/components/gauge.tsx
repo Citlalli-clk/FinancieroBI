@@ -11,28 +11,6 @@ interface GaugeProps {
   crecimiento?: number
 }
 
-const COLOR_STOPS = [
-  { pos: 0,    r: 0xE6, g: 0x28, b: 0x00 }, // #E62800 Pure Red
-  { pos: 0.33, r: 0xF9, g: 0xDC, b: 0x5C }, // #F9DC5C Royal Gold
-  { pos: 0.66, r: 0x60, g: 0xA6, b: 0x3A }, // #60A63A Sage Green
-  { pos: 1,    r: 0x39, g: 0x83, b: 0xF6 }, // #3983F6 Azure Blue
-]
-
-function interpolateColor(t: number): string {
-  const c = Math.max(0, Math.min(1, t))
-  let i = 0
-  for (let j = 0; j < COLOR_STOPS.length - 1; j++) {
-    if (c >= COLOR_STOPS[j].pos) i = j
-  }
-  const a = COLOR_STOPS[i]
-  const b = COLOR_STOPS[Math.min(i + 1, COLOR_STOPS.length - 1)]
-  const f = b.pos === a.pos ? 0 : (c - a.pos) / (b.pos - a.pos)
-  const r = Math.round(a.r + (b.r - a.r) * f)
-  const g = Math.round(a.g + (b.g - a.g) * f)
-  const bl = Math.round(a.b + (b.b - a.b) * f)
-  return `rgb(${r},${g},${bl})`
-}
-
 export function Gauge({ value, clickable = true, cumplimiento = 0, crecimiento = 0 }: GaugeProps) {
   const W = 820
   const H = 720
@@ -43,12 +21,6 @@ export function Gauge({ value, clickable = true, cumplimiento = 0, crecimiento =
   const innerR = outerR * 0.75
   const outerGrayR = outerR + 5
 
-  const segCount = 20
-  const gapDeg = 2.5
-  const totalGap = gapDeg * segCount
-  const usableDeg = 180 - totalGap
-  const segAngle = usableDeg / segCount
-
   const NEEDLE_PCT = 0.75
 
   function polarToXY(angleDeg: number, r: number): [number, number] {
@@ -56,30 +28,14 @@ export function Gauge({ value, clickable = true, cumplimiento = 0, crecimiento =
     return [cx + r * Math.cos(rad), cy - r * Math.sin(rad)]
   }
 
-  const segments: { d: string; color: string }[] = []
-  let currentAngle = 180
-  for (let i = 0; i < segCount; i++) {
-    const startDeg = currentAngle
-    const endDeg = startDeg - segAngle
-
-    const [ox1, oy1] = polarToXY(startDeg, outerR)
-    const [ox2, oy2] = polarToXY(endDeg, outerR)
-    const [ix1, iy1] = polarToXY(endDeg, innerR)
-    const [ix2, iy2] = polarToXY(startDeg, innerR)
-
-    const d = [
-      `M ${ox1} ${oy1}`,
-      `A ${outerR} ${outerR} 0 0 0 ${ox2} ${oy2}`,
-      `L ${ix1} ${iy1}`,
-      `A ${innerR} ${innerR} 0 0 1 ${ix2} ${iy2}`,
-      `Z`,
-    ].join(" ")
-
-    const t = i / (segCount - 1)
-    segments.push({ d, color: interpolateColor(t) })
-
-    currentAngle = endDeg - gapDeg
-  }
+  // Single smooth arc path (semicircle donut)
+  const smoothArc = [
+    `M ${cx - outerR} ${cy}`,
+    `A ${outerR} ${outerR} 0 1 1 ${cx + outerR} ${cy}`,
+    `L ${cx + innerR} ${cy}`,
+    `A ${innerR} ${innerR} 0 1 0 ${cx - innerR} ${cy}`,
+    `Z`,
+  ].join(" ")
 
   const [gL_x, gL_y] = polarToXY(180, outerGrayR)
   const [gR_x, gR_y] = polarToXY(0, outerGrayR)
@@ -112,13 +68,21 @@ export function Gauge({ value, clickable = true, cumplimiento = 0, crecimiento =
         viewBox={`0 0 ${W} ${H}`}
         style={{ display: "block", overflow: "visible" }}
       >
+        {/* Smooth gradient definition */}
+        <defs>
+          <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#E62800" />
+            <stop offset="33%" stopColor="#F9DC5C" />
+            <stop offset="66%" stopColor="#60A63A" />
+            <stop offset="100%" stopColor="#3983F6" />
+          </linearGradient>
+        </defs>
+
         {/* Outer gray arc */}
         <path d={grayArc} fill="none" stroke="#D0D0D0" strokeWidth={2} />
 
-        {/* Segmented color arc */}
-        {segments.map((seg, i) => (
-          <path key={i} d={seg.d} fill={seg.color} stroke="none" strokeWidth={0} />
-        ))}
+        {/* Smooth color arc */}
+        <path d={smoothArc} fill="url(#gaugeGradient)" />
 
         {/* Thick needle */}
         <polygon

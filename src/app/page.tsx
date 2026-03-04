@@ -105,7 +105,7 @@ export default function Home() {
             <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ backgroundColor: '#3983F6' }}>
+                  <tr style={{ backgroundColor: '#6B7280' }}>
                     <th className="text-left px-1.5 py-0.5 text-[13px] font-bold text-white">Línea</th>
                     <th className="text-right px-1.5 py-0.5 text-[13px] font-bold text-white">Prima Neta</th>
                     <th className="text-right px-1.5 py-0.5 text-[13px] font-bold text-white">Año Ant. *</th>
