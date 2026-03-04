@@ -162,16 +162,16 @@ export default function Home() {
             {/* Chart */}
             <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-2 py-1.5 flex flex-col h-[280px] overflow-hidden">
               <div className="flex gap-3 text-[12px] mb-1 self-start">
-                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#CC0000] rounded-sm"/><span className="text-gray-700 font-medium">Prima neta efectuada</span></div>
+                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#1E3A5F] rounded-sm"/><span className="text-gray-700 font-medium">Prima neta efectuada</span></div>
                 <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#2E7D32] rounded-sm"/><span className="text-gray-700 font-medium">Presupuesto</span></div>
               </div>
               <div className="w-full flex-1 flex justify-center overflow-hidden">
                 {ready && chartData.length > 0 && (
                     <BarChart width={520} height={240} layout="vertical" data={chartData} margin={{ top: 2, right: 50, left: 10, bottom: 2 }} barGap={8}>
                       <defs>
-                        <linearGradient id="gradRed" x1="0" y1="0" x2="1" y2="1">
-                          <stop offset="0%" stopColor="#CC0000" stopOpacity={1}/>
-                          <stop offset="100%" stopColor="#990000" stopOpacity={1}/>
+                        <linearGradient id="gradNavy" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#1E3A5F" stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#152D4A" stopOpacity={1}/>
                         </linearGradient>
                         <linearGradient id="gradGreen" x1="0" y1="0" x2="1" y2="1">
                           <stop offset="0%" stopColor="#2E7D32" stopOpacity={1}/>
@@ -184,8 +184,8 @@ export default function Home() {
                         contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.08)', fontSize: 11 }}
                         formatter={(value?: number) => [`$${value ?? 0}M`, '']}
                       />
-                      <Bar dataKey="pn" fill="url(#gradRed)" radius={[0, 3, 3, 0]} barSize={14} isAnimationActive={true} animationDuration={800}>
-                        <LabelList dataKey="pn" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 11, fill: '#990000', fontWeight: 600 }}/>
+                      <Bar dataKey="pn" fill="url(#gradNavy)" radius={[0, 3, 3, 0]} barSize={14} isAnimationActive={true} animationDuration={800}>
+                        <LabelList dataKey="pn" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 11, fill: '#1E3A5F', fontWeight: 600 }}/>
                       </Bar>
                       <Bar dataKey="pp" fill="url(#gradGreen)" radius={[0, 3, 3, 0]} barSize={14} isAnimationActive={true} animationDuration={800}>
                         <LabelList dataKey="pp" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 11, fill: '#1B5E20' }}/>
