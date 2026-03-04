@@ -157,10 +157,10 @@ export function Gauge({ value, clickable = true }: GaugeProps) {
           ${value.toFixed(1)}M
         </text>
         <text
-          x={cx} y={cy + 115}
-          fontSize="18" fill="#555"
+          x={cx} y={cy + 118}
+          fontSize="23" fill="#333"
           textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
-          fontWeight="600"
+          fontWeight="700"
         >
           Prima neta cobrada
         </text>
