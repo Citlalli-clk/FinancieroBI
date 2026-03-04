@@ -35,14 +35,14 @@ function Semaforo({ pct }: { pct: number }) {
 }
 
 /* Horizontal bar chart as pure divs */
-function HBarChart({ data, color, colorFn, maxH }: { data: { name: string; value: number; pct?: number }[]; color?: string; colorFn?: (pct: number) => string; maxH?: number }) {
+function HBarChart({ data, color, colorFn, maxH }: { data: { name: string; value: number; pct?: number }[]; color?: string; colorFn?: (pct: number, idx?: number) => string; maxH?: number }) {
   if (!data.length) return null
   const max = Math.max(...data.map(d => d.value), 1)
   return (
     <div className="flex flex-col justify-center gap-[3px] w-full" style={{ maxHeight: maxH }}>
       {data.map((d, i) => {
         const pct = Math.max((d.value / max) * 100, 3)
-        const fill = colorFn && d.pct != null ? colorFn(d.pct) : color || "#333"
+        const fill = colorFn ? colorFn(d.pct ?? 0, i) : color || "#333"
         return (
           <div key={i} className="flex items-center gap-1" style={{ height: 14 }}>
             <span style={{ fontSize: 9, color: '#666', width: 55, textAlign: 'right', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
@@ -165,7 +165,10 @@ export default function CompromisosPage() {
             </div>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
               <p className="text-sm font-bold text-[#2E7D32] mb-1">🏆 Top 5</p>
-              <HBarChart data={topBarData} color="#2E7D32" />
+              <HBarChart data={topBarData} colorFn={(_pct, i) => {
+                const blues = ["#1E3A5F", "#2A5082", "#3668A5", "#4A90D9", "#6BA8E8"]
+                return blues[i ?? 0] || "#4A90D9"
+              }} />
             </div>
           </div>
 
@@ -194,7 +197,10 @@ export default function CompromisosPage() {
             </div>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
               <p className="text-sm font-bold text-[#E62800] mb-1">⬇️ Bottom 5</p>
-              <HBarChart data={bottomBarData} color="#E62800" />
+              <HBarChart data={bottomBarData} colorFn={(_pct, i) => {
+                const blues = ["#1E3A5F", "#2A5082", "#3668A5", "#4A90D9", "#6BA8E8"]
+                return blues[i ?? 0] || "#4A90D9"
+              }} />
             </div>
           </div>
 

@@ -78,8 +78,11 @@ export default function AseguradorasPage() {
                     <span className="text-sm text-[#333] w-28 truncate shrink-0">{a.aseguradora}</span>
                     <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-[#041224] to-[#E62800] transition-all duration-500"
-                        style={{ width: `${maxAseguradora > 0 ? (a.primaNeta / maxAseguradora) * 100 : 0}%` }}
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${maxAseguradora > 0 ? (a.primaNeta / maxAseguradora) * 100 : 0}%`,
+                          backgroundColor: ["#006B3F", "#1B8A5A", "#35A575", "#4DBF8E", "#66BB6A"][topAseguradoras.indexOf(a)] || "#66BB6A"
+                        }}
                       />
                     </div>
                     <span className="text-sm font-medium text-[#041224] w-10 text-right shrink-0">{a.pct}%</span>

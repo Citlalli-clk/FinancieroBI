@@ -311,7 +311,7 @@ export default function TablaDetallePage() {
     <div className="min-h-screen bg-[#FAFAFA] px-3 py-4 flex flex-col">
       <div className="max-w-[1200px] mx-auto w-full flex flex-col flex-1">
       <div className="flex justify-between items-center border-b pb-2 pt-5 w-full">
-        <PageTabs alertCount={alertCount} />
+        <PageTabs />
         <PeriodFilter onFilterChange={handleFilterChange} />
       </div>
 
