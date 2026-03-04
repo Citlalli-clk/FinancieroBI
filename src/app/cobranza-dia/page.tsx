@@ -77,7 +77,7 @@ export default function CobranzaDiaPage() {
         <div className="bi-card p-3" style={{ background: "#041224" }}>
           <div className="text-[9px] text-white/70 uppercase tracking-wide font-medium mb-1">Cumplimiento diario</div>
           <div className="text-2xl font-bold text-white font-lato">{cumplimiento}%</div>
-          <div className="text-[10px] text-white/60 mt-0.5">Acumulado: {fmt(lastAcumulado)}</div>
+          <div className="text-sm text-white/60 mt-0.5">Acumulado: {fmt(lastAcumulado)}</div>
         </div>
       </div>
 
@@ -98,7 +98,7 @@ export default function CobranzaDiaPage() {
 
       {/* Table */}
       <div className="bi-card overflow-hidden">
-        <table className="w-full text-xs">
+        <table className="w-full text-sm">
           <thead>
             <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
               <th className="text-left px-3 py-2 font-semibold text-gray-600">Fecha</th>

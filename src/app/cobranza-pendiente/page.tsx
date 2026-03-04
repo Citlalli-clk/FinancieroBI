@@ -37,7 +37,7 @@ function StatusBadge({ status }: { status: string }) {
     "Al día": "bg-[#041224] text-white",
   }
   return (
-    <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${colors[status] || "bg-gray-200 text-gray-600"}`}>
+    <span className={`px-2 py-0.5 rounded text-sm font-medium ${colors[status] || "bg-gray-200 text-gray-600"}`}>
       {status}
     </span>
   )
@@ -76,23 +76,23 @@ export default function CobranzaPendientePage() {
         <div className="bi-card border-l-4 border-l-[#E62800] p-3">
           <div className="text-[9px] text-gray-500 uppercase tracking-wide font-medium mb-1">Total pendiente</div>
           <div className="text-2xl font-bold text-[#E62800] font-lato">{fmt(totalPendiente)}</div>
-          <div className="text-[10px] text-gray-400 mt-0.5">{data.length} pólizas</div>
+          <div className="text-sm text-gray-400 mt-0.5">{data.length} pólizas</div>
         </div>
         <div className="bi-card border-l-4 border-l-[#E62800] p-3">
           <div className="text-[9px] text-gray-500 uppercase tracking-wide font-medium mb-1">Vencido</div>
           <div className="text-2xl font-bold text-[#E8735A] font-lato">{fmt(vencidoHoy)}</div>
-          <div className="text-[10px] text-gray-400 mt-0.5">{data.filter(r => r.status === "Vencido").length} pólizas</div>
+          <div className="text-sm text-gray-400 mt-0.5">{data.filter(r => r.status === "Vencido").length} pólizas</div>
         </div>
         <div className="bi-card border-l-4 border-l-[#041224] p-3">
           <div className="text-[9px] text-gray-500 uppercase tracking-wide font-medium mb-1">Por vencer esta semana</div>
           <div className="text-2xl font-bold text-[#166534] font-lato">{fmt(porVencer)}</div>
-          <div className="text-[10px] text-gray-400 mt-0.5">{data.filter(r => r.status === "Por vencer").length} pólizas</div>
+          <div className="text-sm text-gray-400 mt-0.5">{data.filter(r => r.status === "Por vencer").length} pólizas</div>
         </div>
       </div>
 
       {/* Table */}
       <div className="bi-card overflow-hidden">
-        <table className="w-full text-xs">
+        <table className="w-full text-sm">
           <thead>
             <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
               <th className="text-left px-3 py-2 font-semibold text-gray-600">Póliza</th>

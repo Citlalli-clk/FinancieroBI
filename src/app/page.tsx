@@ -118,7 +118,7 @@ export default function Home() {
           {/* Right column: Table + Chart */}
           <div className="w-[45%] flex flex-col gap-1 justify-center mt-6">
             <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-              <table className="w-full text-[12px]">
+              <table className="w-full text-sm">
                 <thead className="bg-[#041224] text-white">
                   <tr>
                     <th className="text-left px-1.5 py-0.5 text-[13px] font-bold">Línea</th>

@@ -100,14 +100,14 @@ export default function CompromisosPage() {
           {/* Row 1: Compromisos table + chart */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
-              <table className="w-full border-collapse" style={{ fontSize: 11, lineHeight: 1.4 }}>
+              <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
                 <thead>
                   <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                    <th className="px-2 py-1 text-left text-[11px]">Vendedor</th>
-                    <th className="px-2 py-1 text-right text-[11px]">Meta</th>
-                    <th className="px-2 py-1 text-right text-[11px]">Prima Neta</th>
-                    <th className="px-2 py-1 text-right text-[11px]">%</th>
-                    <th className="px-2 py-1 text-center text-[11px]">Sem.</th>
+                    <th className="px-2 py-1 text-left text-sm">Vendedor</th>
+                    <th className="px-2 py-1 text-right text-sm">Meta</th>
+                    <th className="px-2 py-1 text-right text-sm">Prima Neta</th>
+                    <th className="px-2 py-1 text-right text-sm">%</th>
+                    <th className="px-2 py-1 text-center text-sm">Sem.</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -135,7 +135,7 @@ export default function CompromisosPage() {
               </table>
             </div>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
-              <p className="text-[11px] font-bold text-[#041224] mb-1">Prima Neta por Vendedor</p>
+              <p className="text-sm font-bold text-[#041224] mb-1">Prima Neta por Vendedor</p>
               <HBarChart data={barData} colorFn={semaforoColor} />
             </div>
           </div>
@@ -143,13 +143,13 @@ export default function CompromisosPage() {
           {/* Row 2: Top 5 table + chart */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
-              <p className="text-[11px] font-bold text-[#041224] mb-1">🏆 Top 5 Vendedores</p>
-              <table className="w-full border-collapse" style={{ fontSize: 10, lineHeight: 1.4 }}>
+              <p className="text-sm font-bold text-[#041224] mb-1">🏆 Top 5 Vendedores</p>
+              <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
                 <thead>
                   <tr className="bg-[#041224] text-white border-b-2 border-b-[#2E7D32]">
-                    <th className="px-2 py-1 text-left w-6 text-[10px]">#</th>
-                    <th className="px-2 py-1 text-left text-[10px]">Vendedor</th>
-                    <th className="px-2 py-1 text-right text-[10px]">Prima Neta</th>
+                    <th className="px-2 py-1 text-left w-6 text-sm">#</th>
+                    <th className="px-2 py-1 text-left text-sm">Vendedor</th>
+                    <th className="px-2 py-1 text-right text-sm">Prima Neta</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -164,7 +164,7 @@ export default function CompromisosPage() {
               </table>
             </div>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
-              <p className="text-[11px] font-bold text-[#2E7D32] mb-1">🏆 Top 5</p>
+              <p className="text-sm font-bold text-[#2E7D32] mb-1">🏆 Top 5</p>
               <HBarChart data={topBarData} color="#2E7D32" />
             </div>
           </div>
@@ -172,13 +172,13 @@ export default function CompromisosPage() {
           {/* Row 3: Bottom 5 table + chart */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
-              <p className="text-[11px] font-bold text-[#041224] mb-1">⬇️ Bottom 5 Vendedores</p>
-              <table className="w-full border-collapse" style={{ fontSize: 10, lineHeight: 1.4 }}>
+              <p className="text-sm font-bold text-[#041224] mb-1">⬇️ Bottom 5 Vendedores</p>
+              <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
                 <thead>
                   <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                    <th className="px-2 py-1 text-left w-6 text-[10px]">#</th>
-                    <th className="px-2 py-1 text-left text-[10px]">Vendedor</th>
-                    <th className="px-2 py-1 text-right text-[10px]">Prima Neta</th>
+                    <th className="px-2 py-1 text-left w-6 text-sm">#</th>
+                    <th className="px-2 py-1 text-left text-sm">Vendedor</th>
+                    <th className="px-2 py-1 text-right text-sm">Prima Neta</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -193,7 +193,7 @@ export default function CompromisosPage() {
               </table>
             </div>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
-              <p className="text-[11px] font-bold text-[#E62800] mb-1">⬇️ Bottom 5</p>
+              <p className="text-sm font-bold text-[#E62800] mb-1">⬇️ Bottom 5</p>
               <HBarChart data={bottomBarData} color="#E62800" />
             </div>
           </div>

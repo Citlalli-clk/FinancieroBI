@@ -175,15 +175,15 @@ export default function CorporatePage() {
 
       {/* Row count for large datasets */}
       {drillLevel !== "poliza" && filteredRows.length >= 30 && (
-        <div className="text-[10px] text-[#888] mb-1">{filteredRows.length} registros encontrados — desplazar para ver más</div>
+        <div className="text-sm text-[#888] mb-1">{filteredRows.length} registros encontrados — desplazar para ver más</div>
       )}
       {drillLevel === "poliza" && filteredPolizas.length >= 30 && (
-        <div className="text-[10px] text-[#888] mb-1">{filteredPolizas.length} pólizas encontradas — desplazar para ver más</div>
+        <div className="text-sm text-[#888] mb-1">{filteredPolizas.length} pólizas encontradas — desplazar para ver más</div>
       )}
 
       {/* Table */}
       <div ref={tableRef} className="bi-card overflow-hidden overflow-x-auto max-h-[70vh] overflow-y-auto">
-        <table className="w-full text-[10px]">
+        <table className="w-full text-sm">
           <thead className="sticky top-0 z-10">
             {drillLevel === "poliza" ? (
               <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">

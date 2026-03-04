@@ -119,20 +119,26 @@ export default function TablaDetallePage() {
         const result = await getLineasNegocio(periodo, year)
         if (cancelled) return
         if (result && result.length > 0) {
-          // Merge real primaNeta with SEED presupuesto/comparison data
-          const merged: LineaFull[] = result.map(r => {
-            const seed = SEED.find(s => s.linea === r.linea)
-            const pn = r.primaNeta
-            const ppto = seed?.presupuesto ?? 0
-            const pnAA = seed?.pnAnioAnt ?? 0
+          // Merge: iterate over SEED to preserve order, fill real primaNeta from Supabase
+          const merged: LineaFull[] = SEED.map(seed => {
+            const real = result.find(r => r.linea === seed.linea)
+            const pn = real ? real.primaNeta : seed.primaNeta
+            const ppto = seed.presupuesto
+            const pnAA = seed.pnAnioAnt
             const dif = ppto > 0 ? pn - ppto : 0
             const pctDif = ppto > 0 ? Math.round((dif / ppto) * 1000) / 10 : 0
             const difY = pnAA > 0 ? pn - pnAA : 0
             const pctDifY = pnAA > 0 ? Math.round((difY / pnAA) * 10000) / 100 : 0
-            const pend = seed?.pendiente ?? 0
+            const pend = seed.pendiente
             return {
-              linea: r.linea, primaNeta: pn, presupuesto: ppto, diferencia: dif,
+              linea: seed.linea, primaNeta: pn, presupuesto: ppto, diferencia: dif,
               pctDifPpto: pctDif, pnAnioAnt: pnAA, difYoY: difY, pctDifYoY: pctDifY, pendiente: pend,
+            }
+          })
+          // Also add any lines from Supabase not in SEED
+          result.forEach(r => {
+            if (!merged.find(m => m.linea === r.linea)) {
+              merged.push({ linea: r.linea, primaNeta: r.primaNeta, presupuesto: 0, diferencia: 0, pctDifPpto: 0, pnAnioAnt: 0, difYoY: 0, pctDifYoY: 0, pendiente: 0 })
             }
           })
           setLineas(merged)
@@ -397,7 +403,7 @@ export default function TablaDetallePage() {
 
       {/* Table — scrollable for large datasets */}
       <div ref={tableRef} className="bi-card overflow-hidden overflow-x-auto max-h-[70vh] overflow-y-auto">
-        <table className="w-full text-[12px]">
+        <table className="w-full text-sm">
           <thead className="sticky top-0 z-10">
             {drillLevel === "linea" ? (
               <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">

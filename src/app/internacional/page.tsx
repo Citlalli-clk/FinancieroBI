@@ -50,7 +50,7 @@ export default function AseguradorasPage() {
           <div className="flex flex-col gap-4">
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <h3 className="text-xs font-bold text-[#041224] mb-2">Top 5 Aseguradoras</h3>
-              <table className="w-full text-[10px]">
+              <table className="w-full text-sm">
                 <thead><tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
                   <th className="px-2 py-1.5 text-left font-semibold w-8">#</th>
                   <th className="px-2 py-1.5 text-left font-semibold">Aseguradora</th>
@@ -75,14 +75,14 @@ export default function AseguradorasPage() {
               <div className="space-y-2">
                 {topAseguradoras.map((a) => (
                   <div key={a.aseguradora} className="flex items-center gap-2">
-                    <span className="text-[10px] text-[#333] w-28 truncate shrink-0">{a.aseguradora}</span>
+                    <span className="text-sm text-[#333] w-28 truncate shrink-0">{a.aseguradora}</span>
                     <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-[#041224] to-[#E62800] transition-all duration-500"
                         style={{ width: `${maxAseguradora > 0 ? (a.primaNeta / maxAseguradora) * 100 : 0}%` }}
                       />
                     </div>
-                    <span className="text-[10px] font-medium text-[#041224] w-10 text-right shrink-0">{a.pct}%</span>
+                    <span className="text-sm font-medium text-[#041224] w-10 text-right shrink-0">{a.pct}%</span>
                   </div>
                 ))}
               </div>
