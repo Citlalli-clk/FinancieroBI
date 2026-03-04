@@ -93,25 +93,10 @@ export default function Home() {
 
         {/* Main Grid */}
         <div className="flex gap-3 flex-1 mt-0">
-          {/* Left column: KPI boxes + Gauge */}
-          <div className="w-[55%] flex items-center justify-center gap-3">
-            {/* KPI indicator box */}
-            <div className="w-[150px] shrink-0 rounded-lg shadow-sm overflow-hidden">
-              <div className="px-3 p-6 text-center" style={{ backgroundColor: '#2E7D32' }}>
-                <p className="text-[11px] leading-tight" style={{ color: 'white' }}>Cumplimiento</p>
-                <p className="text-3xl font-bold leading-tight mt-0.5" style={{ color: 'white' }}>{cumpl}%</p>
-              </div>
-              <div className="px-3 p-6 text-center" style={{ backgroundColor: '#CC0000' }}>
-                <p className="text-[11px] leading-tight" style={{ color: 'white' }}>Crecimiento</p>
-                <p className="text-3xl font-bold leading-tight mt-0.5" style={{ color: 'white' }}>
-                  {crec < 0 ? "↓" : "↑"} {crec}%
-                </p>
-              </div>
-            </div>
-
-            {/* Gauge */}
-            <div className="flex-1 min-w-0">
-              <Gauge value={total / 1e6} prevYear={totalAA / 1e6} budget={totalPpto / 1e6} />
+          {/* Left column: Gauge (Mickey Mouse layout — gauge up top, circles below inside gauge component) */}
+          <div className="w-[55%] flex items-center justify-center">
+            <div className="w-full">
+              <Gauge value={total / 1e6} prevYear={totalAA / 1e6} budget={totalPpto / 1e6} cumplimiento={cumpl} crecimiento={crec} />
             </div>
           </div>
 
@@ -119,13 +104,13 @@ export default function Home() {
           <div className="w-[45%] flex flex-col gap-1 justify-center mt-6">
             <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-[#041224] text-white">
-                  <tr>
-                    <th className="text-left px-1.5 py-0.5 text-[13px] font-bold">Línea</th>
-                    <th className="text-right px-1.5 py-0.5 text-[13px] font-bold">Prima Neta</th>
-                    <th className="text-right px-1.5 py-0.5 text-[13px] font-bold">Año Ant. *</th>
-                    <th className="text-right px-1.5 py-0.5 text-[13px] font-bold">Presupuesto</th>
-                    <th className="text-right px-1.5 py-0.5 text-[13px] font-bold">Diferencia</th>
+                <thead>
+                  <tr style={{ backgroundColor: '#3983F6' }}>
+                    <th className="text-left px-1.5 py-0.5 text-[13px] font-bold text-white">Línea</th>
+                    <th className="text-right px-1.5 py-0.5 text-[13px] font-bold text-white">Prima Neta</th>
+                    <th className="text-right px-1.5 py-0.5 text-[13px] font-bold text-white">Año Ant. *</th>
+                    <th className="text-right px-1.5 py-0.5 text-[13px] font-bold text-white">Presupuesto</th>
+                    <th className="text-right px-1.5 py-0.5 text-[13px] font-bold text-white">Diferencia</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -139,18 +124,18 @@ export default function Home() {
                         </td>
                         <td className="px-1.5 py-0.5 text-right font-semibold text-gray-900">{fmt(l.primaNeta)}</td>
                         <td className="px-1.5 py-0.5 text-right text-gray-500">{fmt(l.anioAnterior)}</td>
-                        <td className="px-1.5 py-0.5 text-right font-semibold" style={{ color: '#2E7D32' }}>{fmt(l.presupuesto)}</td>
+                        <td className="px-1.5 py-0.5 text-right font-semibold" style={{ color: '#374151' }}>{fmt(l.presupuesto)}</td>
                         <td className={`px-1.5 py-1 text-right font-semibold ${diff < 0 ? "text-red-600" : "text-emerald-600"}`}>
                           {diff < 0 ? `(${fmt(Math.abs(diff))})` : fmt(diff)}
                         </td>
                       </tr>
                     )
                   })}
-                  <tr className="font-bold border-t-2 border-gray-300" style={{ backgroundColor: '#000', color: '#fff' }}>
+                  <tr className="font-bold border-t-2 border-gray-300" style={{ backgroundColor: '#6B7280', color: '#fff' }}>
                     <td className="px-1.5 py-0.5" style={{ color: '#fff' }}>Total</td>
                     <td className="px-1.5 py-0.5 text-right" style={{ color: '#fff' }}>{fmt(total)}</td>
                     <td className="px-1.5 py-0.5 text-right" style={{ color: '#fff' }}>{fmt(totalAA)}</td>
-                    <td className="px-1.5 py-0.5 text-right" style={{ color: '#2E7D32' }}>{fmt(totalPpto)}</td>
+                    <td className="px-1.5 py-0.5 text-right" style={{ color: '#fff' }}>{fmt(totalPpto)}</td>
                     <td className={`px-1.5 py-1 text-right font-bold`} style={{ color: (total - totalPpto) < 0 ? '#ff6b6b' : '#4ade80' }}>
                       {(total - totalPpto) < 0 ? `(${fmt(Math.abs(total - totalPpto))})` : fmt(total - totalPpto)}
                     </td>
@@ -162,36 +147,26 @@ export default function Home() {
             {/* Chart */}
             <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-2 py-1.5 flex flex-col h-[280px] overflow-hidden">
               <div className="flex gap-3 text-[12px] mb-1 self-start">
-                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#1a1a1a] rounded-sm"/><span className="text-gray-700 font-medium">Prima neta efectuada</span></div>
-                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#2E7D32] rounded-sm"/><span className="text-gray-700 font-medium">Presupuesto</span></div>
+                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#E67E22' }}/><span className="text-gray-700 font-medium">Prima neta efectuada</span></div>
+                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#9CA3AF' }}/><span className="text-gray-700 font-medium">Presupuesto</span></div>
               </div>
               <div className="w-full flex-1 flex justify-center overflow-hidden">
                 {ready && chartData.length > 0 && (
                     <BarChart width={520} height={240} layout="vertical" data={chartData} margin={{ top: 2, right: 50, left: 10, bottom: 2 }} barGap={8}>
-                      <defs>
-                        <linearGradient id="gradBlack" x1="0" y1="0" x2="1" y2="1">
-                          <stop offset="0%" stopColor="#1a1a1a" stopOpacity={1}/>
-                          <stop offset="100%" stopColor="#0d0d0d" stopOpacity={1}/>
-                        </linearGradient>
-                        <linearGradient id="gradGreen" x1="0" y1="0" x2="1" y2="1">
-                          <stop offset="0%" stopColor="#2E7D32" stopOpacity={1}/>
-                          <stop offset="100%" stopColor="#256B28" stopOpacity={1}/>
-                        </linearGradient>
-                      </defs>
                       <XAxis type="number" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={v => `$${v}M`} tick={{ fontSize: 11 }} axisLine={{ stroke: '#E5E7EB' }}/>
                       <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 11 }} axisLine={false} tickLine={false}/>
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#041224', border: 'none', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.25)', fontSize: 12, padding: '8px 12px', color: '#fff' }}
+                        contentStyle={{ backgroundColor: '#052F5F', border: 'none', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.25)', fontSize: 12, padding: '8px 12px', color: '#fff' }}
                         itemStyle={{ color: '#fff' }}
                         labelStyle={{ color: '#ccc', fontWeight: 600, marginBottom: 4 }}
                         formatter={(value?: number, name?: string) => [`$${value ?? 0}M`, name === 'pn' ? 'Prima Neta' : 'Presupuesto']}
-                        cursor={{ fill: 'rgba(59,130,246,0.08)' }}
+                        cursor={{ fill: 'rgba(57,131,246,0.08)' }}
                       />
-                      <Bar dataKey="pn" fill="url(#gradBlack)" radius={[0, 3, 3, 0]} barSize={14} isAnimationActive={true} animationDuration={800}>
-                        <LabelList dataKey="pn" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 11, fill: '#1a1a1a', fontWeight: 600 }}/>
+                      <Bar dataKey="pn" fill="#E67E22" radius={[0, 3, 3, 0]} barSize={14} isAnimationActive={true} animationDuration={800}>
+                        <LabelList dataKey="pn" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 11, fill: '#E67E22', fontWeight: 600 }}/>
                       </Bar>
-                      <Bar dataKey="pp" fill="url(#gradGreen)" radius={[0, 3, 3, 0]} barSize={14} isAnimationActive={true} animationDuration={800}>
-                        <LabelList dataKey="pp" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 11, fill: '#2E7D32', fontWeight: 600 }}/>
+                      <Bar dataKey="pp" fill="#9CA3AF" radius={[0, 3, 3, 0]} barSize={14} isAnimationActive={true} animationDuration={800}>
+                        <LabelList dataKey="pp" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }}/>
                       </Bar>
                     </BarChart>
                 )}

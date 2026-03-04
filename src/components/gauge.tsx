@@ -7,13 +7,15 @@ interface GaugeProps {
   prevYear?: number
   budget?: number
   clickable?: boolean
+  cumplimiento?: number
+  crecimiento?: number
 }
 
 const COLOR_STOPS = [
-  { pos: 0,    r: 0xCC, g: 0x00, b: 0x00 }, // #CC0000 deep red
-  { pos: 0.33, r: 0xFF, g: 0x6B, b: 0x00 }, // #FF6B00 vivid orange
-  { pos: 0.66, r: 0xFF, g: 0xD7, b: 0x00 }, // #FFD700 vivid gold
-  { pos: 1,    r: 0x00, g: 0x6B, b: 0x3F }, // #006B3F deep green
+  { pos: 0,    r: 0xE6, g: 0x28, b: 0x00 }, // #E62800 Pure Red
+  { pos: 0.33, r: 0xF9, g: 0xDC, b: 0x5C }, // #F9DC5C Royal Gold
+  { pos: 0.66, r: 0x60, g: 0xA6, b: 0x3A }, // #60A63A Sage Green
+  { pos: 1,    r: 0x39, g: 0x83, b: 0xF6 }, // #3983F6 Azure Blue
 ]
 
 function interpolateColor(t: number): string {
@@ -31,13 +33,13 @@ function interpolateColor(t: number): string {
   return `rgb(${r},${g},${bl})`
 }
 
-export function Gauge({ value, clickable = true }: GaugeProps) {
+export function Gauge({ value, clickable = true, cumplimiento = 0, crecimiento = 0 }: GaugeProps) {
   const W = 820
-  const H = 580
+  const H = 720
   const cx = W / 2
-  const cy = 420
+  const cy = 380
 
-  const outerR = 380
+  const outerR = 340
   const innerR = outerR * 0.75
   const outerGrayR = outerR + 5
 
@@ -54,7 +56,6 @@ export function Gauge({ value, clickable = true }: GaugeProps) {
     return [cx + r * Math.cos(rad), cy - r * Math.sin(rad)]
   }
 
-  // Build segmented arc paths
   const segments: { d: string; color: string }[] = []
   let currentAngle = 180
   for (let i = 0; i < segCount; i++) {
@@ -80,12 +81,10 @@ export function Gauge({ value, clickable = true }: GaugeProps) {
     currentAngle = endDeg - gapDeg
   }
 
-  // Outer gray arc
   const [gL_x, gL_y] = polarToXY(180, outerGrayR)
   const [gR_x, gR_y] = polarToXY(0, outerGrayR)
   const grayArc = `M ${gL_x} ${gL_y} A ${outerGrayR} ${outerGrayR} 0 0 1 ${gR_x} ${gR_y}`
 
-  // Needle
   const needleAngleDeg = 180 - NEEDLE_PCT * 180
   const needleLen = outerR - 8
   const [tipX, tipY] = polarToXY(needleAngleDeg, needleLen)
@@ -100,9 +99,11 @@ export function Gauge({ value, clickable = true }: GaugeProps) {
   const tailLen = 20
   const [tailX, tailY] = polarToXY(needleAngleDeg + 180, tailLen)
 
-  // LOW / CRITICAL label positions
-  const [lowX, lowY] = [cx - outerR - 10, cy + 20]
-  const [critX, critY] = [cx + outerR + 10, cy + 20]
+  // Circle KPI positions (Mickey Mouse inverted: gauge on top, two circles below)
+  const circleR = 62
+  const circleY = cy + 200
+  const circleLX = cx - 120
+  const circleRX = cx + 120
 
   const content = (
     <div style={{ width: "100%", position: "relative" }}>
@@ -122,47 +123,63 @@ export function Gauge({ value, clickable = true }: GaugeProps) {
         {/* Thick needle */}
         <polygon
           points={`${tipX},${tipY} ${b1x},${b1y} ${tailX},${tailY} ${b2x},${b2y}`}
-          fill="#1a1a1a"
+          fill="#052F5F"
         />
 
-        {/* Pivot center — circular */}
-        <circle cx={cx} cy={cy} r={18} fill="#333" />
+        {/* Pivot center */}
+        <circle cx={cx} cy={cy} r={18} fill="#052F5F" />
         <circle cx={cx} cy={cy} r={11} fill="white" />
-        <circle cx={cx} cy={cy} r={5} fill="#555" />
+        <circle cx={cx} cy={cy} r={5} fill="#052F5F" />
 
-        {/* CRITICAL label (left, red side) */}
+        {/* KPI Value */}
         <text
-          x={lowX} y={lowY}
-          fontSize="14" fill="#CC0000" textAnchor="middle"
-          fontWeight="bold" fontFamily="Calibri, Arial, sans-serif"
-        >
-          CRITICAL
-        </text>
-
-        {/* LOW label (right, green side) */}
-        <text
-          x={critX} y={critY}
-          fontSize="14" fill="#006B3F" textAnchor="middle"
-          fontWeight="bold" fontFamily="Calibri, Arial, sans-serif"
-        >
-          LOW
-        </text>
-
-        {/* KPI Value — no background */}
-        <text
-          x={cx} y={cy + 80}
-          fontSize="58" fontWeight="900" fill="#1a1a1a"
+          x={cx} y={cy + 60}
+          fontSize="54" fontWeight="900" fill="#052F5F"
           textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
         >
           ${value.toFixed(1)}M
         </text>
         <text
-          x={cx} y={cy + 118}
-          fontSize="23" fill="#333"
+          x={cx} y={cy + 95}
+          fontSize="21" fill="#374151"
           textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
           fontWeight="700"
         >
           Prima neta cobrada
+        </text>
+
+        {/* Cumplimiento circle (left) */}
+        <circle cx={circleLX} cy={circleY} r={circleR} fill="#3983F6" />
+        <text
+          x={circleLX} y={circleY + 8}
+          fontSize="32" fontWeight="900" fill="white"
+          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+        >
+          {cumplimiento}%
+        </text>
+        <text
+          x={circleLX} y={circleY + circleR + 22}
+          fontSize="14" fontWeight="700" fill="#374151"
+          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+        >
+          Cumplimiento
+        </text>
+
+        {/* Crecimiento circle (right) */}
+        <circle cx={circleRX} cy={circleY} r={circleR} fill={crecimiento < 0 ? '#E62800' : '#60A63A'} />
+        <text
+          x={circleRX} y={circleY + 8}
+          fontSize="32" fontWeight="900" fill="white"
+          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+        >
+          {crecimiento < 0 ? "↓" : "↑"} {crecimiento}%
+        </text>
+        <text
+          x={circleRX} y={circleY + circleR + 22}
+          fontSize="14" fontWeight="700" fill="#374151"
+          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+        >
+          Crecimiento
         </text>
       </svg>
     </div>
