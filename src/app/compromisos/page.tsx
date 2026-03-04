@@ -26,10 +26,10 @@ function semaforoColor(pct: number) {
 function Semaforo({ pct }: { pct: number }) {
   const g = pct >= 90, y = pct >= 70 && pct < 90, r = pct < 70
   return (
-    <span className="inline-flex items-center gap-0.5">
-      <span className={`w-2.5 h-2.5 rounded-full inline-block border ${r ? "bg-[#E62800] border-[#B91C00]" : "bg-[#E62800]/15 border-[#E5E7E9]"}`} />
-      <span className={`w-2.5 h-2.5 rounded-full inline-block border ${y ? "bg-[#F5C518] border-[#D4A800]" : "bg-[#F5C518]/15 border-[#E5E7E9]"}`} />
-      <span className={`w-2.5 h-2.5 rounded-full inline-block border ${g ? "bg-[#2E7D32] border-[#1B5E20]" : "bg-[#2E7D32]/15 border-[#E5E7E9]"}`} />
+    <span className="inline-flex items-center gap-0.5 semaforo-lights">
+      <span className={`w-2.5 h-2.5 rounded-full inline-block border border-[#E5E7EB] transition-colors duration-200 ${r ? "light-red" : ""}`} style={{ backgroundColor: '#D1D5DB' }} />
+      <span className={`w-2.5 h-2.5 rounded-full inline-block border border-[#E5E7EB] transition-colors duration-200 ${y ? "light-yellow" : ""}`} style={{ backgroundColor: '#D1D5DB' }} />
+      <span className={`w-2.5 h-2.5 rounded-full inline-block border border-[#E5E7EB] transition-colors duration-200 ${g ? "light-green" : ""}`} style={{ backgroundColor: '#D1D5DB' }} />
     </span>
   )
 }
@@ -116,6 +116,16 @@ export default function CompromisosPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] px-3 py-4 flex flex-col">
+      {/* CSS for hover semaforo */}
+      <style>{`
+        .vendedor-row .semaforo-lights span { background-color: #D1D5DB !important; border-color: #E5E7EB !important; }
+        .vendedor-row:hover .semaforo-lights .light-red { background-color: #E62800 !important; border-color: #B91C00 !important; }
+        .vendedor-row:hover .semaforo-lights .light-yellow { background-color: #F9DC5C !important; border-color: #D4A800 !important; }
+        .vendedor-row:hover .semaforo-lights .light-green { background-color: #60A63A !important; border-color: #4A8A2A !important; }
+        .total-row .semaforo-lights .light-red { background-color: #E62800 !important; border-color: #B91C00 !important; }
+        .total-row .semaforo-lights .light-yellow { background-color: #F9DC5C !important; border-color: #D4A800 !important; }
+        .total-row .semaforo-lights .light-green { background-color: #60A63A !important; border-color: #4A8A2A !important; }
+      `}</style>
       <div className="max-w-[1200px] mx-auto w-full flex flex-col">
         <div className="flex justify-between items-center border-b pb-2 pt-5 w-full">
           <PageTabs />
@@ -131,11 +141,11 @@ export default function CompromisosPage() {
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
               <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
                 <thead>
-                  <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                    <th className="px-2 py-1 text-left text-sm">Vendedor</th>
-                    <th className="px-2 py-1 text-right text-sm">Meta</th>
-                    <th className="px-2 py-1 text-right text-sm">Prima Neta</th>
-                    <th className="px-2 py-1 text-right text-sm">%</th>
+                  <tr className="bg-[#3983F6] text-white">
+                    <th className="px-2 py-1 text-center text-sm">Vendedor</th>
+                    <th className="px-2 py-1 text-center text-sm">Meta</th>
+                    <th className="px-2 py-1 text-center text-sm">Prima Neta</th>
+                    <th className="px-2 py-1 text-center text-sm">%</th>
                     <th className="px-2 py-1 text-center text-sm">Sem.</th>
                   </tr>
                 </thead>
@@ -143,20 +153,20 @@ export default function CompromisosPage() {
                   {loading ? (
                     <tr><td colSpan={5} className="px-2 py-2 text-center text-gray-400">Cargando...</td></tr>
                   ) : data.slice(0, 10).map((r, idx) => (
-                    <tr key={r.vendedor} className={`border-b border-[#F0F0F0] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#F9FAFB]'}`}>
-                      <td className="px-2 py-[2px] font-medium text-[#111]">{r.vendedor}</td>
-                      <td className="px-2 py-[2px] text-right text-gray-500">{fmt(r.meta)}</td>
-                      <td className="px-2 py-[2px] text-right font-medium">{fmt(r.primaActual)}</td>
-                      <td className="px-2 py-[2px] text-right font-medium" style={{ color: r.pctAvance >= 80 ? '#60A63A' : r.pctAvance >= 60 ? '#F9DC5C' : '#E62800' }}>{r.pctAvance}%</td>
+                    <tr key={r.vendedor} className={`vendedor-row border-b border-[#E5E7EB] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}>
+                      <td className="px-2 py-[2px] font-medium text-center text-[#374151]">{r.vendedor}</td>
+                      <td className="px-2 py-[2px] text-center text-[#374151]">{fmt(r.meta)}</td>
+                      <td className="px-2 py-[2px] text-center font-medium text-[#374151]">{fmt(r.primaActual)}</td>
+                      <td className="px-2 py-[2px] text-center font-medium text-[#374151]">{r.pctAvance}%</td>
                       <td className="px-2 py-[2px] text-center"><Semaforo pct={r.pctAvance} /></td>
                     </tr>
                   ))}
                   {!loading && data.length > 0 && (
-                    <tr className="bg-[#041224] text-white">
-                      <td className="px-2 py-[2px] font-bold">Total</td>
-                      <td className="px-2 py-[2px] text-right font-bold">{fmt(totalMeta)}</td>
-                      <td className="px-2 py-[2px] text-right font-bold">{fmt(totalActual)}</td>
-                      <td className="px-2 py-[2px] text-right font-bold">{totalPct}%</td>
+                    <tr className="total-row bg-[#3983F6] text-white">
+                      <td className="px-2 py-[2px] font-bold text-center">Total</td>
+                      <td className="px-2 py-[2px] text-center font-bold">{fmt(totalMeta)}</td>
+                      <td className="px-2 py-[2px] text-center font-bold">{fmt(totalActual)}</td>
+                      <td className="px-2 py-[2px] text-center font-bold">{totalPct}%</td>
                       <td className="px-2 py-[2px] text-center"><Semaforo pct={totalPct} /></td>
                     </tr>
                   )}
@@ -166,20 +176,8 @@ export default function CompromisosPage() {
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3 flex flex-col" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
               <p className="text-sm font-bold text-[#041224] mb-2 tracking-tight">Prima Neta por Vendedor</p>
               <div className="flex-1">
-                <PremiumBarChart data={barData} barHeight={20} colorFn={(idx) => {
-                  const shades = [
-                    { from: '#1a5dc7', to: '#3983F6' },
-                    { from: '#2568d4', to: '#4a90f7' },
-                    { from: '#3074e0', to: '#5b9df8' },
-                    { from: '#3b80ec', to: '#6caaf9' },
-                    { from: '#468cf8', to: '#7db7fa' },
-                    { from: '#5198f9', to: '#8ec4fb' },
-                    { from: '#5ca4fa', to: '#9fd1fc' },
-                    { from: '#67b0fb', to: '#b0defd' },
-                    { from: '#72bcfc', to: '#c1ebfe' },
-                    { from: '#7dc8fd', to: '#d2f8ff' },
-                  ]
-                  return shades[idx % shades.length]
+                <PremiumBarChart data={barData} barHeight={20} colorFn={() => {
+                  return { from: '#6B7280', to: '#9CA3AF' }
                 }} />
               </div>
             </div>
@@ -191,18 +189,18 @@ export default function CompromisosPage() {
               <p className="text-sm font-bold text-[#041224] mb-1">Top 5 Vendedores</p>
               <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
                 <thead>
-                  <tr className="bg-[#041224] text-white border-b-2 border-b-[#2E7D32]">
-                    <th className="px-2 py-1 text-left w-6 text-sm">#</th>
-                    <th className="px-2 py-1 text-left text-sm">Vendedor</th>
-                    <th className="px-2 py-1 text-right text-sm">Prima Neta</th>
+                  <tr className="bg-[#3983F6] text-white">
+                    <th className="px-2 py-1 text-center w-6 text-sm">#</th>
+                    <th className="px-2 py-1 text-center text-sm">Vendedor</th>
+                    <th className="px-2 py-1 text-center text-sm">Prima Neta</th>
                   </tr>
                 </thead>
                 <tbody>
                   {topVendedores.map((v, i) => (
-                    <tr key={v.vendedor} className={`border-b border-[#E5E7E9] ${i % 2 === 1 ? "bg-[#FAFAFA]" : ""}`}>
-                      <td className="px-2 py-[2px] font-bold text-[#2E7D32]">{i + 1}</td>
-                      <td className="px-2 py-[2px]">{v.vendedor}</td>
-                      <td className="px-2 py-[2px] text-right font-medium">{fmt(v.primaNeta)}</td>
+                    <tr key={v.vendedor} className={`border-b border-[#E5E7EB] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}>
+                      <td className="px-2 py-[2px] font-bold text-center text-[#374151]">{i + 1}</td>
+                      <td className="px-2 py-[2px] text-center text-[#374151]">{v.vendedor}</td>
+                      <td className="px-2 py-[2px] text-center font-medium text-[#374151]">{fmt(v.primaNeta)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -213,11 +211,11 @@ export default function CompromisosPage() {
               <div className="flex-1">
                 <PremiumBarChart data={topBarData} barHeight={22} showGrid={false} colorFn={(idx) => {
                   const shades = [
-                    { from: '#1a5dc7', to: '#3983F6' },
-                    { from: '#2568d4', to: '#4a90f7' },
-                    { from: '#3074e0', to: '#5b9df8' },
-                    { from: '#3b80ec', to: '#6caaf9' },
-                    { from: '#468cf8', to: '#7db7fa' },
+                    { from: '#374151', to: '#4B5563' },
+                    { from: '#4B5563', to: '#6B7280' },
+                    { from: '#6B7280', to: '#7D8694' },
+                    { from: '#7D8694', to: '#9CA3AF' },
+                    { from: '#9CA3AF', to: '#B0B7BF' },
                   ]
                   return shades[idx] || shades[4]
                 }} />
@@ -231,33 +229,33 @@ export default function CompromisosPage() {
               <p className="text-sm font-bold text-[#041224] mb-1">Bottom 5 Vendedores</p>
               <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
                 <thead>
-                  <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                    <th className="px-2 py-1 text-left w-6 text-sm">#</th>
-                    <th className="px-2 py-1 text-left text-sm">Vendedor</th>
-                    <th className="px-2 py-1 text-right text-sm">Prima Neta</th>
+                  <tr className="bg-[#3983F6] text-white">
+                    <th className="px-2 py-1 text-center w-6 text-sm">#</th>
+                    <th className="px-2 py-1 text-center text-sm">Vendedor</th>
+                    <th className="px-2 py-1 text-center text-sm">Prima Neta</th>
                   </tr>
                 </thead>
                 <tbody>
                   {bottomVendedores.map((v, i) => (
-                    <tr key={v.vendedor} className={`border-b border-[#E5E7E9] ${i % 2 === 1 ? "bg-[#FAFAFA]" : ""}`}>
-                      <td className="px-2 py-[2px] font-bold text-[#E62800]">{i + 1}</td>
-                      <td className="px-2 py-[2px]">{v.vendedor}</td>
-                      <td className="px-2 py-[2px] text-right font-medium">{fmt(v.primaNeta)}</td>
+                    <tr key={v.vendedor} className={`border-b border-[#E5E7EB] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}>
+                      <td className="px-2 py-[2px] font-bold text-center text-[#374151]">{i + 1}</td>
+                      <td className="px-2 py-[2px] text-center text-[#374151]">{v.vendedor}</td>
+                      <td className="px-2 py-[2px] text-center font-medium text-[#374151]">{fmt(v.primaNeta)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3 flex flex-col" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-              <p className="text-sm font-bold text-[#C62828] mb-2 tracking-tight">Bottom 5</p>
+              <p className="text-sm font-bold text-[#8F2D56] mb-2 tracking-tight">Bottom 5</p>
               <div className="flex-1">
                 <PremiumBarChart data={bottomBarData} barHeight={22} showGrid={false} colorFn={(idx) => {
                   const shades = [
-                    { from: '#8F2D56', to: '#E62800' },
-                    { from: '#A03862', to: '#E84020' },
-                    { from: '#B1436E', to: '#EA5840' },
-                    { from: '#C24E7A', to: '#EC7060' },
-                    { from: '#D35986', to: '#EE8880' },
+                    { from: '#8F2D56', to: '#A44470' },
+                    { from: '#A44470', to: '#B45B84' },
+                    { from: '#B45B84', to: '#C47298' },
+                    { from: '#C47298', to: '#D4A0B3' },
+                    { from: '#D4A0B3', to: '#E0BAC8' },
                   ]
                   return shades[idx] || shades[4]
                 }} />
