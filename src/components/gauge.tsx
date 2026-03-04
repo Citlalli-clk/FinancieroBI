@@ -72,9 +72,8 @@ export function Gauge({ value, clickable = true, cumplimiento = 0, crecimiento =
         <defs>
           <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#E62800" />
-            <stop offset="33%" stopColor="#F9DC5C" />
-            <stop offset="66%" stopColor="#60A63A" />
-            <stop offset="100%" stopColor="#3983F6" />
+            <stop offset="50%" stopColor="#F9DC5C" />
+            <stop offset="100%" stopColor="#60A63A" />
           </linearGradient>
         </defs>
 
