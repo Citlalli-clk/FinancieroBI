@@ -23,13 +23,12 @@ function semaforoColor(pct: number) {
   if (pct >= 70) return "#F5C518"
   return "#E62800"
 }
-function Semaforo({ pct }: { pct: number }) {
-  const g = pct >= 90, y = pct >= 70 && pct < 90, r = pct < 70
+function Semaforo(_props: { pct: number }) {
   return (
     <span className="inline-flex items-center gap-0.5 semaforo-lights">
-      <span className={`w-2.5 h-2.5 rounded-full inline-block border border-[#E5E7EB] transition-colors duration-200 ${r ? "light-red" : ""}`} style={{ backgroundColor: '#D1D5DB' }} />
-      <span className={`w-2.5 h-2.5 rounded-full inline-block border border-[#E5E7EB] transition-colors duration-200 ${y ? "light-yellow" : ""}`} style={{ backgroundColor: '#D1D5DB' }} />
-      <span className={`w-2.5 h-2.5 rounded-full inline-block border border-[#E5E7EB] transition-colors duration-200 ${g ? "light-green" : ""}`} style={{ backgroundColor: '#D1D5DB' }} />
+      <span className="w-2.5 h-2.5 rounded-full inline-block border border-[#E5E7EB] transition-colors duration-200 light-red" style={{ backgroundColor: '#D1D5DB' }} />
+      <span className="w-2.5 h-2.5 rounded-full inline-block border border-[#E5E7EB] transition-colors duration-200 light-yellow" style={{ backgroundColor: '#D1D5DB' }} />
+      <span className="w-2.5 h-2.5 rounded-full inline-block border border-[#E5E7EB] transition-colors duration-200 light-green" style={{ backgroundColor: '#D1D5DB' }} />
     </span>
   )
 }
@@ -141,7 +140,7 @@ export default function CompromisosPage() {
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
               <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
                 <thead>
-                  <tr className="bg-[#3983F6] text-white">
+                  <tr className="bg-[#6B7280] text-white">
                     <th className="px-2 py-1 text-center text-sm">Vendedor</th>
                     <th className="px-2 py-1 text-center text-sm">Meta</th>
                     <th className="px-2 py-1 text-center text-sm">Prima Neta</th>
@@ -162,7 +161,7 @@ export default function CompromisosPage() {
                     </tr>
                   ))}
                   {!loading && data.length > 0 && (
-                    <tr className="total-row bg-[#3983F6] text-white">
+                    <tr className="total-row bg-[#6B7280] text-white">
                       <td className="px-2 py-[2px] font-bold text-center">Total</td>
                       <td className="px-2 py-[2px] text-center font-bold">{fmt(totalMeta)}</td>
                       <td className="px-2 py-[2px] text-center font-bold">{fmt(totalActual)}</td>
@@ -176,8 +175,11 @@ export default function CompromisosPage() {
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3 flex flex-col" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
               <p className="text-sm font-bold text-[#041224] mb-2 tracking-tight">Prima Neta por Vendedor</p>
               <div className="flex-1">
-                <PremiumBarChart data={barData} barHeight={20} colorFn={() => {
-                  return { from: '#6B7280', to: '#9CA3AF' }
+                <PremiumBarChart data={barData} barHeight={20} colorFn={(idx) => {
+                  const total = barData.length || 1
+                  const intensity = 1 - (idx / total) * 0.5
+                  const r = Math.round(57 * intensity), g = Math.round(131 * intensity), b = Math.round(246 * intensity)
+                  return { from: `rgb(${r},${g},${b})`, to: `rgb(${Math.min(r+30,255)},${Math.min(g+30,255)},${Math.min(b+30,255)})` }
                 }} />
               </div>
             </div>
@@ -189,7 +191,7 @@ export default function CompromisosPage() {
               <p className="text-sm font-bold text-[#041224] mb-1">Top 5 Vendedores</p>
               <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
                 <thead>
-                  <tr className="bg-[#3983F6] text-white">
+                  <tr className="bg-[#6B7280] text-white">
                     <th className="px-2 py-1 text-center w-6 text-sm">#</th>
                     <th className="px-2 py-1 text-center text-sm">Vendedor</th>
                     <th className="px-2 py-1 text-center text-sm">Prima Neta</th>
@@ -211,11 +213,11 @@ export default function CompromisosPage() {
               <div className="flex-1">
                 <PremiumBarChart data={topBarData} barHeight={22} showGrid={false} colorFn={(idx) => {
                   const shades = [
-                    { from: '#374151', to: '#4B5563' },
-                    { from: '#4B5563', to: '#6B7280' },
-                    { from: '#6B7280', to: '#7D8694' },
-                    { from: '#7D8694', to: '#9CA3AF' },
-                    { from: '#9CA3AF', to: '#B0B7BF' },
+                    { from: '#1D4ED8', to: '#2563EB' },
+                    { from: '#2563EB', to: '#3B82F6' },
+                    { from: '#3B82F6', to: '#60A5FA' },
+                    { from: '#60A5FA', to: '#93C5FD' },
+                    { from: '#93C5FD', to: '#BFDBFE' },
                   ]
                   return shades[idx] || shades[4]
                 }} />
@@ -229,7 +231,7 @@ export default function CompromisosPage() {
               <p className="text-sm font-bold text-[#041224] mb-1">Bottom 5 Vendedores</p>
               <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
                 <thead>
-                  <tr className="bg-[#3983F6] text-white">
+                  <tr className="bg-[#6B7280] text-white">
                     <th className="px-2 py-1 text-center w-6 text-sm">#</th>
                     <th className="px-2 py-1 text-center text-sm">Vendedor</th>
                     <th className="px-2 py-1 text-center text-sm">Prima Neta</th>
@@ -251,11 +253,11 @@ export default function CompromisosPage() {
               <div className="flex-1">
                 <PremiumBarChart data={bottomBarData} barHeight={22} showGrid={false} colorFn={(idx) => {
                   const shades = [
-                    { from: '#8F2D56', to: '#A44470' },
-                    { from: '#A44470', to: '#B45B84' },
-                    { from: '#B45B84', to: '#C47298' },
-                    { from: '#C47298', to: '#D4A0B3' },
-                    { from: '#D4A0B3', to: '#E0BAC8' },
+                    { from: '#93C5FD', to: '#BFDBFE' },
+                    { from: '#BFDBFE', to: '#DBEAFE' },
+                    { from: '#DBEAFE', to: '#EFF6FF' },
+                    { from: '#DBEAFE', to: '#EFF6FF' },
+                    { from: '#DBEAFE', to: '#EFF6FF' },
                   ]
                   return shades[idx] || shades[4]
                 }} />
