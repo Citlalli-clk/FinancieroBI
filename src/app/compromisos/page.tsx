@@ -94,12 +94,11 @@ export default function CompromisosPage() {
         </div>
         <h1 className="text-sm font-bold text-[#111] font-lato mt-3 mb-2">Vendedores — Compromisos</h1>
 
-        {/* 2-COLUMN LAYOUT: Left=Tables, Right=Charts */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* ROW-BASED LAYOUT: Each row = [table | chart] with matched heights */}
+        <div className="flex flex-col gap-2">
 
-          {/* LEFT COLUMN — All 3 tables */}
-          <div className="flex flex-col gap-2">
-            {/* Compromisos table */}
+          {/* Row 1: Compromisos table + chart */}
+          <div className="grid grid-cols-2 gap-3">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
               <table className="w-full border-collapse" style={{ fontSize: 11, lineHeight: 1.4 }}>
                 <thead>
@@ -135,8 +134,14 @@ export default function CompromisosPage() {
                 </tbody>
               </table>
             </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
+              <p className="text-[11px] font-bold text-[#041224] mb-1">Prima Neta por Vendedor</p>
+              <HBarChart data={barData} colorFn={semaforoColor} />
+            </div>
+          </div>
 
-            {/* Top 5 table */}
+          {/* Row 2: Top 5 table + chart */}
+          <div className="grid grid-cols-2 gap-3">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
               <p className="text-[11px] font-bold text-[#041224] mb-1">🏆 Top 5 Vendedores</p>
               <table className="w-full border-collapse" style={{ fontSize: 10, lineHeight: 1.4 }}>
@@ -158,8 +163,14 @@ export default function CompromisosPage() {
                 </tbody>
               </table>
             </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
+              <p className="text-[11px] font-bold text-[#2E7D32] mb-1">🏆 Top 5</p>
+              <HBarChart data={topBarData} color="#2E7D32" />
+            </div>
+          </div>
 
-            {/* Bottom 5 table */}
+          {/* Row 3: Bottom 5 table + chart */}
+          <div className="grid grid-cols-2 gap-3">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
               <p className="text-[11px] font-bold text-[#041224] mb-1">⬇️ Bottom 5 Vendedores</p>
               <table className="w-full border-collapse" style={{ fontSize: 10, lineHeight: 1.4 }}>
@@ -181,23 +192,6 @@ export default function CompromisosPage() {
                 </tbody>
               </table>
             </div>
-          </div>
-
-          {/* RIGHT COLUMN — All 3 charts (aligned with tables) */}
-          <div className="flex flex-col gap-2">
-            {/* Compromisos chart */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
-              <p className="text-[11px] font-bold text-[#041224] mb-1">Prima Neta por Vendedor</p>
-              <HBarChart data={barData} colorFn={semaforoColor} />
-            </div>
-
-            {/* Top 5 chart */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
-              <p className="text-[11px] font-bold text-[#2E7D32] mb-1">🏆 Top 5</p>
-              <HBarChart data={topBarData} color="#2E7D32" />
-            </div>
-
-            {/* Bottom 5 chart */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
               <p className="text-[11px] font-bold text-[#E62800] mb-1">⬇️ Bottom 5</p>
               <HBarChart data={bottomBarData} color="#E62800" />
