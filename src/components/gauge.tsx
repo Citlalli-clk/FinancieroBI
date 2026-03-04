@@ -90,7 +90,7 @@ export function Gauge({ value, clickable = true }: GaugeProps) {
   const needleLen = outerR - 8
   const [tipX, tipY] = polarToXY(needleAngleDeg, needleLen)
 
-  const baseHalfWidth = 6
+  const baseHalfWidth = 7
   const perpRad = ((needleAngleDeg + 90) * Math.PI) / 180
   const b1x = cx + baseHalfWidth * Math.cos(perpRad)
   const b1y = cy - baseHalfWidth * Math.sin(perpRad)
@@ -125,10 +125,9 @@ export function Gauge({ value, clickable = true }: GaugeProps) {
           fill="#1a1a1a"
         />
 
-        {/* Pivot center — 3 concentric circles */}
-        <circle cx={cx} cy={cy} r={18} fill="#888" />
-        <circle cx={cx} cy={cy} r={14} fill="white" />
-        <circle cx={cx} cy={cy} r={8} fill="#666" />
+        {/* Pivot center — diamond */}
+        <rect x={cx - 14} y={cy - 14} width={28} height={28} rx={2} fill="#333" transform={`rotate(45 ${cx} ${cy})`} />
+        <rect x={cx - 8} y={cy - 8} width={16} height={16} rx={1} fill="white" transform={`rotate(45 ${cx} ${cy})`} />
 
         {/* LOW label */}
         <text
@@ -148,17 +147,18 @@ export function Gauge({ value, clickable = true }: GaugeProps) {
           CRITICAL
         </text>
 
-        {/* KPI Value */}
+        {/* KPI Value Badge */}
+        <rect x={cx - 110} y={cy + 55} width={220} height={52} rx={8} fill="#041224" />
         <text
-          x={cx} y={cy + 50}
-          fontSize="48" fontWeight="900" fill="#111"
+          x={cx} y={cy + 90}
+          fontSize="48" fontWeight="900" fill="white"
           textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
         >
           ${value.toFixed(1)}M
         </text>
         <text
-          x={cx} y={cy + 72}
-          fontSize="14" fill="#666"
+          x={cx} y={cy + 122}
+          fontSize="13" fill="#666"
           textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
           fontWeight="500"
         >

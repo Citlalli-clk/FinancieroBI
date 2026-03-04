@@ -94,13 +94,13 @@ export default function Home() {
           <div className="w-[55%] flex items-center justify-center gap-3">
             {/* KPI indicator box */}
             <div className="w-[150px] shrink-0 rounded-lg shadow-sm overflow-hidden">
-              <div className="bg-[#ECFDF5] px-3 p-6 text-center">
-                <p className="text-[11px] text-[#065F46] leading-tight">Cumplimiento</p>
-                <p className="text-3xl font-bold text-[#059669] leading-tight mt-0.5">{cumpl}%</p>
+              <div className="px-3 p-6 text-center" style={{ backgroundColor: '#2E7D32' }}>
+                <p className="text-[11px] leading-tight" style={{ color: 'white' }}>Cumplimiento</p>
+                <p className="text-3xl font-bold leading-tight mt-0.5" style={{ color: 'white' }}>{cumpl}%</p>
               </div>
-              <div className="bg-[#FEF2F2] px-3 p-6 text-center">
-                <p className="text-[11px] text-[#991B1B] leading-tight">Crecimiento</p>
-                <p className="text-3xl font-bold text-[#DC2626] leading-tight mt-0.5">
+              <div className="px-3 p-6 text-center" style={{ backgroundColor: '#CC0000' }}>
+                <p className="text-[11px] leading-tight" style={{ color: 'white' }}>Crecimiento</p>
+                <p className="text-3xl font-bold leading-tight mt-0.5" style={{ color: 'white' }}>
                   {crec < 0 ? "↓" : "↑"} {crec}%
                 </p>
               </div>
