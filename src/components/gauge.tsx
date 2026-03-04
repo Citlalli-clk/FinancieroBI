@@ -38,12 +38,12 @@ function interpolateColor(t: number): string {
 }
 
 export function Gauge({ value, clickable = true }: GaugeProps) {
-  const W = 580
-  const H = 400
+  const W = 680
+  const H = 480
   const cx = W / 2
-  const cy = 290
+  const cy = 340
 
-  const outerR = 250
+  const outerR = 300
   const innerR = outerR * 0.75 // 150
   const borderR = outerR + 10   // 210 — grey frame outside
   const borderInnerR = innerR - 6
