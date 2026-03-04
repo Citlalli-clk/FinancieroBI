@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { ChevronRight, ChevronLeft, Search, Download } from "lucide-react"
 import { PageTabs } from "@/components/page-tabs"
@@ -44,6 +44,14 @@ interface Crumb { level: DrillLevel; label: string }
 interface DrillRow { name: string; primaNeta: number; presupuesto: number | null; diferencia: number | null; pctDifPpto: number | null; pnAnioAnt: number | null; difYoY: number | null; pctDifYoY: number | null; pendiente: number | null }
 
 export default function TablaDetallePage() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <TablaDetalleContent />
+    </Suspense>
+  )
+}
+
+function TablaDetalleContent() {
   const searchParams = useSearchParams()
   const lineaParam = searchParams.get("linea")
   const [highlightId, setHighlightId] = useState<string | null>(null)
