@@ -12,7 +12,7 @@ interface GaugeProps {
 }
 
 export function Gauge({ value, budget = 129.5, clickable = true, cumplimiento = 0, crecimiento = 0 }: GaugeProps) {
-  const W = 820
+  const W = 880
   const H = 720
   const cx = W / 2
   const cy = 380

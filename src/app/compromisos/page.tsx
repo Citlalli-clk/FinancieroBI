@@ -141,7 +141,7 @@ export default function CompromisosPage() {
               <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
                 <thead>
                   <tr className="bg-[#6B7280] text-white">
-                    <th className="px-2 py-1 text-center text-sm">Vendedor</th>
+                    <th className="px-2 py-1 text-left text-sm">Vendedor</th>
                     <th className="px-2 py-1 text-center text-sm">Meta</th>
                     <th className="px-2 py-1 text-center text-sm">Prima Neta</th>
                     <th className="px-2 py-1 text-center text-sm">%</th>
@@ -153,7 +153,7 @@ export default function CompromisosPage() {
                     <tr><td colSpan={5} className="px-2 py-2 text-center text-gray-400">Cargando...</td></tr>
                   ) : data.slice(0, 10).map((r, idx) => (
                     <tr key={r.vendedor} className={`vendedor-row border-b border-[#E5E7EB] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}>
-                      <td className="px-2 py-[2px] font-medium text-center text-[#374151]">{r.vendedor}</td>
+                      <td className="px-2 py-[2px] font-medium text-left text-[#374151]">{r.vendedor}</td>
                       <td className="px-2 py-[2px] text-center text-[#374151]">{fmt(r.meta)}</td>
                       <td className="px-2 py-[2px] text-center font-medium text-[#374151]">{fmt(r.primaActual)}</td>
                       <td className="px-2 py-[2px] text-center font-medium text-[#374151]">{r.pctAvance}%</td>
@@ -162,7 +162,7 @@ export default function CompromisosPage() {
                   ))}
                   {!loading && data.length > 0 && (
                     <tr className="total-row bg-[#6B7280] text-white">
-                      <td className="px-2 py-[2px] font-bold text-center">Total</td>
+                      <td className="px-2 py-[2px] font-bold text-left">Total</td>
                       <td className="px-2 py-[2px] text-center font-bold">{fmt(totalMeta)}</td>
                       <td className="px-2 py-[2px] text-center font-bold">{fmt(totalActual)}</td>
                       <td className="px-2 py-[2px] text-center font-bold">{totalPct}%</td>
@@ -193,7 +193,7 @@ export default function CompromisosPage() {
                 <thead>
                   <tr className="bg-[#6B7280] text-white">
                     <th className="px-2 py-1 text-center w-6 text-sm">#</th>
-                    <th className="px-2 py-1 text-center text-sm">Vendedor</th>
+                    <th className="px-2 py-1 text-left text-sm">Vendedor</th>
                     <th className="px-2 py-1 text-center text-sm">Prima Neta</th>
                   </tr>
                 </thead>
@@ -201,7 +201,7 @@ export default function CompromisosPage() {
                   {topVendedores.map((v, i) => (
                     <tr key={v.vendedor} className={`border-b border-[#E5E7EB] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}>
                       <td className="px-2 py-[2px] font-bold text-center text-[#374151]">{i + 1}</td>
-                      <td className="px-2 py-[2px] text-center text-[#374151]">{v.vendedor}</td>
+                      <td className="px-2 py-[2px] text-left text-[#374151]">{v.vendedor}</td>
                       <td className="px-2 py-[2px] text-center font-medium text-[#374151]">{fmt(v.primaNeta)}</td>
                     </tr>
                   ))}
@@ -233,7 +233,7 @@ export default function CompromisosPage() {
                 <thead>
                   <tr className="bg-[#6B7280] text-white">
                     <th className="px-2 py-1 text-center w-6 text-sm">#</th>
-                    <th className="px-2 py-1 text-center text-sm">Vendedor</th>
+                    <th className="px-2 py-1 text-left text-sm">Vendedor</th>
                     <th className="px-2 py-1 text-center text-sm">Prima Neta</th>
                   </tr>
                 </thead>
@@ -241,7 +241,7 @@ export default function CompromisosPage() {
                   {bottomVendedores.map((v, i) => (
                     <tr key={v.vendedor} className={`border-b border-[#E5E7EB] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}>
                       <td className="px-2 py-[2px] font-bold text-center text-[#374151]">{i + 1}</td>
-                      <td className="px-2 py-[2px] text-center text-[#374151]">{v.vendedor}</td>
+                      <td className="px-2 py-[2px] text-left text-[#374151]">{v.vendedor}</td>
                       <td className="px-2 py-[2px] text-center font-medium text-[#374151]">{fmt(v.primaNeta)}</td>
                     </tr>
                   ))}
