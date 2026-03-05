@@ -24,8 +24,8 @@ function fmtFull(v: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 }
 
-// Brand colors for bars/segments
-const COLORS = ["#3983F6", "#052F5F", "#E62800", "#F9DC5C", "#8F2D56", "#60A63A", "#FDDC35", "#F62828", "#9CA3AF", "#6366f1", "#0ea5e9", "#f97316"]
+// Professional blue-to-gray palette matching the upper table style
+const COLORS = ["#3983F6", "#1E5BBF", "#052F5F", "#5BA0F8", "#7DB5FA", "#2C4A7C", "#4A6FA5", "#6B8CBF", "#8DA8D4", "#A3B8D8", "#374151", "#6B7280"]
 
 // Donut chart using SVG
 function DonutChart({ data, total, label }: { data: { name: string; value: number; color: string }[]; total: number; label: string }) {

@@ -97,12 +97,14 @@ export function Gauge({ value, budget = 129.5, clickable = true, cumplimiento = 
           const [t2x, t2y] = polarToXY(angleDeg, tickR2)
           const [lx, ly] = polarToXY(angleDeg, labelR)
           // Anchor: left labels start, right labels end, middle ones middle
-          const anchor = tick.pct < 0.2 ? "start" : tick.pct > 0.8 ? "end" : "middle"
+          const anchor = tick.pct < 0.15 ? "start" : tick.pct > 0.85 ? "end" : "middle"
+          // Push edge labels below the arc baseline so they don't overlap
+          const yOffset = (tick.pct < 0.05 || tick.pct > 0.95) ? 20 : 0
           return (
             <g key={i}>
               <line x1={t1x} y1={t1y} x2={t2x} y2={t2y} stroke="#9CA3AF" strokeWidth={1.5} />
               <text
-                x={lx} y={ly}
+                x={lx} y={ly + yOffset}
                 fontSize="15" fontWeight="700" fill="#374151"
                 textAnchor={anchor}
                 dominantBaseline="middle"
