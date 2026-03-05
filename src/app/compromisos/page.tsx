@@ -91,7 +91,7 @@ export default function CompromisosPage() {
   const [data, setData] = useState<CompromisoRow[]>([])
   const [loading, setLoading] = useState(true)
   const [topVendedores, setTopVendedores] = useState<{ vendedor: string; primaNeta: number }[]>([])
-  const [bottomVendedores, setBottomVendedores] = useState<{ vendedor: string; primaNeta: number }[]>([])
+  // Bottom 5 removed per Angel's request
 
   const handleFilterChange = useCallback((newYear: string, newPeriodos: number[]) => { setYear(newYear); setPeriodos(newPeriodos) }, [])
   useEffect(() => { document.title = "Vendedores | CLK BI Dashboard" }, [])
@@ -101,7 +101,7 @@ export default function CompromisosPage() {
     setLoading(true)
     getCompromisos(Number(year), month).then(r => { setData(r ?? []); setLoading(false) }).catch(() => setLoading(false))
     getRankedVendedores(month, year).then(v => {
-      if (v && v.length > 0) { setTopVendedores(v.slice(0, 5)); setBottomVendedores(v.slice(-5).reverse()) }
+      if (v && v.length > 0) { setTopVendedores(v.slice(0, 5)) }
     })
   }, [year, month])
 
@@ -111,7 +111,7 @@ export default function CompromisosPage() {
 
   const barData = data.map(r => ({ name: surname(r.vendedor), value: r.primaActual, pct: r.pctAvance }))
   const topBarData = topVendedores.map(v => ({ name: surname(v.vendedor), value: v.primaNeta }))
-  const bottomBarData = bottomVendedores.map(v => ({ name: surname(v.vendedor), value: v.primaNeta }))
+  // bottomBarData removed
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] px-3 py-4 flex flex-col">
@@ -225,45 +225,7 @@ export default function CompromisosPage() {
             </div>
           </div>
 
-          {/* Row 3: Bottom 5 table + chart */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
-              <p className="text-sm font-bold text-[#041224] mb-1">Bottom 5 Vendedores</p>
-              <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
-                <thead>
-                  <tr className="bg-[#6B7280] text-white">
-                    <th className="px-2 py-1 text-center w-6 text-sm">#</th>
-                    <th className="px-2 py-1 text-left text-sm">Vendedor</th>
-                    <th className="px-2 py-1 text-center text-sm">Prima Neta</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bottomVendedores.map((v, i) => (
-                    <tr key={v.vendedor} className={`border-b border-[#E5E7EB] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}>
-                      <td className="px-2 py-[2px] font-bold text-center text-[#374151]">{i + 1}</td>
-                      <td className="px-2 py-[2px] text-left text-[#374151]">{v.vendedor}</td>
-                      <td className="px-2 py-[2px] text-center font-medium text-[#374151]">{fmt(v.primaNeta)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3 flex flex-col" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-              <p className="text-sm font-bold text-[#8F2D56] mb-2 tracking-tight">Bottom 5</p>
-              <div className="flex-1">
-                <PremiumBarChart data={bottomBarData} barHeight={22} showGrid={false} colorFn={(idx) => {
-                  const shades = [
-                    { from: '#93C5FD', to: '#BFDBFE' },
-                    { from: '#BFDBFE', to: '#DBEAFE' },
-                    { from: '#DBEAFE', to: '#EFF6FF' },
-                    { from: '#DBEAFE', to: '#EFF6FF' },
-                    { from: '#DBEAFE', to: '#EFF6FF' },
-                  ]
-                  return shades[idx] || shades[4]
-                }} />
-              </div>
-            </div>
-          </div>
+          {/* Bottom 5 removed */}
 
         </div>
       </div>

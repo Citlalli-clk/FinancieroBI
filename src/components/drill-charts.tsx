@@ -25,7 +25,7 @@ function fmtFull(v: number) {
 }
 
 // Brand palette — each linea de negocio has a distinct, visible color
-const COLORS = ["#3983F6", "#60A63A", "#F9DC5C", "#8F2D56", "#052F5F", "#F62828", "#5BA0F8", "#FDDC35", "#E62800", "#9CA3AF", "#4A6FA5", "#6B7280"]
+const COLORS = ["#1565C0", "#4FC3F7", "#FF8F00", "#9E9E9E", "#00897B", "#E53935", "#7E57C2", "#FFB74D", "#43A047", "#78909C", "#5C6BC0", "#8D6E63"]
 
 // Donut chart using SVG
 function DonutChart({ data, total, label }: { data: { name: string; value: number; color: string }[]; total: number; label: string }) {
