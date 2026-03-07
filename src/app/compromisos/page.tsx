@@ -132,13 +132,40 @@ export default function CompromisosPage() {
         </div>
         <h1 className="text-sm font-bold text-[#111] font-lato mt-3 mb-2">Vendedores — Compromisos</h1>
 
-        {/* ROW-BASED LAYOUT: Each row = [table | chart] with matched heights */}
+        {/* ROW-BASED LAYOUT */}
         <div className="flex flex-col gap-2">
 
           {/* Row 1: Compromisos table + chart */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
-              <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
+              {/* Mobile: card layout */}
+              <div className="md:hidden space-y-1.5">
+                {loading ? (
+                  <p className="text-center text-gray-400 py-4">Cargando...</p>
+                ) : data.slice(0, 10).map((r) => (
+                  <div key={r.vendedor} className="vendedor-row border border-gray-100 rounded-lg px-3 py-2">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold text-sm text-[#374151]">{r.vendedor}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold" style={{ color: semaforoColor(r.pctAvance) }}>{r.pctAvance}%</span>
+                        <Semaforo pct={r.pctAvance} />
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>PN: <strong className="text-gray-900">{fmt(r.primaActual)}</strong></span>
+                      <span>Meta: {fmt(r.meta)}</span>
+                    </div>
+                  </div>
+                ))}
+                {!loading && data.length > 0 && (
+                  <div className="bg-[#6B7280] rounded-lg px-3 py-2 flex justify-between items-center">
+                    <span className="font-bold text-sm text-white">Total: {totalPct}%</span>
+                    <span className="font-bold text-sm text-white">{fmt(totalActual)}</span>
+                  </div>
+                )}
+              </div>
+              {/* Desktop: full table */}
+              <table className="hidden md:table w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
                 <thead>
                   <tr className="bg-[#6B7280] text-white">
                     <th className="px-2 py-1 text-left text-sm">Vendedor</th>
@@ -189,7 +216,17 @@ export default function CompromisosPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
               <p className="text-sm font-bold text-[#041224] mb-1">Top 5 Vendedores</p>
-              <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
+              {/* Mobile: compact list */}
+              <div className="md:hidden space-y-1">
+                {topVendedores.map((v, i) => (
+                  <div key={v.vendedor} className="flex justify-between items-center border-b border-gray-100 py-1.5">
+                    <span className="text-sm"><strong className="text-gray-500 mr-1.5">#{i+1}</strong>{v.vendedor}</span>
+                    <span className="text-sm font-bold text-[#374151]">{fmt(v.primaNeta)}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop: table */}
+              <table className="hidden md:table w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
                 <thead>
                   <tr className="bg-[#6B7280] text-white">
                     <th className="px-2 py-1 text-center w-6 text-sm">#</th>

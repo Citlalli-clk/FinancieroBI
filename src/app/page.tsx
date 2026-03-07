@@ -105,8 +105,36 @@ export default function Home() {
 
           {/* Right column: Table + Chart */}
           <div className="w-full md:w-[45%] flex flex-col gap-2 md:gap-1 justify-center mt-2 md:mt-6">
-            <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-x-auto">
-              <table className="w-full text-xs md:text-sm min-w-[480px]">
+            {/* Mobile: compact card list */}
+            <div className="md:hidden space-y-1.5">
+              {lineas.map((l) => {
+                const diff = l.primaNeta - l.presupuesto
+                const link = LINEA_LINKS[l.nombre]
+                const content = (
+                  <div className="bg-white rounded-lg border border-gray-200 px-3 py-2 shadow-sm">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold text-sm text-gray-900">{l.nombre}</span>
+                      <span className={`text-xs font-bold ${diff < 0 ? "text-red-600" : "text-emerald-600"}`}>
+                        {diff < 0 ? `(${fmt(Math.abs(diff))})` : `+${fmt(diff)}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>PN: <strong className="text-gray-900">{fmt(l.primaNeta)}</strong></span>
+                      <span>Ppto: {fmt(l.presupuesto)}</span>
+                    </div>
+                  </div>
+                )
+                return link ? <Link key={l.nombre} href={link}>{content}</Link> : <div key={l.nombre}>{content}</div>
+              })}
+              <div className="bg-gray-600 rounded-lg px-3 py-2 flex justify-between items-center">
+                <span className="font-bold text-sm text-white">Total</span>
+                <span className="font-bold text-sm text-white">{fmt(total)}</span>
+              </div>
+            </div>
+
+            {/* Desktop: full table */}
+            <div className="hidden md:block bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+              <table className="w-full text-sm">
                 <thead>
                   <tr style={{ backgroundColor: '#6B7280' }}>
                     <th className="text-left px-1.5 py-0.5 text-[13px] font-bold text-white">Línea</th>

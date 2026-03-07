@@ -60,7 +60,7 @@ export function PeriodFilter({ onFilterChange, defaultYear = "2026", defaultMont
   }
 
   return (
-    <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+    <div className="flex items-center gap-1.5 md:gap-3 flex-wrap w-full md:w-auto">
       <div className="flex items-center gap-1.5 text-sm">
         <label htmlFor="pf-year" className="text-gray-500 font-medium">Año</label>
         <select id="pf-year" name="pf-year" value={year} onChange={e => setYear(e.target.value)} className="border border-gray-300 rounded-md px-2 py-0.5 text-sm font-medium bg-white">

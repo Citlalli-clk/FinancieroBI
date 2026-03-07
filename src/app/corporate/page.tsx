@@ -182,8 +182,39 @@ export default function CorporatePage() {
       )}
 
       {/* Table */}
-      <div ref={tableRef} className="bi-card overflow-hidden overflow-x-auto max-h-[70vh] overflow-y-auto">
-        <table className="w-full text-sm">
+      <div ref={tableRef} className="bi-card overflow-hidden max-h-[70vh] overflow-y-auto">
+        {/* Mobile poliza card view */}
+        {drillLevel === "poliza" && (
+          <div className="md:hidden">
+            {loading ? (
+              <p className="px-3 py-8 text-center text-gray-400">Cargando...</p>
+            ) : filteredPolizas.length === 0 ? (
+              <p className="px-3 py-8 text-center text-[#888]">Datos en integración</p>
+            ) : (
+              <div className="space-y-1.5 p-2">
+                {filteredPolizas.map((p, idx) => (
+                  <div key={`${p.documento}-${idx}`} className="border border-gray-100 rounded-lg px-3 py-2">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold text-sm text-[#111]">{p.documento}</span>
+                      <span className={`text-sm font-bold ${p.primaNeta < 0 ? "text-[#E62800]" : ""}`}>
+                        {p.primaNeta < 0 ? `(${fmt(Math.abs(p.primaNeta))})` : fmt(p.primaNeta)}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 space-y-0.5">
+                      <div>{p.aseguradora} · {p.ramo}</div>
+                      <div>{p.subramo} · {p.fechaLiquidacion}</div>
+                    </div>
+                  </div>
+                ))}
+                <div className="bg-[#041224] text-white rounded-lg px-3 py-2 flex justify-between">
+                  <span className="font-bold">Total</span>
+                  <span className="font-bold">{fmt(polizaTotal)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        <table className={`w-full text-sm ${drillLevel === "poliza" ? "hidden md:table" : ""}`}>
           <thead className="sticky top-0 z-10">
             {drillLevel === "poliza" ? (
               <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
