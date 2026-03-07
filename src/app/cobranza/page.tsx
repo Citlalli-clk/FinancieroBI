@@ -334,7 +334,38 @@ export default function CobranzaPage() {
       </div>
 
       {/* Detalle por compania */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden mb-3">
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-1.5 mb-3">
+        <h3 className="text-sm font-bold text-[#041224] mb-1">Detalle por Compañía</h3>
+        {sortedCompanies.map((c) => {
+          const difConv = c.primaNeta - c.convenio
+          const difAA = c.primaNeta - c.pnAA
+          const pctConv = c.convenio > 0 ? ((c.primaNeta / c.convenio - 1) * 100).toFixed(1) : "0"
+          return (
+            <div key={c.nombre} className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 shadow-sm">
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="font-bold text-sm text-[#041224]">{c.nombre}</span>
+                <span className={`text-xs font-bold ${difConv < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}`}>{pctConv}%</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+                <div className="flex justify-between"><span className="text-gray-500">Prima Neta</span><strong>{fmt(c.primaNeta)}</strong></div>
+                <div className="flex justify-between"><span className="text-gray-500">Convenio</span><span>{fmt(c.convenio)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Año Ant.</span><span>{fmt(c.pnAA)}</span></div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Crec.</span>
+                  <span className={difAA < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}>{difAA < 0 ? "-" : "+"}{Math.abs(c.pnAA > 0 ? ((c.primaNeta / c.pnAA - 1) * 100) : 0).toFixed(1)}%</span>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+        <div className="bg-[#1a1a1a] text-white rounded-lg px-3 py-2.5 flex justify-between items-center">
+          <span className="font-bold text-sm">TOTAL</span>
+          <span className="font-bold text-sm">{fmt(compTotals.primaNeta)}</span>
+        </div>
+      </div>
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white rounded-xl shadow-md overflow-hidden mb-3">
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-separate border-spacing-0">
             <thead>

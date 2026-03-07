@@ -429,8 +429,98 @@ function TablaDetalleContent() {
         <div className="text-[12px] text-[#888] mb-1">{filteredPolizas.length} pólizas encontradas — desplazar para ver más</div>
       )}
 
-      {/* Table — scrollable for large datasets */}
-      <div ref={tableRef} className="bi-card overflow-hidden overflow-x-auto max-h-[70vh] overflow-y-auto">
+      {/* Table — mobile: cards, desktop: full table */}
+      {/* MOBILE CARD VIEW */}
+      <div className="md:hidden space-y-1.5 mb-3">
+        {loading ? (
+          <p className="text-center text-gray-400 py-8">Cargando...</p>
+        ) : drillLevel === "linea" ? (
+          <>
+            {filteredLineas.map((l) => {
+              const dif = l.diferencia
+              const difYoy = l.difYoY
+              return (
+                <div key={l.linea} className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 shadow-sm active:bg-gray-50"
+                  onClick={() => drill("gerencia", l.linea, { linea: l.linea })}>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="font-bold text-sm text-[#111] flex items-center gap-1">
+                      <ChevronRight className="w-3.5 h-3.5 text-[#E62800]" />
+                      {l.linea}
+                    </span>
+                    <span className={`text-xs font-bold ${dif < 0 ? "text-[#E62800]" : "text-[#166534]"}`}>
+                      {l.pctDifPpto > 0 ? "+" : ""}{l.pctDifPpto}%
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+                    <div className="flex justify-between"><span className="text-gray-500">Prima Neta</span><strong className="text-[#111]">{fmt(l.primaNeta)}</strong></div>
+                    <div className="flex justify-between"><span className="text-gray-500">Presupuesto</span><span>{fmt(l.presupuesto)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">Año Ant.</span><span>{fmt(l.pnAnioAnt)}</span></div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Crec.</span>
+                      <span className={difYoy < 0 ? "text-[#E62800]" : "text-[#166534]"}>{l.pctDifYoY > 0 ? "+" : ""}{l.pctDifYoY}%</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            <div className="bg-[#041224] text-white rounded-lg px-3 py-2.5 flex justify-between items-center">
+              <span className="font-bold text-sm">Total</span>
+              <span className="font-bold text-sm">{fmt(totalLineas.primaNeta)}</span>
+            </div>
+          </>
+        ) : drillLevel === "poliza" ? (
+          <>
+            {filteredPolizas.length === 0 ? (
+              <p className="text-center text-[#888] py-8">Datos en integración</p>
+            ) : filteredPolizas.map((p, idx) => (
+              <div key={`${p.documento}-${idx}`} className="bg-white rounded-lg border border-gray-200 px-3 py-2 shadow-sm">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-bold text-sm text-[#111]">{p.documento}</span>
+                  <span className={`text-sm font-bold ${p.primaNeta < 0 ? "text-[#E62800]" : ""}`}>
+                    {p.primaNeta < 0 ? `(${fmt(Math.abs(p.primaNeta))})` : fmt(p.primaNeta)}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500">
+                  <div>{p.aseguradora} · {p.ramo}</div>
+                  <div>{p.fechaLiquidacion}</div>
+                </div>
+              </div>
+            ))}
+            <div className="bg-[#041224] text-white rounded-lg px-3 py-2.5 flex justify-between">
+              <span className="font-bold">Total</span><span className="font-bold">{fmt(polizaTotal)}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            {filteredRows.length === 0 ? (
+              <p className="text-center text-[#888] py-8">Sin datos para este periodo</p>
+            ) : filteredRows.map((r) => {
+              const nextLevel: DrillLevel | null = drillLevel === "gerencia" ? "vendedor" : drillLevel === "vendedor" ? "grupo" : drillLevel === "grupo" ? "cliente" : drillLevel === "cliente" ? "poliza" : null
+              const selKey = drillLevel === "gerencia" ? "gerencia" : drillLevel === "vendedor" ? "vendedor" : drillLevel === "grupo" ? "grupo" : drillLevel === "cliente" ? "cliente" : null
+              return (
+                <div key={r.name} className="bg-white rounded-lg border border-gray-200 px-3 py-2 shadow-sm active:bg-gray-50"
+                  onClick={() => nextLevel && selKey && drill(nextLevel, r.name, { ...sel, [selKey]: r.name })}>
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-sm text-[#111] flex items-center gap-1">
+                      {nextLevel && <ChevronRight className="w-3.5 h-3.5 text-[#E62800]" />}
+                      {r.name}
+                    </span>
+                    <span className={`text-sm font-bold ${r.primaNeta < 0 ? "text-[#E62800]" : ""}`}>
+                      {r.primaNeta < 0 ? `(${fmt(Math.abs(r.primaNeta))})` : fmt(r.primaNeta)}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+            <div className="bg-[#041224] text-white rounded-lg px-3 py-2.5 flex justify-between">
+              <span className="font-bold">Total</span><span className="font-bold">{fmt(rowTotal)}</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* DESKTOP TABLE VIEW */}
+      <div ref={tableRef} className="hidden md:block bi-card overflow-hidden overflow-x-auto max-h-[70vh] overflow-y-auto">
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10">
             {drillLevel === "linea" ? (

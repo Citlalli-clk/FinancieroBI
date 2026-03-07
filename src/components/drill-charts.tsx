@@ -194,7 +194,7 @@ export function DrillCharts({ rows, levelLabel, parentLabel, loading }: DrillCha
 
       {/* Charts grid */}
       <div className="p-4">
-        <div className="flex gap-6 items-start">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-center md:items-start">
           {/* Left: Donut */}
           <div className="flex-shrink-0">
             <DonutChart
