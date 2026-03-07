@@ -9,7 +9,7 @@ import { Gauge } from "@/components/gauge"
 import { PageTabs } from "@/components/page-tabs"
 import { PeriodFilter } from "@/components/period-filter"
 // import { DetailDrillTable } from "@/components/detail-drill-table"
-import { BarChart, Bar, XAxis, YAxis, LabelList, Tooltip } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, LabelList, Tooltip, ResponsiveContainer } from "recharts"
 
 function fmt(v: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
@@ -86,7 +86,7 @@ export default function Home() {
     <div className="min-h-screen bg-[#FAFAFA] px-3 py-4 flex flex-col">
       <div className="max-w-[1200px] mx-auto w-full flex flex-col flex-1">
         {/* Header */}
-        <div className="flex justify-between items-center border-b pb-2 pt-5 w-full">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-2 pt-3 md:pt-5 w-full gap-2 md:gap-0">
           <PageTabs />
           <PeriodFilter onFilterChange={handleFilterChange} defaultYear="2026" defaultMonth={2} />
         </div>
@@ -95,18 +95,18 @@ export default function Home() {
         <h1 className="text-xl font-bold tracking-wide text-gray-800 mt-6 mb-3 pb-1 border-b border-gray-200">PRIMA NETA COBRADA</h1>
 
         {/* Main Grid */}
-        <div className="flex gap-3 flex-1 mt-0">
-          {/* Left column: Gauge (Mickey Mouse layout — gauge up top, circles below inside gauge component) */}
-          <div className="w-[55%] flex items-center justify-center">
-            <div className="w-full">
+        <div className="flex flex-col md:flex-row gap-3 flex-1 mt-0">
+          {/* Left column: Gauge (HERO on mobile — full width, prominent) */}
+          <div className="w-full md:w-[55%] flex items-center justify-center">
+            <div className="w-full max-w-[400px] md:max-w-none mx-auto">
               <Gauge value={total / 1e6} prevYear={totalAA / 1e6} budget={totalPpto / 1e6} cumplimiento={cumpl} crecimiento={crec} />
             </div>
           </div>
 
           {/* Right column: Table + Chart */}
-          <div className="w-[45%] flex flex-col gap-1 justify-center mt-6">
-            <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-              <table className="w-full text-sm">
+          <div className="w-full md:w-[45%] flex flex-col gap-2 md:gap-1 justify-center mt-2 md:mt-6">
+            <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-x-auto">
+              <table className="w-full text-xs md:text-sm min-w-[480px]">
                 <thead>
                   <tr style={{ backgroundColor: '#6B7280' }}>
                     <th className="text-left px-1.5 py-0.5 text-[13px] font-bold text-white">Línea</th>
@@ -148,16 +148,17 @@ export default function Home() {
             </div>
 
             {/* Chart */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-2 py-1.5 flex flex-col h-[280px] overflow-hidden">
-              <div className="flex gap-3 text-[12px] mb-1 self-start">
-                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#3983F6' }}/><span className="text-gray-700 font-medium">Prima neta efectuada</span></div>
-                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#9CA3AF' }}/><span className="text-gray-700 font-medium">Presupuesto</span></div>
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-2 py-1.5 flex flex-col h-[260px] md:h-[280px] overflow-hidden">
+              <div className="flex gap-2 md:gap-3 text-[10px] md:text-[12px] mb-1 self-start">
+                <div className="flex items-center gap-1"><span className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-sm" style={{ backgroundColor: '#3983F6' }}/><span className="text-gray-700 font-medium">Prima neta efectuada</span></div>
+                <div className="flex items-center gap-1"><span className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-sm" style={{ backgroundColor: '#9CA3AF' }}/><span className="text-gray-700 font-medium">Presupuesto</span></div>
               </div>
-              <div className="w-full flex-1 flex justify-center overflow-hidden">
+              <div className="w-full flex-1">
                 {ready && chartData.length > 0 && (
-                    <BarChart width={520} height={240} layout="vertical" data={chartData} margin={{ top: 2, right: 50, left: 10, bottom: 2 }} barGap={8}>
-                      <XAxis type="number" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={v => `$${v}M`} tick={{ fontSize: 11 }} axisLine={{ stroke: '#E5E7EB' }}/>
-                      <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 11 }} axisLine={false} tickLine={false}/>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart layout="vertical" data={chartData} margin={{ top: 2, right: 45, left: 5, bottom: 2 }} barGap={8}>
+                      <XAxis type="number" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={v => `$${v}M`} tick={{ fontSize: 10 }} axisLine={{ stroke: '#E5E7EB' }}/>
+                      <YAxis type="category" dataKey="name" width={85} tick={{ fontSize: 10 }} axisLine={false} tickLine={false}/>
                       <Tooltip
                         contentStyle={{ backgroundColor: '#052F5F', border: 'none', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.25)', fontSize: 12, padding: '8px 12px', color: '#fff' }}
                         itemStyle={{ color: '#fff' }}
@@ -165,13 +166,14 @@ export default function Home() {
                         formatter={(value?: number, name?: string) => [`$${value ?? 0}M`, name === 'pn' ? 'Prima Neta' : 'Presupuesto']}
                         cursor={{ fill: 'rgba(57,131,246,0.08)' }}
                       />
-                      <Bar dataKey="pn" fill="#3983F6" radius={[0, 3, 3, 0]} barSize={14} isAnimationActive={true} animationDuration={800}>
-                        <LabelList dataKey="pn" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 11, fill: '#3983F6', fontWeight: 600 }}/>
+                      <Bar dataKey="pn" fill="#3983F6" radius={[0, 3, 3, 0]} barSize={12} isAnimationActive={true} animationDuration={800}>
+                        <LabelList dataKey="pn" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 10, fill: '#3983F6', fontWeight: 600 }}/>
                       </Bar>
-                      <Bar dataKey="pp" fill="#9CA3AF" radius={[0, 3, 3, 0]} barSize={14} isAnimationActive={true} animationDuration={800}>
-                        <LabelList dataKey="pp" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 11, fill: '#6B7280', fontWeight: 600 }}/>
+                      <Bar dataKey="pp" fill="#9CA3AF" radius={[0, 3, 3, 0]} barSize={12} isAnimationActive={true} animationDuration={800}>
+                        <LabelList dataKey="pp" position="right" formatter={(v: unknown) => v != null ? `$${v}M` : ''} style={{ fontSize: 10, fill: '#6B7280', fontWeight: 600 }}/>
                       </Bar>
                     </BarChart>
+                  </ResponsiveContainer>
                 )}
               </div>
             </div>
