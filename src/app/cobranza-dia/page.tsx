@@ -65,7 +65,7 @@ export default function CobranzaDiaPage() {
       <h1 className="text-base font-bold text-[#111] font-lato mb-4">Cobranza por día</h1>
 
       {/* Cards */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
         <div className="bi-card border-l-4 border-l-[#E62800] p-3">
           <div className="text-[9px] text-gray-500 uppercase tracking-wide font-medium mb-1">Meta del día</div>
           <div className="text-2xl font-bold text-[#111] font-lato">{fmt(metaTotal / data.length)}</div>
@@ -97,7 +97,7 @@ export default function CobranzaDiaPage() {
       </div>
 
       {/* Table */}
-      <div className="bi-card overflow-hidden">
+      <div className="bi-card overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">

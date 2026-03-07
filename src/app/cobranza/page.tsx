@@ -184,7 +184,7 @@ export default function CobranzaPage() {
   return (
     <div className="min-h-screen bg-[#F3F4F6] px-3 py-4 flex flex-col">
       <div className="max-w-[1200px] mx-auto w-full flex flex-col flex-1">
-      <div className="flex justify-between items-center border-b pb-2 pt-5 w-full">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-2 pt-3 md:pt-5 w-full gap-2 md:gap-0">
         <PageTabs />
         <PeriodFilter onFilterChange={handleFilterChange} />
       </div>
@@ -200,7 +200,7 @@ export default function CobranzaPage() {
         const metaPct = compTotals.convenio > 0 ? Number(((compTotals.primaNeta / compTotals.convenio) * 100).toFixed(1)) : 0
         const growthPct = compTotals.pnAA > 0 ? ((compTotals.primaNeta - compTotals.pnAA) / compTotals.pnAA) * 100 : 0
         return (
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
         {/* Card 1 — Meta convenio */}
         <div className="bg-white rounded-xl shadow-md p-3 flex flex-col">
           <p className="text-[#9CA3AF] text-sm font-bold uppercase tracking-wider mb-2">Meta convenio</p>
@@ -269,7 +269,7 @@ export default function CobranzaPage() {
       })()}
 
       {/* Resumen por ramo */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden mb-4">
+      <div className="bg-white rounded-xl shadow-md overflow-hidden overflow-x-auto mb-4">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-[#1a1a1a]">

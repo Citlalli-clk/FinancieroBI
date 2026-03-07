@@ -126,7 +126,7 @@ export default function CompromisosPage() {
         .total-row .semaforo-lights .light-green { background-color: #60A63A !important; border-color: #4A8A2A !important; }
       `}</style>
       <div className="max-w-[1200px] mx-auto w-full flex flex-col">
-        <div className="flex justify-between items-center border-b pb-2 pt-5 w-full">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-2 pt-3 md:pt-5 w-full gap-2 md:gap-0">
           <PageTabs />
           <PeriodFilter onFilterChange={handleFilterChange} />
         </div>
@@ -136,7 +136,7 @@ export default function CompromisosPage() {
         <div className="flex flex-col gap-2">
 
           {/* Row 1: Compromisos table + chart */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
               <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
                 <thead>
@@ -186,7 +186,7 @@ export default function CompromisosPage() {
           </div>
 
           {/* Row 2: Top 5 table + chart */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
               <p className="text-sm font-bold text-[#041224] mb-1">Top 5 Vendedores</p>
               <table className="w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>

@@ -134,7 +134,7 @@ export default function CorporatePage() {
   return (
     <div className="min-h-screen bg-[#FAFAFA] px-3 py-4 flex flex-col">
       <div className="max-w-[1200px] mx-auto w-full flex flex-col flex-1">
-      <div className="flex justify-between items-center border-b pb-2 pt-5 w-full">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-2 pt-3 md:pt-5 w-full gap-2 md:gap-0">
         <PageTabs />
         <PeriodFilter onFilterChange={handleFilterChange} />
       </div>
