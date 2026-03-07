@@ -16,6 +16,11 @@ import { DrillCharts } from "@/components/drill-charts"
 function fmt(v: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 }
+function fmtShort(v: number) {
+  if (Math.abs(v) >= 1e6) return `$${(v / 1e6).toFixed(1)}M`
+  if (Math.abs(v) >= 1e3) return `$${(v / 1e3).toFixed(0)}K`
+  return `$${v}`
+}
 
 const MESES_LABELS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
@@ -437,28 +442,30 @@ function TablaDetalleContent() {
         ) : drillLevel === "linea" ? (
           <>
             {filteredLineas.map((l) => {
-              const dif = l.diferencia
-              const difYoy = l.difYoY
+              const pctPpto = l.presupuesto > 0 ? Math.round((l.primaNeta / l.presupuesto) * 100) : 0
               return (
-                <div key={l.linea} className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 shadow-sm active:bg-gray-50"
+                <div key={l.linea} className="bg-white rounded-xl border border-gray-200 px-3 py-3 shadow-sm active:bg-gray-50 transition-colors"
                   onClick={() => drill("gerencia", l.linea, { linea: l.linea })}>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="font-bold text-sm text-[#111] flex items-center gap-1">
-                      <ChevronRight className="w-3.5 h-3.5 text-[#E62800]" />
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold text-sm text-[#111] flex items-center gap-1 truncate">
+                      <ChevronRight className="w-3.5 h-3.5 text-[#E62800] flex-shrink-0" />
                       {l.linea}
                     </span>
-                    <span className={`text-xs font-bold ${dif < 0 ? "text-[#E62800]" : "text-[#166534]"}`}>
+                    <span className={`text-sm font-black flex-shrink-0 ml-2 ${l.pctDifPpto < 0 ? "text-[#E62800]" : "text-[#166534]"}`}>
                       {l.pctDifPpto > 0 ? "+" : ""}{l.pctDifPpto}%
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
-                    <div className="flex justify-between"><span className="text-gray-500">Prima Neta</span><strong className="text-[#111]">{fmt(l.primaNeta)}</strong></div>
-                    <div className="flex justify-between"><span className="text-gray-500">Presupuesto</span><span>{fmt(l.presupuesto)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">Año Ant.</span><span>{fmt(l.pnAnioAnt)}</span></div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Crec.</span>
-                      <span className={difYoy < 0 ? "text-[#E62800]" : "text-[#166534]"}>{l.pctDifYoY > 0 ? "+" : ""}{l.pctDifYoY}%</span>
-                    </div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-base font-black text-[#041224]">{fmtShort(l.primaNeta)}</span>
+                    <span className="text-[11px] text-gray-400">/ {fmtShort(l.presupuesto)}</span>
+                    <span className="text-[10px] text-gray-400 ml-auto">AA: {fmtShort(l.pnAnioAnt)}</span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(Math.max(pctPpto, 0), 100)}%`,
+                        backgroundColor: pctPpto >= 100 ? '#10B981' : pctPpto >= 80 ? '#F59E0B' : '#EF4444'
+                      }} />
                   </div>
                 </div>
               )
