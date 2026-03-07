@@ -8,7 +8,7 @@ import { Gauge } from "@/components/gauge"
 import { PageTabs } from "@/components/page-tabs"
 import { PeriodFilter } from "@/components/period-filter"
 import { BarChart, Bar, XAxis, YAxis, LabelList, Tooltip, ResponsiveContainer } from "recharts"
-import { TrendingUp, TrendingDown, ChevronRight } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 
 function fmt(v: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
@@ -72,32 +72,9 @@ export default function Home() {
 
         {/* ═══ MOBILE LAYOUT ═══ */}
         <div className="md:hidden flex flex-col gap-3">
-          {/* Hero: Gauge */}
-          <div className="w-full max-w-[340px] mx-auto">
+          {/* Hero: Gauge — LARGE, fills the screen */}
+          <div className="w-full mx-auto">
             <Gauge value={total / 1e6} prevYear={totalAA / 1e6} budget={totalPpto / 1e6} cumplimiento={cumpl} crecimiento={crec} />
-          </div>
-
-          {/* KPI Summary Cards — like Power BI mobile */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm">
-              <p className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Prima Neta</p>
-              <p className="text-lg font-black text-[#041224]">{fmtShort(total)}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm">
-              <p className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Presupuesto</p>
-              <p className="text-lg font-black text-gray-600">{fmtShort(totalPpto)}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm">
-              <p className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Cumplimiento</p>
-              <p className="text-lg font-black text-[#3983F6]">{cumpl}%</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm">
-              <p className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Crecimiento</p>
-              <div className="flex items-center gap-1">
-                {crec >= 0 ? <TrendingUp className="w-4 h-4 text-emerald-600" /> : <TrendingDown className="w-4 h-4 text-red-600" />}
-                <p className={`text-lg font-black ${crec >= 0 ? "text-emerald-600" : "text-red-600"}`}>{crec}%</p>
-              </div>
-            </div>
           </div>
 
           {/* Lines list — card style, tappable */}

@@ -182,19 +182,40 @@ export function DrillCharts({ rows, levelLabel, parentLabel, loading }: DrillCha
   return (
     <div className="mt-3 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden" style={{ animation: "fadeSlideIn 0.4s ease" }}>
       {/* Header */}
-      <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between" style={{ backgroundColor: "#f8fafc" }}>
+      <div className="px-3 md:px-4 py-2 md:py-2.5 border-b border-gray-100 flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-0" style={{ backgroundColor: "#f8fafc" }}>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-[#052F5F]">📊 Distribución por {levelLabel}</span>
-          <span className="text-[10px] bg-[#3983F6]/10 text-[#3983F6] font-medium px-2 py-0.5 rounded-full">
-            {parentLabel}
-          </span>
+          <span className="text-xs md:text-sm font-semibold text-[#052F5F]">📊 Distribución por {levelLabel}</span>
         </div>
-        <span className="text-xs text-gray-400">{items.length} registros · Total: {fmtFull(total)}</span>
+        <span className="text-[10px] md:text-xs text-gray-400">{items.length} registros · Total: {fmtFull(total)}</span>
       </div>
 
-      {/* Charts grid */}
-      <div className="p-4">
-        <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-center md:items-start">
+      {/* ═══ MOBILE: compact donut + inline legend with values ═══ */}
+      <div className="md:hidden p-3">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0">
+            <DonutChart
+              data={donutData.map(d => ({ name: d.name, value: d.value, color: d.color }))}
+              total={total}
+              label="Prima neta"
+            />
+          </div>
+          {/* Integrated legend with values — replaces bars + pct grid */}
+          <div className="flex-1 min-w-0 flex flex-col gap-1.5 pt-1">
+            {donutData.slice(0, 6).map((d, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: d.color }} />
+                <span className="text-[11px] text-gray-700 truncate flex-1" title={d.name}>{d.name}</span>
+                <span className="text-[11px] font-bold text-gray-900 flex-shrink-0">{fmt(d.value)}</span>
+                <span className="text-[10px] font-semibold flex-shrink-0 w-10 text-right" style={{ color: d.color }}>{d.pct.toFixed(1)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ DESKTOP: full donut + bars + pct grid ═══ */}
+      <div className="hidden md:block p-4">
+        <div className="flex gap-6 items-start">
           {/* Left: Donut */}
           <div className="flex-shrink-0">
             <DonutChart
