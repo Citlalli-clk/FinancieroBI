@@ -29,7 +29,7 @@ interface LineaFull {
 }
 const SEED: LineaFull[] = [
   { linea: "Click Franquicias", primaNeta: 52577939, presupuesto: 68989976, diferencia: -16412037, pctDifPpto: -23.8, pnAnioAnt: 45038829, difYoY: 7539110, pctDifYoY: 16.74, pendiente: 37639869 },
-  { linea: "Click Promotoras", primaNeta: 20017383, presupuesto: 25534211, diferencia: -5516828, pctDifPpto: -21.6, pnAnioAnt: 19422359, difYoY: 595024, pctDifYoY: 3.06, pendiente: 21892390 },
+  { linea: "Click Promotorías", primaNeta: 20017383, presupuesto: 25534211, diferencia: -5516828, pctDifPpto: -21.6, pnAnioAnt: 19422359, difYoY: 595024, pctDifYoY: 3.06, pendiente: 21892390 },
   { linea: "Corporate", primaNeta: 12708705, presupuesto: 16242717, diferencia: -3534012, pctDifPpto: -21.8, pnAnioAnt: 13539625, difYoY: -830920, pctDifYoY: -6.14, pendiente: 8763272 },
   { linea: "Cartera Tradicional", primaNeta: 10632028, presupuesto: 12322087, diferencia: -1690059, pctDifPpto: -13.7, pnAnioAnt: 10057425, difYoY: 574603, pctDifYoY: 5.71, pendiente: 7416036 },
   { linea: "Call Center", primaNeta: 2602364, presupuesto: 6398081, diferencia: -3795717, pctDifPpto: -59.3, pnAnioAnt: 853685, difYoY: 1748679, pctDifYoY: 204.84, pendiente: 12236199 },
@@ -144,7 +144,7 @@ function TablaDetalleContent() {
           // Merge: iterate over SEED to preserve order, fill real primaNeta from Supabase
           const merged: LineaFull[] = SEED.map(seed => {
             const real = result.find(r => r.linea === seed.linea)
-            const pn = real ? real.primaNeta : seed.primaNeta
+            const pn = real ? real.primaNeta : 0
             const ppto = seed.presupuesto
             const pnAA = seed.pnAnioAnt
             const dif = ppto > 0 ? pn - ppto : 0
