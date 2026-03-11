@@ -146,7 +146,7 @@ function TablaDetalleContent() {
             const real = result.find(r => r.linea === seed.linea)
             const pn = real ? real.primaNeta : 0
             const ppto = Math.round(seed.presupuesto / 12 * Math.max(periodos.length, 1))
-            const pnAA = seed.pnAnioAnt
+            const pnAA = Math.round(seed.pnAnioAnt / 12 * Math.max(periodos.length, 1))
             const dif = ppto > 0 ? pn - ppto : 0
             const pctDif = ppto > 0 ? Math.round((dif / ppto) * 1000) / 10 : 0
             const difY = pnAA > 0 ? pn - pnAA : 0
@@ -302,7 +302,7 @@ function TablaDetalleContent() {
   const polizaTotal = filteredPolizas.reduce((s, p) => s + p.primaNeta, 0)
 
   // Fixed column labels (removed compare mode)
-  const cmpLabel = { col: "PN año anterior *", difCol: "Dif PN año ant", pctCol: "% Dif PN AA" }
+  const cmpLabel = { col: "PN año anterior", difCol: "Dif PN año ant", pctCol: "% Dif PN AA" }
 
   const handleExcelExport = () => {
     const levelName = levelLabels[drillLevel]
@@ -581,7 +581,7 @@ function TablaDetalleContent() {
                   const isAlert = l.presupuesto > 0 && l.pctDifPpto <= ALERT_THRESHOLD
                   const isCritical = l.presupuesto > 0 && l.pctDifPpto < -15
                   return (
-                    <tr key={l.linea} id={toSlug(l.linea)} className={`group border-b border-[#F0F0F0] cursor-pointer transition-all duration-150 hover:bg-[#FFF5F5] hover:border-l-[3px] hover:border-l-[#E62800] ${isAlert ? "bg-[#FFF3F3]" : isCritical ? "bg-[#FFF2F2]" : idx % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"}`}
+                    <tr key={l.linea} id={toSlug(l.linea)} className={`group border-b border-[#F0F0F0] cursor-pointer transition-all duration-150 hover:bg-[#FFF5F5] ${isAlert ? "bg-[#FFF3F3]" : isCritical ? "bg-[#FFF2F2]" : idx % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"}`}
                       onClick={() => drill("gerencia", l.linea, { linea: l.linea })}>
                       <td className="px-1 py-1.5 text-center">
                         {/* Alert icons hidden for SEED data presentation */}
@@ -598,9 +598,7 @@ function TablaDetalleContent() {
                       <td className="px-2 py-1.5 text-right text-gray-500">
                         {l.pendiente ? fmt(l.pendiente) : ""}
                       </td>
-                      <td className="px-1 py-1.5 w-16 text-right">
-                        <span className="text-[9px] text-[#E62800] opacity-0 group-hover:opacity-100 transition-opacity font-medium whitespace-nowrap">→ Ver detalle</span>
-                      </td>
+                      
                     </tr>
                   )
                 })}
@@ -665,7 +663,7 @@ function TablaDetalleContent() {
 
                   return (
                     <tr key={r.name}
-                      className={`group border-b border-[#F0F0F0] ${nextLevel ? "cursor-pointer" : ""} transition-all duration-150 ${idx % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"} hover:bg-[#FFF5F5] hover:border-l-[3px] hover:border-l-[#E62800]`}
+                      className={`group border-b border-[#F0F0F0] ${nextLevel ? "cursor-pointer" : ""} transition-all duration-150 ${idx % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"} hover:bg-[#FFF5F5]`}
                       onClick={() => nextLevel && selKey && drill(nextLevel, r.name, { ...sel, [selKey]: r.name })}>
                       <td className="px-1 py-1.5 text-center">
                         {nextLevel && <ChevronRight className="w-4 h-4 text-[#E62800] inline transition-transform group-hover:scale-125 group-hover:translate-x-1" />}
