@@ -145,7 +145,7 @@ function TablaDetalleContent() {
           const merged: LineaFull[] = SEED.map(seed => {
             const real = result.find(r => r.linea === seed.linea)
             const pn = real ? real.primaNeta : 0
-            const ppto = seed.presupuesto
+            const ppto = Math.round(seed.presupuesto / 12 * Math.max(periodos.length, 1))
             const pnAA = seed.pnAnioAnt
             const dif = ppto > 0 ? pn - ppto : 0
             const pctDif = ppto > 0 ? Math.round((dif / ppto) * 1000) / 10 : 0
@@ -177,7 +177,7 @@ function TablaDetalleContent() {
     load()
 
     return () => { cancelled = true }
-  }, [periodo, year])
+  }, [periodo, year, periodos.length])
 
   // Generic drill function
   const drill = async (level: DrillLevel, label: string, newSel: typeof sel) => {
@@ -595,9 +595,11 @@ function TablaDetalleContent() {
                       <td className="px-2 py-1.5 text-right text-gray-500">{l.pnAnioAnt ? fmt(l.pnAnioAnt) : ""}</td>
                       <td className={`px-2 py-1.5 text-right font-medium ${difYoy < 0 ? "text-[#E62800]" : "text-[#166534]"}`}>{l.pnAnioAnt ? (difYoy < 0 ? `(${fmt(Math.abs(difYoy))})` : fmt(difYoy)) : ""}</td>
                       <td className={`px-2 py-1.5 text-right ${difYoy < 0 ? "text-[#E62800]" : "text-[#166534]"}`}>{l.pctDifYoY ? `${l.pctDifYoY > 0 ? "+" : ""}${l.pctDifYoY}%` : ""}</td>
-                      <td className="px-2 py-1.5 text-right text-gray-500 relative">
+                      <td className="px-2 py-1.5 text-right text-gray-500">
                         {l.pendiente ? fmt(l.pendiente) : ""}
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-[#E62800] opacity-0 group-hover:opacity-100 transition-opacity font-medium">→ Ver detalle</span>
+                      </td>
+                      <td className="px-1 py-1.5 w-16 text-right">
+                        <span className="text-[9px] text-[#E62800] opacity-0 group-hover:opacity-100 transition-opacity font-medium whitespace-nowrap">→ Ver detalle</span>
                       </td>
                     </tr>
                   )
@@ -678,9 +680,8 @@ function TablaDetalleContent() {
                       <td className="px-2 py-1.5 text-right text-gray-400">{r.pnAnioAnt !== null ? fmt(r.pnAnioAnt) : "—"}</td>
                       <td className="px-2 py-1.5 text-right text-gray-400">{r.difYoY !== null ? fmt(r.difYoY) : "—"}</td>
                       <td className="px-2 py-1.5 text-right text-gray-400">{r.pctDifYoY !== null ? `${r.pctDifYoY}%` : "—"}</td>
-                      <td className="px-2 py-1.5 text-right relative">
+                      <td className="px-2 py-1.5 text-right">
                         <span className="text-gray-400">{r.pendiente !== null ? fmt(r.pendiente) : "—"}</span>
-                        {nextLevel && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-[#E62800] opacity-0 group-hover:opacity-100 transition-opacity font-medium">→ Ver detalle</span>}
                       </td>
                     </tr>
                   )
