@@ -373,34 +373,24 @@ export async function getRankedAseguradoras(
  */
 export async function getLastDataDate(): Promise<string | null> {
   try {
+    // Use anio + mes columns for accurate last date detection
     const { data, error } = await supabase
       .from("dashboard_data")
-      .select("FLiquidacion")
-      .order("FLiquidacion", { ascending: false })
-      .limit(50)
+      .select("anio, mes")
+      .not("anio", "is", null)
+      .not("mes", "is", null)
+      .order("anio", { ascending: false })
+      .order("mes", { ascending: false })
+      .limit(1)
     if (error || !data?.length) return null
-    // FLiquidacion is text like "DD/MM/YY HH:MM" — find the max date
-    let maxDate: Date | null = null
-    let maxStr = ""
-    for (const row of data) {
-      const raw = (row as Record<string, unknown>).FLiquidacion as string
-      if (!raw) continue
-      // Parse DD/MM/YY or DD/MM/YYYY
-      const parts = raw.trim().split(/[\s]+/)[0].split("/")
-      if (parts.length >= 3) {
-        const day = parseInt(parts[0]), month = parseInt(parts[1])
-        let yr = parseInt(parts[2])
-        if (yr < 100) yr += 2000
-        const d = new Date(yr, month - 1, day)
-        if (!maxDate || d > maxDate) { maxDate = d; maxStr = raw }
-      }
-    }
-    if (!maxDate) return null
-    // Return as DD/MM/YYYY
-    const dd = String(maxDate.getDate()).padStart(2, "0")
-    const mm = String(maxDate.getMonth() + 1).padStart(2, "0")
-    const yyyy = maxDate.getFullYear()
-    return `${dd}/${mm}/${yyyy}`
+    const row = data[0] as Record<string, unknown>
+    const anio = row.anio as number
+    const mes = row.mes as number
+    // Last day of that month
+    const lastDay = new Date(anio, mes, 0).getDate()
+    const dd = String(lastDay).padStart(2, "0")
+    const mm = String(mes).padStart(2, "0")
+    return `${dd}/${mm}/${anio}`
   } catch { return null }
 }
 
@@ -545,13 +535,15 @@ export async function getPeriodos(): Promise<number[] | null> {
   try {
     const { data, error } = await supabase
       .from("dashboard_data")
-      .select("Periodo")
+      .select("mes")
+      .not("mes", "is", null)
+      .limit(5000)
 
     if (error || !data?.length) return null
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const set = new Set<number>()
-    for (const r of data as any[]) { set.add(r.Periodo as number) }
+    for (const r of data as any[]) { set.add(r.mes as number) }
     const unique = Array.from(set).sort((a, b) => a - b)
     return unique
   } catch {
