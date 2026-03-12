@@ -165,7 +165,6 @@ export function DrillCharts({ rows, levelLabel, parentLabel, loading }: DrillCha
     return (
       <div className="mt-3 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
         <div className="text-center text-gray-400 py-6">
-          <div className="text-3xl mb-2">📊</div>
           <p className="text-sm">Selecciona una categoría para ver la distribución gráfica</p>
         </div>
       </div>
@@ -184,7 +183,7 @@ export function DrillCharts({ rows, levelLabel, parentLabel, loading }: DrillCha
       {/* Header */}
       <div className="px-3 md:px-4 py-2 md:py-2.5 border-b border-gray-100 flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-0" style={{ backgroundColor: "#f8fafc" }}>
         <div className="flex items-center gap-2">
-          <span className="text-xs md:text-sm font-semibold text-[#052F5F]">📊 Distribución por {levelLabel}</span>
+          <span className="text-xs md:text-sm font-semibold text-[#052F5F]">Distribución por {levelLabel}</span>
         </div>
         <span className="text-[10px] md:text-xs text-gray-400">{items.length} registros · Total: {fmtFull(total)}</span>
       </div>

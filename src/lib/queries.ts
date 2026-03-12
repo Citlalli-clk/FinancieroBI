@@ -100,14 +100,21 @@ export async function getLineasNegocio(periodo?: number, año?: string): Promise
 }
 
 /**
- * Fetch gerencias for a given línea de negocio
+ * Fetch gerencias for a given línea de negocio with YoY comparison
  */
+export interface GerenciaRow {
+  gerencia: string
+  primaNeta: number
+  pnAnioAnt: number
+}
+
 export async function getGerencias(
   linea: string,
   periodo?: number,
   año?: string
-): Promise<{ gerencia: string; primaNeta: number }[] | null> {
+): Promise<GerenciaRow[] | null> {
   try {
+    // Current year query
     let query = supabase
       .from("dashboard_data")
       .select("GerenciaNombre, PrimaNeta, TCPago, Descuento, FLiquidacion")
@@ -123,8 +130,27 @@ export async function getGerencias(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const grouped = groupBySum(data as any[], "GerenciaNombre")
 
+    // Prior year query for YoY comparison
+    const priorYear = año ? String(parseInt(año) - 1) : String(new Date().getFullYear() - 1)
+    let queryPY = supabase
+      .from("dashboard_data")
+      .select("GerenciaNombre, PrimaNeta, TCPago, Descuento, FLiquidacion")
+      .eq("LBussinesNombre", linea)
+      .eq("anio", parseInt(priorYear))
+      .limit(5000)
+
+    if (periodo) queryPY = queryPY.eq("mes", periodo)
+
+    const { data: dataPY } = await queryPY
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const groupedPY = dataPY ? groupBySum(dataPY as any[], "GerenciaNombre") : {}
+
     return Object.entries(grouped)
-      .map(([gerencia, prima]) => ({ gerencia, primaNeta: Math.round(prima) }))
+      .map(([gerencia, prima]) => ({
+        gerencia,
+        primaNeta: Math.round(prima),
+        pnAnioAnt: Math.round(groupedPY[gerencia] || 0)
+      }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
   } catch {
     return null
@@ -132,14 +158,20 @@ export async function getGerencias(
 }
 
 /**
- * Fetch vendedores for a given gerencia + línea
+ * Fetch vendedores for a given gerencia + línea with YoY comparison
  */
+export interface VendedorRow {
+  vendedor: string
+  primaNeta: number
+  pnAnioAnt: number
+}
+
 export async function getVendedores(
   gerencia: string,
   linea: string,
   periodo?: number,
   año?: string
-): Promise<{ vendedor: string; primaNeta: number }[] | null> {
+): Promise<VendedorRow[] | null> {
   try {
     let query = supabase
       .from("dashboard_data")
@@ -157,8 +189,28 @@ export async function getVendedores(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const grouped = groupBySum(data as any[], "VendNombre")
 
+    // Prior year query for YoY
+    const priorYear = año ? String(parseInt(año) - 1) : String(new Date().getFullYear() - 1)
+    let queryPY = supabase
+      .from("dashboard_data")
+      .select("VendNombre, PrimaNeta, TCPago, Descuento, FLiquidacion")
+      .eq("GerenciaNombre", gerencia)
+      .eq("LBussinesNombre", linea)
+      .eq("anio", parseInt(priorYear))
+      .limit(5000)
+
+    if (periodo) queryPY = queryPY.eq("mes", periodo)
+
+    const { data: dataPY } = await queryPY
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const groupedPY = dataPY ? groupBySum(dataPY as any[], "VendNombre") : {}
+
     return Object.entries(grouped)
-      .map(([vendedor, prima]) => ({ vendedor, primaNeta: Math.round(prima) }))
+      .map(([vendedor, prima]) => ({
+        vendedor,
+        primaNeta: Math.round(prima),
+        pnAnioAnt: Math.round(groupedPY[vendedor] || 0)
+      }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
   } catch {
     return null
@@ -191,15 +243,22 @@ export async function getTipoCambio(): Promise<FxRates & { fechaActualizacion?: 
 }
 
 /**
- * Fetch grupos for a given vendedor + gerencia + línea
+ * Fetch grupos for a given vendedor + gerencia + línea with YoY comparison
  */
+export interface GrupoRow {
+  grupo: string
+  cliente: string
+  primaNeta: number
+  pnAnioAnt: number
+}
+
 export async function getGrupos(
   vendedor: string,
   gerencia: string,
   linea: string,
   periodo?: number,
   año?: string
-): Promise<{ grupo: string; cliente: string; primaNeta: number }[] | null> {
+): Promise<GrupoRow[] | null> {
   try {
     let query = supabase
       .from("dashboard_data")
@@ -225,8 +284,35 @@ export async function getGrupos(
       grouped[g].prima += calcPrima(row)
     }
 
+    // Prior year query for YoY
+    const priorYear = año ? String(parseInt(año) - 1) : String(new Date().getFullYear() - 1)
+    let queryPY = supabase
+      .from("dashboard_data")
+      .select("Grupo, PrimaNeta, TCPago, Descuento, FLiquidacion")
+      .eq("VendNombre", vendedor)
+      .eq("GerenciaNombre", gerencia)
+      .eq("LBussinesNombre", linea)
+      .eq("anio", parseInt(priorYear))
+
+    if (periodo) queryPY = queryPY.eq("mes", periodo)
+
+    const { data: dataPY } = await queryPY
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const groupedPY: Record<string, number> = {}
+    if (dataPY) {
+      for (const row of dataPY as any[]) {
+        const g = (row.Grupo as string) || "Sin grupo"
+        groupedPY[g] = (groupedPY[g] || 0) + calcPrima(row)
+      }
+    }
+
     return Object.entries(grouped)
-      .map(([grupo, d]) => ({ grupo, cliente: d.cliente, primaNeta: Math.round(d.prima) }))
+      .map(([grupo, d]) => ({
+        grupo,
+        cliente: d.cliente,
+        primaNeta: Math.round(d.prima),
+        pnAnioAnt: Math.round(groupedPY[grupo] || 0)
+      }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
   } catch {
     return null
@@ -234,8 +320,14 @@ export async function getGrupos(
 }
 
 /**
- * Fetch clientes for a given grupo + vendedor + gerencia + línea
+ * Fetch clientes for a given grupo + vendedor + gerencia + línea with YoY
  */
+export interface ClienteRow {
+  cliente: string
+  primaNeta: number
+  pnAnioAnt: number
+}
+
 export async function getClientes(
   grupo: string,
   vendedor: string,
@@ -243,7 +335,7 @@ export async function getClientes(
   linea: string,
   periodo?: number,
   año?: string
-): Promise<{ cliente: string; primaNeta: number }[] | null> {
+): Promise<ClienteRow[] | null> {
   try {
     let query = supabase
       .from("dashboard_data")
@@ -261,8 +353,30 @@ export async function getClientes(
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const grouped = groupBySum(data as any[], "NombreCompleto")
+
+    // Prior year query for YoY
+    const priorYear = año ? String(parseInt(año) - 1) : String(new Date().getFullYear() - 1)
+    let queryPY = supabase
+      .from("dashboard_data")
+      .select("NombreCompleto, PrimaNeta, TCPago, Descuento, FLiquidacion")
+      .eq("Grupo", grupo)
+      .eq("VendNombre", vendedor)
+      .eq("GerenciaNombre", gerencia)
+      .eq("LBussinesNombre", linea)
+      .eq("anio", parseInt(priorYear))
+
+    if (periodo) queryPY = queryPY.eq("mes", periodo)
+
+    const { data: dataPY } = await queryPY
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const groupedPY = dataPY ? groupBySum(dataPY as any[], "NombreCompleto") : {}
+
     return Object.entries(grouped)
-      .map(([cliente, prima]) => ({ cliente, primaNeta: Math.round(prima) }))
+      .map(([cliente, prima]) => ({
+        cliente,
+        primaNeta: Math.round(prima),
+        pnAnioAnt: Math.round(groupedPY[cliente] || 0)
+      }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
   } catch {
     return null

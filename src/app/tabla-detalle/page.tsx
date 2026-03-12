@@ -21,6 +21,16 @@ function fmtShort(v: number) {
   if (Math.abs(v) >= 1e3) return `$${(v / 1e3).toFixed(0)}K`
   return `$${v}`
 }
+function fmtDate(dateStr: string): string {
+  if (!dateStr) return ""
+  // Handle ISO date format (2026-02-20T00:00:00 or 2026-02-20)
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (match) {
+    const [, yyyy, mm, dd] = match
+    return `${dd}/${mm}/${yyyy}`
+  }
+  return dateStr
+}
 
 const MESES_LABELS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
@@ -185,23 +195,61 @@ function TablaDetalleContent() {
     setSel(newSel)
     setCrumbs(prev => [...prev, { level: drillLevel, label }])
 
-    const toRow = (name: string, primaNeta: number): DrillRow => ({
-      name, primaNeta, presupuesto: null, diferencia: null, pctDifPpto: null, pnAnioAnt: null, difYoY: null, pctDifYoY: null, pendiente: null
-    })
+    // Helper: compute DrillRow with YoY and proportional presupuesto
+    const toRowWithYoY = (
+      name: string,
+      primaNeta: number,
+      pnAnioAnt: number,
+      lineaTotal: number,
+      lineaPpto: number,
+      lineaPendiente: number
+    ): DrillRow => {
+      // Proportional presupuesto based on share of línea total
+      const share = lineaTotal > 0 ? primaNeta / lineaTotal : 0
+      const ppto = Math.round(lineaPpto * share)
+      const dif = ppto > 0 ? primaNeta - ppto : null
+      const pctDif = ppto > 0 ? Math.round((dif! / ppto) * 1000) / 10 : null
+      const difY = pnAnioAnt > 0 ? primaNeta - pnAnioAnt : (pnAnioAnt === 0 && primaNeta > 0 ? primaNeta : null)
+      const pctDifY = pnAnioAnt > 0 ? Math.round((difY! / pnAnioAnt) * 10000) / 100 : null
+      const pend = Math.round(lineaPendiente * share)
+      return {
+        name,
+        primaNeta,
+        presupuesto: ppto > 0 ? ppto : null,
+        diferencia: dif,
+        pctDifPpto: pctDif,
+        pnAnioAnt: pnAnioAnt > 0 ? pnAnioAnt : null,
+        difYoY: difY,
+        pctDifYoY: pctDifY,
+        pendiente: pend > 0 ? pend : null
+      }
+    }
+
+    // Get línea-level data for proportional calculations
+    const lineaSeed = SEED.find(s => s.linea === newSel.linea)
+    const lineaPpto = lineaSeed ? Math.round(lineaSeed.presupuesto / 12 * Math.max(periodos.length, 1)) : 0
+    const lineaPendiente = lineaSeed?.pendiente ?? 0
 
     try {
       if (level === "gerencia") {
         const data = await getGerencias(newSel.linea!, periodo, year)
-        setRows((data ?? []).map(d => toRow(d.gerencia, d.primaNeta)))
+        const lineaTotal = (data ?? []).reduce((s, d) => s + d.primaNeta, 0)
+        setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, lineaTotal, lineaPpto, lineaPendiente)))
       } else if (level === "vendedor") {
         const data = await getVendedores(newSel.gerencia!, newSel.linea!, periodo, year)
-        setRows((data ?? []).map(d => toRow(d.vendedor, d.primaNeta)))
+        const total = (data ?? []).reduce((s, d) => s + d.primaNeta, 0)
+        // For vendedor level, use gerencia's proportional share of línea ppto
+        const gerenciaShare = lineas.find(l => l.linea === newSel.linea)
+        const gerenciaPpto = gerenciaShare ? Math.round(lineaPpto * (total / (gerenciaShare.primaNeta || 1))) : lineaPpto
+        setRows((data ?? []).map(d => toRowWithYoY(d.vendedor, d.primaNeta, d.pnAnioAnt, total, gerenciaPpto, lineaPendiente)))
       } else if (level === "grupo") {
         const data = await getGrupos(newSel.vendedor!, newSel.gerencia!, newSel.linea!, periodo, year)
-        setRows((data ?? []).map(d => toRow(d.grupo, d.primaNeta)))
+        const total = (data ?? []).reduce((s, d) => s + d.primaNeta, 0)
+        setRows((data ?? []).map(d => toRowWithYoY(d.grupo, d.primaNeta, d.pnAnioAnt, total, 0, 0)))
       } else if (level === "cliente") {
         const data = await getClientes(newSel.grupo!, newSel.vendedor!, newSel.gerencia!, newSel.linea!, periodo, year)
-        setRows((data ?? []).map(d => toRow(d.cliente, d.primaNeta)))
+        const total = (data ?? []).reduce((s, d) => s + d.primaNeta, 0)
+        setRows((data ?? []).map(d => toRowWithYoY(d.cliente, d.primaNeta, d.pnAnioAnt, total, 0, 0)))
       } else if (level === "poliza") {
         const data = await getPolizas(newSel.cliente!, newSel.grupo!, newSel.vendedor!, newSel.gerencia!, newSel.linea!, periodo, year)
         setPolizas(data ?? [])
@@ -489,7 +537,7 @@ function TablaDetalleContent() {
                 </div>
                 <div className="text-xs text-gray-500">
                   <div>{p.aseguradora} · {p.ramo}</div>
-                  <div>{p.fechaLiquidacion}</div>
+                  <div>{fmtDate(p.fechaLiquidacion)}</div>
                 </div>
               </div>
             ))}
@@ -557,14 +605,14 @@ function TablaDetalleContent() {
               <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
                 <th className="w-6 px-1 py-2"></th>
                 <th className="text-left px-2 py-2 font-semibold">{levelLabels[drillLevel]}</th>
-                <th className="text-right px-2 py-2 font-semibold">Prima neta</th>
-                <th className="text-right px-2 py-2 font-semibold">Presupuesto</th>
-                <th className="text-right px-2 py-2 font-semibold">Diferencia</th>
-                <th className="text-right px-2 py-2 font-semibold">% Dif ppto</th>
-                <th className="text-right px-2 py-2 font-semibold">{cmpLabel.col}</th>
-                <th className="text-right px-2 py-2 font-semibold">{cmpLabel.difCol}</th>
-                <th className="text-right px-2 py-2 font-semibold">{cmpLabel.pctCol}</th>
-                <th className="text-right px-2 py-2 font-semibold">Pendiente</th>
+                <th className="text-right px-2 py-2 font-semibold min-w-[100px]">Prima neta</th>
+                <th className="text-right px-2 py-2 font-semibold min-w-[100px]">Presupuesto</th>
+                <th className="text-right px-2 py-2 font-semibold min-w-[100px]">Diferencia</th>
+                <th className="text-right px-2 py-2 font-semibold min-w-[70px]">% Dif ppto</th>
+                <th className="text-right px-2 py-2 font-semibold min-w-[100px]">{cmpLabel.col}</th>
+                <th className="text-right px-2 py-2 font-semibold min-w-[100px]">{cmpLabel.difCol}</th>
+                <th className="text-right px-2 py-2 font-semibold min-w-[70px]">{cmpLabel.pctCol}</th>
+                <th className="text-right px-2 py-2 font-semibold min-w-[100px]">Pendiente</th>
               </tr>
             )}
           </thead>
@@ -623,12 +671,12 @@ function TablaDetalleContent() {
                   <tr><td colSpan={7} className="px-3 py-8 text-center text-[#888]">Datos en integración</td></tr>
                 ) : filteredPolizas.map((p, idx) => (
                   <tr key={`${p.documento}-${idx}`} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${idx % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"}`}>
-                    <td className="px-2 py-1.5 font-medium text-[#111]">{p.documento}</td>
-                    <td className="px-2 py-1.5 text-[#333]">{p.aseguradora}</td>
-                    <td className="px-2 py-1.5 text-[#333]">{p.ramo}</td>
-                    <td className="px-2 py-1.5 text-[#666]">{p.subramo}</td>
-                    <td className="px-2 py-1.5 text-[#666]">{p.fechaLiquidacion}</td>
-                    <td className="px-2 py-1.5 text-[#666]">{p.fechaLimPago}</td>
+                    <td className="px-2 py-1.5 font-medium text-[#111] text-left">{p.documento}</td>
+                    <td className="px-2 py-1.5 text-[#333] text-left">{p.aseguradora}</td>
+                    <td className="px-2 py-1.5 text-[#333] text-left">{p.ramo}</td>
+                    <td className="px-2 py-1.5 text-[#666] text-left">{p.subramo}</td>
+                    <td className="px-2 py-1.5 text-[#666] text-left">{fmtDate(p.fechaLiquidacion)}</td>
+                    <td className="px-2 py-1.5 text-[#666] text-left">{fmtDate(p.fechaLimPago)}</td>
                     <td className={`px-2 py-1.5 text-right font-medium ${p.primaNeta < 0 ? "text-[#E62800]" : ""}`}>{p.primaNeta < 0 ? `(${fmt(Math.abs(p.primaNeta))})` : fmt(p.primaNeta)}</td>
                   </tr>
                 ))}
@@ -665,36 +713,36 @@ function TablaDetalleContent() {
                     <tr key={r.name}
                       className={`group border-b border-[#F0F0F0] ${nextLevel ? "cursor-pointer" : ""} transition-all duration-150 ${idx % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"} hover:bg-[#FFF5F5]`}
                       onClick={() => nextLevel && selKey && drill(nextLevel, r.name, { ...sel, [selKey]: r.name })}>
-                      <td className="px-1 py-1.5 text-center">
+                      <td className="px-1 py-1.5 text-center w-6">
                         {nextLevel && <ChevronRight className="w-4 h-4 text-[#E62800] inline transition-transform group-hover:scale-125 group-hover:translate-x-1" />}
                       </td>
-                      <td className="px-2 py-1.5 font-medium text-[#111]">{r.name}</td>
-                      <td className={`px-2 py-1.5 text-right font-medium ${r.primaNeta < 0 ? "text-[#E62800]" : ""}`}>
+                      <td className="px-2 py-1.5 font-medium text-[#111] text-left">{r.name}</td>
+                      <td className={`px-2 py-1.5 text-right font-medium min-w-[100px] ${r.primaNeta < 0 ? "text-[#E62800]" : ""}`}>
                         {r.primaNeta < 0 ? `(${fmt(Math.abs(r.primaNeta))})` : fmt(r.primaNeta)}
                       </td>
-                      <td className="px-2 py-1.5 text-right text-gray-400">{r.presupuesto !== null ? fmt(r.presupuesto) : "—"}</td>
-                      <td className="px-2 py-1.5 text-right text-gray-400">{r.diferencia !== null ? fmt(r.diferencia) : "—"}</td>
-                      <td className="px-2 py-1.5 text-right text-gray-400">{r.pctDifPpto !== null ? `${r.pctDifPpto}%` : "—"}</td>
-                      <td className="px-2 py-1.5 text-right text-gray-400">{r.pnAnioAnt !== null ? fmt(r.pnAnioAnt) : "—"}</td>
-                      <td className="px-2 py-1.5 text-right text-gray-400">{r.difYoY !== null ? fmt(r.difYoY) : "—"}</td>
-                      <td className="px-2 py-1.5 text-right text-gray-400">{r.pctDifYoY !== null ? `${r.pctDifYoY}%` : "—"}</td>
-                      <td className="px-2 py-1.5 text-right">
+                      <td className="px-2 py-1.5 text-right text-gray-400 min-w-[100px]">{r.presupuesto !== null ? fmt(r.presupuesto) : "—"}</td>
+                      <td className="px-2 py-1.5 text-right text-gray-400 min-w-[100px]">{r.diferencia !== null ? (r.diferencia < 0 ? `(${fmt(Math.abs(r.diferencia))})` : fmt(r.diferencia)) : "—"}</td>
+                      <td className="px-2 py-1.5 text-right text-gray-400 min-w-[70px]">{r.pctDifPpto !== null ? `${r.pctDifPpto > 0 ? "+" : ""}${r.pctDifPpto}%` : "—"}</td>
+                      <td className="px-2 py-1.5 text-right text-gray-400 min-w-[100px]">{r.pnAnioAnt !== null ? fmt(r.pnAnioAnt) : "—"}</td>
+                      <td className="px-2 py-1.5 text-right text-gray-400 min-w-[100px]">{r.difYoY !== null ? (r.difYoY < 0 ? `(${fmt(Math.abs(r.difYoY))})` : fmt(r.difYoY)) : "—"}</td>
+                      <td className="px-2 py-1.5 text-right text-gray-400 min-w-[70px]">{r.pctDifYoY !== null ? `${r.pctDifYoY > 0 ? "+" : ""}${r.pctDifYoY}%` : "—"}</td>
+                      <td className="px-2 py-1.5 text-right min-w-[100px]">
                         <span className="text-gray-400">{r.pendiente !== null ? fmt(r.pendiente) : "—"}</span>
                       </td>
                     </tr>
                   )
                 })}
                 <tr className="bg-[#041224] text-white border-t-2 cursor-default">
-                  <td className="px-1 py-2"></td>
-                  <td className="px-2 py-2 font-bold">Total</td>
-                  <td className="px-2 py-2 text-right font-bold">{fmt(rowTotal)}</td>
-                  <td className="px-2 py-2 text-right text-white/50">—</td>
-                  <td className="px-2 py-2 text-right text-white/50">—</td>
-                  <td className="px-2 py-2 text-right text-white/50">—</td>
-                  <td className="px-2 py-2 text-right text-white/50">—</td>
-                  <td className="px-2 py-2 text-right text-white/50">—</td>
-                  <td className="px-2 py-2 text-right text-white/50">—</td>
-                  <td className="px-2 py-2 text-right text-white/50">—</td>
+                  <td className="px-1 py-2 w-6"></td>
+                  <td className="px-2 py-2 font-bold text-left">Total</td>
+                  <td className="px-2 py-2 text-right font-bold min-w-[100px]">{fmt(rowTotal)}</td>
+                  <td className="px-2 py-2 text-right text-white/50 min-w-[100px]">—</td>
+                  <td className="px-2 py-2 text-right text-white/50 min-w-[100px]">—</td>
+                  <td className="px-2 py-2 text-right text-white/50 min-w-[70px]">—</td>
+                  <td className="px-2 py-2 text-right text-white/50 min-w-[100px]">—</td>
+                  <td className="px-2 py-2 text-right text-white/50 min-w-[100px]">—</td>
+                  <td className="px-2 py-2 text-right text-white/50 min-w-[70px]">—</td>
+                  <td className="px-2 py-2 text-right text-white/50 min-w-[100px]">—</td>
                 </tr>
               </>
             )}
