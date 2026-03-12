@@ -196,22 +196,26 @@ function TablaDetalleContent() {
     setCrumbs(prev => [...prev, { level: drillLevel, label }])
 
     // Helper: compute DrillRow with YoY and proportional presupuesto
+    // Now requires pnAnioAntTotal to allocate budget based on prior year share (not current primaNeta)
     const toRowWithYoY = (
       name: string,
       primaNeta: number,
       pnAnioAnt: number,
-      lineaTotal: number,
+      pnAnioAntTotal: number,
       lineaPpto: number,
       lineaPendiente: number
     ): DrillRow => {
-      // Proportional presupuesto based on share of línea total
-      const share = lineaTotal > 0 ? primaNeta / lineaTotal : 0
-      const ppto = Math.round(lineaPpto * share)
+      // Allocate presupuesto based on PRIOR YEAR share, not current primaNeta
+      // This gives unique % Dif ppto per row (rows performing better/worse than their historical share)
+      const priorShare = pnAnioAntTotal > 0 ? pnAnioAnt / pnAnioAntTotal : 0
+      const ppto = Math.round(lineaPpto * priorShare)
       const dif = ppto > 0 ? primaNeta - ppto : null
       const pctDif = ppto > 0 ? Math.round((dif! / ppto) * 1000) / 10 : null
       const difY = pnAnioAnt > 0 ? primaNeta - pnAnioAnt : (pnAnioAnt === 0 && primaNeta > 0 ? primaNeta : null)
       const pctDifY = pnAnioAnt > 0 ? Math.round((difY! / pnAnioAnt) * 10000) / 100 : null
-      const pend = Math.round(lineaPendiente * share)
+      // Pendiente allocated by current primaNeta share
+      const currentShare = primaNeta > 0 ? primaNeta / (primaNeta + (pnAnioAnt || primaNeta)) : 0
+      const pend = Math.round(lineaPendiente * (priorShare > 0 ? priorShare : currentShare))
       return {
         name,
         primaNeta,
@@ -233,23 +237,24 @@ function TablaDetalleContent() {
     try {
       if (level === "gerencia") {
         const data = await getGerencias(newSel.linea!, periodo, year)
-        const lineaTotal = (data ?? []).reduce((s, d) => s + d.primaNeta, 0)
-        setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, lineaTotal, lineaPpto, lineaPendiente)))
+        const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
+        setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, lineaPpto, lineaPendiente)))
       } else if (level === "vendedor") {
         const data = await getVendedores(newSel.gerencia!, newSel.linea!, periodo, year)
-        const total = (data ?? []).reduce((s, d) => s + d.primaNeta, 0)
+        const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
+        const currentTotal = (data ?? []).reduce((s, d) => s + d.primaNeta, 0)
         // For vendedor level, use gerencia's proportional share of línea ppto
         const gerenciaShare = lineas.find(l => l.linea === newSel.linea)
-        const gerenciaPpto = gerenciaShare ? Math.round(lineaPpto * (total / (gerenciaShare.primaNeta || 1))) : lineaPpto
-        setRows((data ?? []).map(d => toRowWithYoY(d.vendedor, d.primaNeta, d.pnAnioAnt, total, gerenciaPpto, lineaPendiente)))
+        const gerenciaPpto = gerenciaShare ? Math.round(lineaPpto * (currentTotal / (gerenciaShare.primaNeta || 1))) : lineaPpto
+        setRows((data ?? []).map(d => toRowWithYoY(d.vendedor, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, gerenciaPpto, lineaPendiente)))
       } else if (level === "grupo") {
         const data = await getGrupos(newSel.vendedor!, newSel.gerencia!, newSel.linea!, periodo, year)
-        const total = (data ?? []).reduce((s, d) => s + d.primaNeta, 0)
-        setRows((data ?? []).map(d => toRowWithYoY(d.grupo, d.primaNeta, d.pnAnioAnt, total, 0, 0)))
+        const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
+        setRows((data ?? []).map(d => toRowWithYoY(d.grupo, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, 0, 0)))
       } else if (level === "cliente") {
         const data = await getClientes(newSel.grupo!, newSel.vendedor!, newSel.gerencia!, newSel.linea!, periodo, year)
-        const total = (data ?? []).reduce((s, d) => s + d.primaNeta, 0)
-        setRows((data ?? []).map(d => toRowWithYoY(d.cliente, d.primaNeta, d.pnAnioAnt, total, 0, 0)))
+        const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
+        setRows((data ?? []).map(d => toRowWithYoY(d.cliente, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, 0, 0)))
       } else if (level === "poliza") {
         const data = await getPolizas(newSel.cliente!, newSel.grupo!, newSel.vendedor!, newSel.gerencia!, newSel.linea!, periodo, year)
         setPolizas(data ?? [])
@@ -691,10 +696,10 @@ function TablaDetalleContent() {
               <>
                 {filteredRows.length === 0 ? (
                   <tr><td colSpan={10} className="px-3 py-8 text-center text-[#888]">
-                    {drillLevel === "cliente" || drillLevel === "grupo" 
-                      ? "Datos en integración" 
-                      : drillLevel === "vendedor" 
-                      ? "Sin vendedores registrados para esta gerencia" 
+                    {drillLevel === "cliente" || drillLevel === "grupo"
+                      ? "Datos en integración"
+                      : drillLevel === "vendedor"
+                      ? "Sin vendedores registrados para esta gerencia"
                       : `Sin datos para este periodo ${year}`}
                   </td></tr>
                 ) : filteredRows.map((r, idx) => {
@@ -711,23 +716,23 @@ function TablaDetalleContent() {
 
                   return (
                     <tr key={r.name}
-                      className={`group border-b border-[#F0F0F0] ${nextLevel ? "cursor-pointer" : ""} transition-all duration-150 ${idx % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"} hover:bg-[#FFF5F5]`}
+                      className={`group border-b border-gray-200 ${nextLevel ? "cursor-pointer" : ""} transition-all duration-150 bg-white hover:bg-gray-50`}
                       onClick={() => nextLevel && selKey && drill(nextLevel, r.name, { ...sel, [selKey]: r.name })}>
-                      <td className="px-1 py-1.5 text-center w-6">
-                        {nextLevel && <ChevronRight className="w-4 h-4 text-[#E62800] inline transition-transform group-hover:scale-125 group-hover:translate-x-1" />}
+                      <td className="px-1 py-2 text-center w-8">
+                        {nextLevel && <ChevronRight className="w-5 h-5 text-[#E62800] inline transition-transform group-hover:scale-110 group-hover:translate-x-0.5" />}
                       </td>
-                      <td className="px-2 py-1.5 font-medium text-[#111] text-left">{r.name}</td>
-                      <td className={`px-2 py-1.5 text-right font-medium min-w-[100px] ${r.primaNeta < 0 ? "text-[#E62800]" : ""}`}>
+                      <td className="px-2 py-2 font-medium text-[#111] text-left">{r.name}</td>
+                      <td className={`px-2 py-2 text-right tabular-nums font-medium min-w-[100px] ${r.primaNeta < 0 ? "text-[#EF4444]" : "text-[#111]"}`}>
                         {r.primaNeta < 0 ? `(${fmt(Math.abs(r.primaNeta))})` : fmt(r.primaNeta)}
                       </td>
-                      <td className="px-2 py-1.5 text-right text-gray-400 min-w-[100px]">{r.presupuesto !== null ? fmt(r.presupuesto) : "—"}</td>
-                      <td className="px-2 py-1.5 text-right text-gray-400 min-w-[100px]">{r.diferencia !== null ? (r.diferencia < 0 ? `(${fmt(Math.abs(r.diferencia))})` : fmt(r.diferencia)) : "—"}</td>
-                      <td className="px-2 py-1.5 text-right text-gray-400 min-w-[70px]">{r.pctDifPpto !== null ? `${r.pctDifPpto > 0 ? "+" : ""}${r.pctDifPpto}%` : "—"}</td>
-                      <td className="px-2 py-1.5 text-right text-gray-400 min-w-[100px]">{r.pnAnioAnt !== null ? fmt(r.pnAnioAnt) : "—"}</td>
-                      <td className="px-2 py-1.5 text-right text-gray-400 min-w-[100px]">{r.difYoY !== null ? (r.difYoY < 0 ? `(${fmt(Math.abs(r.difYoY))})` : fmt(r.difYoY)) : "—"}</td>
-                      <td className="px-2 py-1.5 text-right text-gray-400 min-w-[70px]">{r.pctDifYoY !== null ? `${r.pctDifYoY > 0 ? "+" : ""}${r.pctDifYoY}%` : "—"}</td>
-                      <td className="px-2 py-1.5 text-right min-w-[100px]">
-                        <span className="text-gray-400">{r.pendiente !== null ? fmt(r.pendiente) : "—"}</span>
+                      <td className="px-2 py-2 text-right tabular-nums text-[#111] min-w-[100px]">{r.presupuesto !== null ? fmt(r.presupuesto) : <span className="text-[#CBD5E0]">—</span>}</td>
+                      <td className={`px-2 py-2 text-right tabular-nums font-medium min-w-[100px] ${r.diferencia === null ? "" : r.diferencia < 0 ? "text-[#EF4444]" : "text-[#111]"}`}>{r.diferencia !== null ? (r.diferencia < 0 ? `(${fmt(Math.abs(r.diferencia))})` : fmt(r.diferencia)) : <span className="text-[#CBD5E0]">—</span>}</td>
+                      <td className={`px-2 py-2 text-right tabular-nums min-w-[70px] ${r.pctDifPpto === null ? "" : r.pctDifPpto < 0 ? "text-[#EF4444]" : "text-[#10B981]"}`}>{r.pctDifPpto !== null ? `${r.pctDifPpto > 0 ? "+" : ""}${r.pctDifPpto}%` : <span className="text-[#CBD5E0]">—</span>}</td>
+                      <td className="px-2 py-2 text-right tabular-nums text-[#111] min-w-[100px]">{r.pnAnioAnt !== null ? fmt(r.pnAnioAnt) : <span className="text-[#CBD5E0]">—</span>}</td>
+                      <td className={`px-2 py-2 text-right tabular-nums font-medium min-w-[100px] ${r.difYoY === null ? "" : r.difYoY < 0 ? "text-[#EF4444]" : "text-[#111]"}`}>{r.difYoY !== null ? (r.difYoY < 0 ? `(${fmt(Math.abs(r.difYoY))})` : fmt(r.difYoY)) : <span className="text-[#CBD5E0]">—</span>}</td>
+                      <td className={`px-2 py-2 text-right tabular-nums min-w-[70px] ${r.pctDifYoY === null ? "" : r.pctDifYoY < 0 ? "text-[#EF4444]" : "text-[#10B981]"}`}>{r.pctDifYoY !== null ? `${r.pctDifYoY > 0 ? "+" : ""}${r.pctDifYoY}%` : <span className="text-[#CBD5E0]">—</span>}</td>
+                      <td className="px-2 py-2 text-right tabular-nums min-w-[100px]">
+                        {r.pendiente !== null ? <span className="text-[#111]">{fmt(r.pendiente)}</span> : <span className="text-[#CBD5E0]">—</span>}
                       </td>
                     </tr>
                   )
