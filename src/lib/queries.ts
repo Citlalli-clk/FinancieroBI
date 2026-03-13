@@ -846,6 +846,11 @@ export async function getVendedoresByTipo(
  * Fetch vendedores with full data (all 9 columns) grouped by tier.
  * This merges getVendedores (full data with YoY) with tier mapping from catalogos_agentes.
  * Used for Click Franquicias and Click Promotorías tier grouper.
+ *
+ * RESILIENCE STRATEGY:
+ * 1. If prior year data for specific period is empty, fetch ALL periods of prior year
+ * 2. If prior year total is still 0, use CURRENT year share for presupuesto allocation
+ * 3. If no share data at all, fall back to equal distribution among vendedores
  */
 export async function getVendedoresWithTipo(
   gerencia: string,
@@ -875,8 +880,10 @@ export async function getVendedoresWithTipo(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const grouped = groupBySum(data as any[], "VendNombre")
 
-    // 2. Fetch prior year data for YoY comparison
+    // 2. Fetch prior year data for YoY comparison — with fallback strategy
     const priorYear = año ? String(parseInt(año) - 1) : String(new Date().getFullYear() - 1)
+
+    // First try: fetch prior year with same period filter
     let queryPY = supabase
       .from("dashboard_data")
       .select("VendNombre, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
@@ -888,9 +895,37 @@ export async function getVendedoresWithTipo(
     if (periodo) queryPY = queryPY.eq("mes", periodo)
     if (clasificacionAseguradoras?.length) queryPY = queryPY.in("CiaAbreviacion", clasificacionAseguradoras)
 
-    const { data: dataPY } = await queryPY
+    let { data: dataPY } = await queryPY
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const groupedPY = dataPY ? groupBySum(dataPY as any[], "VendNombre") : {}
+    let groupedPY = dataPY ? groupBySum(dataPY as any[], "VendNombre") : {}
+    let pnAnioAntTotal = Object.values(groupedPY).reduce((s, v) => s + v, 0)
+
+    // FALLBACK 1: If period-specific prior year data is empty, try fetching ALL periods of prior year
+    if (pnAnioAntTotal === 0 && periodo) {
+      const queryPYFull = supabase
+        .from("dashboard_data")
+        .select("VendNombre, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
+        .eq("GerenciaNombre", gerencia)
+        .eq("LBussinesNombre", linea)
+        .eq("anio", parseInt(priorYear))
+        .limit(10000)
+
+      const { data: dataPYFull } = await queryPYFull
+      if (dataPYFull && dataPYFull.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        groupedPY = groupBySum(dataPYFull as any[], "VendNombre")
+        pnAnioAntTotal = Object.values(groupedPY).reduce((s, v) => s + v, 0)
+        // Scale the full-year data proportionally to match selected period count
+        // If user selected 1 month, divide by 12 to approximate single-month share
+        if (pnAnioAntTotal > 0) {
+          const scaleFactor = 1 / 12 // Approximate: single month vs full year
+          for (const key of Object.keys(groupedPY)) {
+            groupedPY[key] = groupedPY[key] * scaleFactor
+          }
+          pnAnioAntTotal = pnAnioAntTotal * scaleFactor
+        }
+      }
+    }
 
     // 3. Fetch tier mapping from catalogos_agentes
     const vendedorNames = Object.keys(grouped)
@@ -908,9 +943,17 @@ export async function getVendedoresWithTipo(
     }
 
     // 4. Calculate totals for budget allocation
-    const pnAnioAntTotal = Object.values(groupedPY).reduce((s, v) => s + v, 0)
     const ppto = lineaPpto ?? 0
     const pendienteTotal = lineaPendiente ?? 0
+
+    // FALLBACK 2: If prior year total is still 0, use CURRENT year total for share calculation
+    const pnCurrentTotal = Object.values(grouped).reduce((s, v) => s + v, 0)
+    const useCurrentYearShare = pnAnioAntTotal === 0 && pnCurrentTotal > 0
+    const shareTotal = useCurrentYearShare ? pnCurrentTotal : pnAnioAntTotal
+
+    // FALLBACK 3: If no share data at all, use equal distribution
+    const vendedorCount = vendedorNames.length
+    const useEqualDistribution = shareTotal === 0 && ppto > 0 && vendedorCount > 0
 
     // 5. Build full vendedor rows with all columns and group by tier
     const byTipo: Record<string, VendedorFullRow[]> = {}
@@ -919,9 +962,18 @@ export async function getVendedoresWithTipo(
       const tipo = tipoMap[vendedor] || "Sin clasificar"
       const pnAnioAnt = groupedPY[vendedor] || 0
 
-      // Allocate presupuesto based on PRIOR YEAR share
-      const priorShare = pnAnioAntTotal > 0 ? pnAnioAnt / pnAnioAntTotal : 0
-      const presupuesto = ppto > 0 ? Math.round(ppto * priorShare) : null
+      // Calculate share based on available data (prior year, current year, or equal)
+      let share: number
+      if (useEqualDistribution) {
+        share = 1 / vendedorCount
+      } else if (useCurrentYearShare) {
+        share = pnCurrentTotal > 0 ? primaNeta / pnCurrentTotal : 0
+      } else {
+        share = pnAnioAntTotal > 0 ? pnAnioAnt / pnAnioAntTotal : 0
+      }
+
+      // Allocate presupuesto based on calculated share
+      const presupuesto = ppto > 0 && share > 0 ? Math.round(ppto * share) : (ppto > 0 && useEqualDistribution ? Math.round(ppto / vendedorCount) : null)
       const diferencia = presupuesto !== null && presupuesto > 0 ? Math.round(primaNeta) - presupuesto : null
       const pctDifPpto = presupuesto !== null && presupuesto > 0 && diferencia !== null
         ? Math.round((diferencia / presupuesto) * 1000) / 10
@@ -930,7 +982,7 @@ export async function getVendedoresWithTipo(
       const pctDifYoY = pnAnioAnt > 0 && difYoY !== null
         ? Math.round((difYoY / pnAnioAnt) * 10000) / 100
         : null
-      const pendiente = pendienteTotal > 0 && priorShare > 0 ? Math.round(pendienteTotal * priorShare) : null
+      const pendiente = pendienteTotal > 0 && share > 0 ? Math.round(pendienteTotal * share) : null
 
       if (!byTipo[tipo]) byTipo[tipo] = []
       byTipo[tipo].push({
