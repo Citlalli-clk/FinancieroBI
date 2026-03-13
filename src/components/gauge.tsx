@@ -12,9 +12,8 @@ interface GaugeProps {
   crecimiento?: number
 }
 
-export function Gauge({ value, budget = 129.5, clickable = true, cumplimiento = 0, crecimiento = 0 }: GaugeProps) {
+export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, cumplimiento = 0, crecimiento = 0 }: GaugeProps) {
   const uniqueId = useId()
-  const gradientId = `gaugeGradient${uniqueId.replace(/:/g, '_')}`
   const W = 860
   const H = 720
   const cx = W / 2
@@ -25,15 +24,25 @@ export function Gauge({ value, budget = 129.5, clickable = true, cumplimiento = 
   const outerGrayR = outerR + 5
   const labelR = outerR + 32
 
-  const NEEDLE_PCT = 0.75
+  // Dynamic needle position based on cumplimiento (% of budget achieved)
+  // Clamp between 0 and ~120% for visual purposes
+  const needlePct = Math.min(Math.max(cumplimiento / 100, 0), 1.2)
 
-  // 5 clean labels outside the arc
+  // Semáforo zone thresholds:
+  // RED zone: 0% to (prevYear / budget * 100)%
+  // YELLOW zone: from red threshold to 100%
+  // GREEN zone: above 100%
+  const redThreshold = budget > 0 ? (prevYear / budget) : 0.5 // fraction of arc for red zone
+  const yellowThreshold = 1.0 // 100% = end of yellow, start of green
+
+  // 5 clean labels outside the arc (scaled to 120% max for green zone visibility)
+  const maxScale = 1.2 // Show up to 120% on gauge
   const arcLabels = [
     { pct: 0, label: "$0M" },
-    { pct: 0.25, label: `$${Math.round(budget * 0.25)}M` },
-    { pct: 0.5, label: `$${Math.round(budget * 0.5)}M` },
-    { pct: 0.75, label: `$${Math.round(budget * 0.75)}M` },
-    { pct: 1, label: `$${Math.round(budget * 10) / 10}M` },
+    { pct: 0.25 * maxScale, label: `$${Math.round(budget * 0.25)}M` },
+    { pct: 0.5 * maxScale, label: `$${Math.round(budget * 0.5)}M` },
+    { pct: 0.75 * maxScale, label: `$${Math.round(budget * 0.75)}M` },
+    { pct: 1 * maxScale, label: `$${Math.round(budget * 10) / 10}M` },
   ]
 
   function polarToXY(angleDeg: number, r: number): [number, number] {
@@ -41,19 +50,40 @@ export function Gauge({ value, budget = 129.5, clickable = true, cumplimiento = 
     return [cx + r * Math.cos(rad), cy - r * Math.sin(rad)]
   }
 
-  const smoothArc = [
-    `M ${cx - outerR} ${cy}`,
-    `A ${outerR} ${outerR} 0 1 1 ${cx + outerR} ${cy}`,
-    `L ${cx + innerR} ${cy}`,
-    `A ${innerR} ${innerR} 0 1 0 ${cx - innerR} ${cy}`,
-    `Z`,
-  ].join(" ")
+  // Create arc path helper
+  function createArcPath(startPct: number, endPct: number, outer: number, inner: number): string {
+    const startAngle = 180 - startPct * 180
+    const endAngle = 180 - endPct * 180
+    const [outerStartX, outerStartY] = polarToXY(startAngle, outer)
+    const [outerEndX, outerEndY] = polarToXY(endAngle, outer)
+    const [innerEndX, innerEndY] = polarToXY(endAngle, inner)
+    const [innerStartX, innerStartY] = polarToXY(startAngle, inner)
+    const largeArc = Math.abs(endPct - startPct) > 0.5 ? 1 : 0
+    return [
+      `M ${outerStartX} ${outerStartY}`,
+      `A ${outer} ${outer} 0 ${largeArc} 1 ${outerEndX} ${outerEndY}`,
+      `L ${innerEndX} ${innerEndY}`,
+      `A ${inner} ${inner} 0 ${largeArc} 0 ${innerStartX} ${innerStartY}`,
+      `Z`,
+    ].join(" ")
+  }
+
+  // Create the three zone arcs (as fractions of the full arc)
+  // The gauge goes from 0 to 120% (maxScale), so we need to scale zones
+  const redEndPct = Math.min(redThreshold / maxScale, 1)
+  const yellowEndPct = Math.min(yellowThreshold / maxScale, 1)
+  const greenEndPct = 1 // Full arc
+
+  const redArc = createArcPath(0, redEndPct, outerR, innerR)
+  const yellowArc = createArcPath(redEndPct, yellowEndPct, outerR, innerR)
+  const greenArc = createArcPath(yellowEndPct, greenEndPct, outerR, innerR)
 
   const [gL_x, gL_y] = polarToXY(180, outerGrayR)
   const [gR_x, gR_y] = polarToXY(0, outerGrayR)
   const grayArc = `M ${gL_x} ${gL_y} A ${outerGrayR} ${outerGrayR} 0 0 1 ${gR_x} ${gR_y}`
 
-  const needleAngleDeg = 180 - NEEDLE_PCT * 180
+  // Dynamic needle angle based on actual cumplimiento
+  const needleAngleDeg = 180 - (needlePct / maxScale) * 180
   const needleLen = outerR - 8
   const [tipX, tipY] = polarToXY(needleAngleDeg, needleLen)
 
@@ -82,20 +112,16 @@ export function Gauge({ value, budget = 129.5, clickable = true, cumplimiento = 
         viewBox={`0 0 ${W} ${H}`}
         style={{ display: "block" }}
       >
-        <defs>
-          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#E62800" />
-            <stop offset="50%" stopColor="#F9DC5C" />
-            <stop offset="100%" stopColor="#60A63A" />
-          </linearGradient>
-        </defs>
-
         <path d={grayArc} fill="none" stroke="#D0D0D0" strokeWidth={2} />
-        <path d={smoothArc} fill={`url(#${gradientId})`} />
+
+        {/* Semáforo zones - solid colors, no gradients */}
+        <path d={redArc} fill="#E62800" />
+        <path d={yellowArc} fill="#F9DC5C" />
+        <path d={greenArc} fill="#60A63A" />
 
         {/* Tick marks + labels OUTSIDE */}
         {arcLabels.map((tick, i) => {
-          const angleDeg = 180 - tick.pct * 180
+          const angleDeg = 180 - (tick.pct / maxScale) * 180
           const [t1x, t1y] = polarToXY(angleDeg, tickR1)
           const [t2x, t2y] = polarToXY(angleDeg, tickR2)
           const [lx, ly] = polarToXY(angleDeg, labelR)
@@ -128,20 +154,29 @@ export function Gauge({ value, budget = 129.5, clickable = true, cumplimiento = 
         <circle cx={cx} cy={cy} r={11} fill="white" />
         <circle cx={cx} cy={cy} r={5} fill="#052F5F" />
 
+        {/* Prominent % achievement in center */}
         <text
-          x={cx} y={cy + 60}
-          fontSize="54" fontWeight="900" fill="#052F5F"
+          x={cx} y={cy + 55}
+          fontSize="58" fontWeight="900" fill="#052F5F"
           textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+          style={{ fontFeatureSettings: "'tnum'" }}
         >
-          ${value.toFixed(1)}M
+          {cumplimiento}%
         </text>
         <text
-          x={cx} y={cy + 95}
+          x={cx} y={cy + 90}
           fontSize="21" fill="#374151"
           textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
           fontWeight="700"
         >
-          Prima neta cobrada
+          Cumplimiento
+        </text>
+        <text
+          x={cx} y={cy + 120}
+          fontSize="18" fill="#6B7280"
+          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+        >
+          ${value.toFixed(1)}M de ${budget.toFixed(1)}M
         </text>
 
         <circle cx={circleLX} cy={circleY} r={circleR} fill="#3983F6" />
@@ -149,15 +184,16 @@ export function Gauge({ value, budget = 129.5, clickable = true, cumplimiento = 
           x={circleLX} y={circleY + 8}
           fontSize="32" fontWeight="900" fill="white"
           textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+          style={{ fontFeatureSettings: "'tnum'" }}
         >
-          {cumplimiento}%
+          ${value.toFixed(1)}M
         </text>
         <text
           x={circleLX} y={circleY + circleR + 22}
           fontSize="14" fontWeight="700" fill="#374151"
           textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
         >
-          Cumplimiento
+          Prima Neta
         </text>
 
         <circle cx={circleRX} cy={circleY} r={circleR} fill={crecimiento < 0 ? '#E62800' : '#60A63A'} />
@@ -165,8 +201,9 @@ export function Gauge({ value, budget = 129.5, clickable = true, cumplimiento = 
           x={circleRX} y={circleY + 8}
           fontSize="32" fontWeight="900" fill="white"
           textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+          style={{ fontFeatureSettings: "'tnum'" }}
         >
-          {crecimiento < 0 ? "↓" : "↑"} {crecimiento}%
+          {crecimiento < 0 ? "↓" : "↑"}{Math.abs(crecimiento)}%
         </text>
         <text
           x={circleRX} y={circleY + circleR + 22}

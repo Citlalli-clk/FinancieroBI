@@ -132,16 +132,16 @@ export default function CorporatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] px-3 py-4 flex flex-col">
-      <div className="max-w-[1200px] mx-auto w-full flex flex-col flex-1">
+    <div className="bg-[#FAFAFA] px-3 py-4">
+      <div className="max-w-[1200px] mx-auto w-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-2 pt-3 md:pt-5 w-full gap-2 md:gap-0">
         <PageTabs />
         <PeriodFilter onFilterChange={handleFilterChange} />
       </div>
       <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
         <h1 className="text-sm font-bold text-[#111] font-lato">Corporate — Prima neta cobrada</h1>
-        <div className="flex items-center gap-1.5">
-          <button onClick={handleExcelExport} className="flex items-center gap-1 px-2.5 py-1.5 rounded text-[11px] font-medium border border-[#041224] text-[#041224] hover:bg-[#F5F5F5]">
+        <div className="flex items-center gap-1">
+          <button onClick={handleExcelExport} className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border border-[#041224] text-[#041224] hover:bg-[#F5F5F5]">
             <Download className="w-3 h-3" /> Excel
           </button>
         </div>
@@ -175,28 +175,28 @@ export default function CorporatePage() {
 
       {/* Row count for large datasets */}
       {drillLevel !== "poliza" && filteredRows.length >= 30 && (
-        <div className="text-sm text-[#888] mb-1">{filteredRows.length} registros encontrados — desplazar para ver más</div>
+        <div className="text-xs text-[#888] mb-1">{filteredRows.length} registros encontrados — desplazar para ver más</div>
       )}
       {drillLevel === "poliza" && filteredPolizas.length >= 30 && (
-        <div className="text-sm text-[#888] mb-1">{filteredPolizas.length} pólizas encontradas — desplazar para ver más</div>
+        <div className="text-xs text-[#888] mb-1">{filteredPolizas.length} pólizas encontradas — desplazar para ver más</div>
       )}
 
       {/* Table */}
-      <div ref={tableRef} className="bi-card overflow-hidden max-h-[70vh] overflow-y-auto">
+      <div ref={tableRef} className="bg-white rounded-lg border border-gray-200 overflow-hidden max-h-[70vh] overflow-y-auto">
         {/* Mobile poliza card view */}
         {drillLevel === "poliza" && (
           <div className="md:hidden">
             {loading ? (
-              <p className="px-3 py-8 text-center text-gray-400">Cargando...</p>
+              <p className="px-2 py-6 text-center text-xs text-gray-400">Cargando...</p>
             ) : filteredPolizas.length === 0 ? (
-              <p className="px-3 py-8 text-center text-[#888]">Datos en integración</p>
+              <p className="px-2 py-6 text-center text-xs text-[#888]">Datos en integración</p>
             ) : (
-              <div className="space-y-1.5 p-2">
+              <div className="space-y-1 p-2">
                 {filteredPolizas.map((p, idx) => (
-                  <div key={`${p.documento}-${idx}`} className="border border-gray-100 rounded-lg px-3 py-2">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-sm text-[#111]">{p.documento}</span>
-                      <span className={`text-sm font-bold ${p.primaNeta < 0 ? "text-[#E62800]" : ""}`}>
+                  <div key={`${p.documento}-${idx}`} className="border border-gray-100 rounded-lg px-2 py-1.5">
+                    <div className="flex justify-between items-center mb-0.5">
+                      <span className="font-medium text-xs text-[#111]">{p.documento}</span>
+                      <span className={`text-xs font-medium tabular-nums ${p.primaNeta < 0 ? "text-[#E62800]" : ""}`}>
                         {p.primaNeta < 0 ? `(${fmt(Math.abs(p.primaNeta))})` : fmt(p.primaNeta)}
                       </span>
                     </div>
@@ -206,56 +206,56 @@ export default function CorporatePage() {
                     </div>
                   </div>
                 ))}
-                <div className="bg-[#041224] text-white rounded-lg px-3 py-2 flex justify-between">
-                  <span className="font-bold">Total</span>
-                  <span className="font-bold">{fmt(polizaTotal)}</span>
+                <div className="bg-[#041224] text-white rounded-lg px-2 py-1.5 flex justify-between">
+                  <span className="font-bold text-xs">Total</span>
+                  <span className="font-bold text-xs tabular-nums">{fmt(polizaTotal)}</span>
                 </div>
               </div>
             )}
           </div>
         )}
-        <table className={`w-full text-sm ${drillLevel === "poliza" ? "hidden md:table" : ""}`}>
+        <table className={`w-full ${drillLevel === "poliza" ? "hidden md:table" : ""}`}>
           <thead className="sticky top-0 z-10">
             {drillLevel === "poliza" ? (
               <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                <th className="text-left px-2 py-2 font-semibold">Documento</th>
-                <th className="text-left px-2 py-2 font-semibold">Aseguradora</th>
-                <th className="text-left px-2 py-2 font-semibold">Ramo</th>
-                <th className="text-left px-2 py-2 font-semibold">Subramo</th>
-                <th className="text-left px-2 py-2 font-semibold">F. Liquidación</th>
-                <th className="text-right px-2 py-2 font-semibold">Prima neta</th>
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Documento</th>
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Aseguradora</th>
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Ramo</th>
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Subramo</th>
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">F. Liquidación</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Prima neta</th>
               </tr>
             ) : (
               <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                <th className="w-6 px-1 py-2"></th>
-                <th className="text-left px-2 py-2 font-semibold">{levelLabels[drillLevel]}</th>
-                <th className="text-right px-2 py-2 font-semibold">Prima neta</th>
+                <th className="w-6 px-1 py-1.5"></th>
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">{levelLabels[drillLevel]}</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Prima neta</th>
               </tr>
             )}
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="px-3 py-8 text-center text-gray-400">Cargando...</td></tr>
+              <tr><td colSpan={6} className="px-2 py-6 text-center text-xs text-gray-400">Cargando...</td></tr>
             ) : drillLevel === "poliza" ? (
               <>
                 {filteredPolizas.length === 0 ? (
-                  <tr><td colSpan={6} className="px-3 py-8 text-center text-[#888]">Datos en integración</td></tr>
+                  <tr><td colSpan={6} className="px-2 py-6 text-center text-xs text-[#888]">Datos en integración</td></tr>
                 ) : filteredPolizas.map((p, idx) => (
                   <tr key={`${p.documento}-${idx}`} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${idx % 2 === 1 ? "bg-[#FAFAFA]" : ""}`}>
-                    <td className="px-2 py-1.5 font-medium text-[#111]">{p.documento}</td>
-                    <td className="px-2 py-1.5">{p.aseguradora}</td>
-                    <td className="px-2 py-1.5">{p.ramo}</td>
-                    <td className="px-2 py-1.5 text-[#666]">{p.subramo}</td>
-                    <td className="px-2 py-1.5 text-[#666]">{p.fechaLiquidacion}</td>
-                    <td className={`px-2 py-1.5 text-right font-medium ${p.primaNeta < 0 ? "text-[#E62800]" : ""}`}>{p.primaNeta < 0 ? `(${fmt(Math.abs(p.primaNeta))})` : fmt(p.primaNeta)}</td>
+                    <td className="px-2 py-1.5 text-xs font-medium text-[#111]">{p.documento}</td>
+                    <td className="px-2 py-1.5 text-xs">{p.aseguradora}</td>
+                    <td className="px-2 py-1.5 text-xs">{p.ramo}</td>
+                    <td className="px-2 py-1.5 text-xs text-[#666]">{p.subramo}</td>
+                    <td className="px-2 py-1.5 text-xs text-[#666]">{p.fechaLiquidacion}</td>
+                    <td className={`px-2 py-1.5 text-right text-xs font-medium tabular-nums ${p.primaNeta < 0 ? "text-[#E62800]" : ""}`}>{p.primaNeta < 0 ? `(${fmt(Math.abs(p.primaNeta))})` : fmt(p.primaNeta)}</td>
                   </tr>
                 ))}
-                <tr className="bg-[#041224] text-white border-t-2"><td className="px-2 py-2 font-bold" colSpan={5}>Total</td><td className="px-2 py-2 text-right font-bold">{fmt(polizaTotal)}</td></tr>
+                <tr className="bg-[#041224] text-white"><td className="px-2 py-1.5 text-xs font-bold" colSpan={5}>Total</td><td className="px-2 py-1.5 text-right text-xs font-bold tabular-nums">{fmt(polizaTotal)}</td></tr>
               </>
             ) : (
               <>
                 {filteredRows.length === 0 ? (
-                  <tr><td colSpan={3} className="px-3 py-8 text-center text-[#888]">Sin datos para este periodo {year}</td></tr>
+                  <tr><td colSpan={3} className="px-2 py-6 text-center text-xs text-[#888]">Sin datos para este periodo {year}</td></tr>
                 ) : filteredRows.map((r, idx) => {
                   const nextLevel: DrillLevel | null = drillLevel === "gerencia" ? "vendedor" : drillLevel === "vendedor" ? "grupo" : drillLevel === "grupo" ? "cliente" : drillLevel === "cliente" ? "poliza" : null
                   const selKey = drillLevel === "gerencia" ? "gerencia" : drillLevel === "vendedor" ? "vendedor" : drillLevel === "grupo" ? "grupo" : drillLevel === "cliente" ? "cliente" : null
@@ -263,12 +263,12 @@ export default function CorporatePage() {
                     <tr key={r.name} className={`border-b border-[#F0F0F0] ${nextLevel ? "cursor-pointer" : ""} hover:bg-[#FFF5F5] ${idx % 2 === 1 ? "bg-[#FAFAFA]" : ""}`}
                       onClick={() => nextLevel && selKey && drill(nextLevel, r.name, { ...sel, [selKey]: r.name })}>
                       <td className="px-1 py-1.5 text-center">{nextLevel && <ChevronRight className="w-3 h-3 text-[#E62800] inline" />}</td>
-                      <td className="px-2 py-1.5 font-medium text-[#111]">{r.name}</td>
-                      <td className={`px-2 py-1.5 text-right font-medium ${r.primaNeta < 0 ? "text-[#E62800]" : ""}`}>{r.primaNeta < 0 ? `(${fmt(Math.abs(r.primaNeta))})` : fmt(r.primaNeta)}</td>
+                      <td className="px-2 py-1.5 text-xs font-medium text-[#111]">{r.name}</td>
+                      <td className={`px-2 py-1.5 text-right text-xs font-medium tabular-nums ${r.primaNeta < 0 ? "text-[#E62800]" : ""}`}>{r.primaNeta < 0 ? `(${fmt(Math.abs(r.primaNeta))})` : fmt(r.primaNeta)}</td>
                     </tr>
                   )
                 })}
-                <tr className="bg-[#041224] text-white border-t-2"><td className="px-1 py-2"></td><td className="px-2 py-2 font-bold">Total</td><td className="px-2 py-2 text-right font-bold">{fmt(rowTotal)}</td></tr>
+                <tr className="bg-[#041224] text-white"><td className="px-1 py-1.5"></td><td className="px-2 py-1.5 text-xs font-bold">Total</td><td className="px-2 py-1.5 text-right text-xs font-bold tabular-nums">{fmt(rowTotal)}</td></tr>
               </>
             )}
           </tbody>

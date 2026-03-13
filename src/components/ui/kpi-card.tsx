@@ -46,8 +46,11 @@ export function KPICard({
     return () => clearInterval(timer)
   }, [value, loading])
 
-  const formatted =
-    format === "currency"
+  // Show dash for zero or empty values
+  const isEmpty = value === 0 || value === null || value === undefined
+  const formatted = isEmpty
+    ? "—"
+    : format === "currency"
       ? formatCurrency(displayValue)
       : format === "percentage"
         ? formatPercentage(displayValue)
@@ -77,7 +80,7 @@ export function KPICard({
         </span>
         {icon && <span className="text-clk-gray-medium">{icon}</span>}
       </div>
-      <div className="text-2xl font-bold text-clk-dark font-lato">{formatted}</div>
+      <div className="text-2xl font-bold text-clk-dark font-lato" style={{ fontFeatureSettings: "'tnum'" }}>{formatted}</div>
       <div className="flex items-center gap-2 mt-1">
         {trend && (
           <span

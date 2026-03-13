@@ -280,9 +280,8 @@ export function DetailDrillTable({ selectedLinea, periodo, year }: DetailDrillTa
         <div className="border-t border-gray-200 mb-4" />
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-5 py-12 text-center">
-            <div className="text-4xl mb-3">👆</div>
-            <p className="text-sm text-gray-400">Selecciona una línea de negocio para ver el desglose detallado</p>
-            <p className="text-xs text-gray-300 mt-1">Click en una fila de la tabla o una barra del gráfico</p>
+            <p className="text-xs text-gray-400">Selecciona una línea de negocio para ver el desglose detallado</p>
+            <p className="text-[10px] text-gray-300 mt-1">Click en una fila de la tabla o una barra del gráfico</p>
           </div>
         </div>
       </div>
@@ -297,21 +296,21 @@ export function DetailDrillTable({ selectedLinea, periodo, year }: DetailDrillTa
       {/* Container */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
 
-        {/* Header bar — Azure Blue */}
-        <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: "#3983F6" }}>
+        {/* Header bar — Dark */}
+        <div className="flex items-center justify-between px-4 py-2" style={{ backgroundColor: "#041224" }}>
           <div className="flex items-center gap-3">
-            <h3 className="text-sm font-semibold text-white">
-              📋 {drillLevel === "poliza" ? "Pólizas" : LEVEL_LABELS[drillLevel]}
+            <h3 className="text-xs font-semibold text-white uppercase tracking-wider">
+              {drillLevel === "poliza" ? "Pólizas" : LEVEL_LABELS[drillLevel]}
             </h3>
-            <span className="text-xs text-white/70 bg-white/15 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] text-white/70 bg-white/15 px-2 py-0.5 rounded-full">
               {drillLevel === "poliza" ? filteredPolizas.length : filteredRows.length} registros
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleExcelExport} className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-white border border-white/30 hover:bg-white/15 transition-colors">
+            <button onClick={handleExcelExport} className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium text-white border border-white/30 hover:bg-white/15 transition-colors">
               <Download className="w-3 h-3" /> Excel
             </button>
-            <button onClick={handlePDFExport} className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-white border border-white/30 hover:bg-white/15 transition-colors">
+            <button onClick={handlePDFExport} className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium text-white border border-white/30 hover:bg-white/15 transition-colors">
               <Download className="w-3 h-3" /> PDF
             </button>
           </div>
@@ -356,24 +355,24 @@ export function DetailDrillTable({ selectedLinea, periodo, year }: DetailDrillTa
         </div>
 
         {/* Table */}
-        <div ref={tableRef} className="max-h-[42vh] overflow-y-auto overflow-x-auto">
-          <table className="w-full text-sm">
+        <div ref={tableRef} className="max-h-[42vh] overflow-y-auto overflow-x-auto w-full">
+          <table className="w-full text-xs">
             <thead className="sticky top-0 z-10">
               {drillLevel === "poliza" ? (
-                <tr style={{ backgroundColor: "#3983F6" }}>
-                  <th className="text-left px-3 py-2 text-[11px] font-semibold text-white uppercase tracking-wide">Documento</th>
-                  <th className="text-left px-3 py-2 text-[11px] font-semibold text-white uppercase tracking-wide">Aseguradora</th>
-                  <th className="text-left px-3 py-2 text-[11px] font-semibold text-white uppercase tracking-wide">Ramo</th>
-                  <th className="text-left px-3 py-2 text-[11px] font-semibold text-white uppercase tracking-wide">Subramo</th>
-                  <th className="text-left px-3 py-2 text-[11px] font-semibold text-white uppercase tracking-wide">F. Liquidación</th>
-                  <th className="text-left px-3 py-2 text-[11px] font-semibold text-white uppercase tracking-wide">F. Lím. Pago</th>
-                  <th className="text-right px-3 py-2 text-[11px] font-semibold text-white uppercase tracking-wide">Prima neta</th>
+                <tr className="bg-[#041224] border-b-2 border-b-[#E62800]">
+                  <th className="text-left px-3 py-1.5 text-xs font-semibold text-white uppercase tracking-wider">Documento</th>
+                  <th className="text-left px-3 py-1.5 text-xs font-semibold text-white uppercase tracking-wider">Aseguradora</th>
+                  <th className="text-left px-3 py-1.5 text-xs font-semibold text-white uppercase tracking-wider">Ramo</th>
+                  <th className="text-left px-3 py-1.5 text-xs font-semibold text-white uppercase tracking-wider">Subramo</th>
+                  <th className="text-left px-3 py-1.5 text-xs font-semibold text-white uppercase tracking-wider">F. Liquidación</th>
+                  <th className="text-left px-3 py-1.5 text-xs font-semibold text-white uppercase tracking-wider">F. Lím. Pago</th>
+                  <th className="text-right px-3 py-1.5 text-xs font-semibold text-white uppercase tracking-wider">Prima neta</th>
                 </tr>
               ) : (
-                <tr style={{ backgroundColor: "#3983F6" }}>
-                  {hasNextLevel && <th className="w-8 px-1 py-2"></th>}
-                  <th className="text-left px-3 py-2 text-[11px] font-semibold text-white uppercase tracking-wide">{LEVEL_LABELS[drillLevel]}</th>
-                  <th className="text-right px-3 py-2 text-[11px] font-semibold text-white uppercase tracking-wide">Prima neta</th>
+                <tr className="bg-[#041224] border-b-2 border-b-[#E62800]">
+                  {hasNextLevel && <th className="w-6 px-1 py-1.5"></th>}
+                  <th className="text-left px-3 py-1.5 text-xs font-semibold text-white uppercase tracking-wider">{LEVEL_LABELS[drillLevel]}</th>
+                  <th className="text-right px-3 py-1.5 text-xs font-semibold text-white uppercase tracking-wider">Prima neta</th>
                 </tr>
               )}
             </thead>
@@ -397,24 +396,24 @@ export function DetailDrillTable({ selectedLinea, periodo, year }: DetailDrillTa
                   ) : filteredPolizas.map((p, idx) => (
                     <tr
                       key={`${p.documento}-${idx}`}
-                      className={`border-b border-gray-50 transition-all duration-150 hover:bg-[#eff6ff] ${idx % 2 === 0 ? "bg-white" : "bg-[#fafbfc]"}`}
+                      className={`border-b border-[#F0F0F0] transition-all duration-150 hover:bg-[#FFF5F5] ${idx % 2 === 0 ? "bg-white" : "bg-[#FAFAFA]"}`}
                       style={{ animation: `fadeSlideIn 0.3s ease ${idx * 30}ms both` }}
                     >
-                      <td className="px-3 py-2 font-medium text-gray-900">{p.documento}</td>
-                      <td className="px-3 py-2 text-gray-600">{p.aseguradora}</td>
-                      <td className="px-3 py-2 text-gray-600">{p.ramo}</td>
-                      <td className="px-3 py-2 text-gray-500">{p.subramo}</td>
-                      <td className="px-3 py-2 text-gray-500">{p.fechaLiquidacion}</td>
-                      <td className="px-3 py-2 text-gray-500">{p.fechaLimPago}</td>
-                      <td className={`px-3 py-2 text-right font-medium tabular-nums ${p.primaNeta < 0 ? "text-[#E62800]" : "text-gray-900"}`}>
+                      <td className="px-3 py-1.5 font-medium text-[#111]">{p.documento}</td>
+                      <td className="px-3 py-1.5 text-[#333]">{p.aseguradora}</td>
+                      <td className="px-3 py-1.5 text-[#333]">{p.ramo}</td>
+                      <td className="px-3 py-1.5 text-[#666]">{p.subramo}</td>
+                      <td className="px-3 py-1.5 text-[#666] tabular-nums">{p.fechaLiquidacion}</td>
+                      <td className="px-3 py-1.5 text-[#666] tabular-nums">{p.fechaLimPago}</td>
+                      <td className={`px-3 py-1.5 text-right font-medium tabular-nums ${p.primaNeta < 0 ? "text-red-500" : ""}`}>
                         {p.primaNeta < 0 ? `(${fmt(Math.abs(p.primaNeta))})` : fmt(p.primaNeta)}
                       </td>
                     </tr>
                   ))}
                   {filteredPolizas.length > 0 && (
-                    <tr style={{ backgroundColor: "#6B7280" }}>
-                      <td className="px-3 py-2 font-bold text-white" colSpan={6}>Total</td>
-                      <td className="px-3 py-2 text-right font-bold text-white tabular-nums">{fmt(polizaTotal)}</td>
+                    <tr className="bg-[#041224]">
+                      <td className="px-3 py-1.5 font-bold text-white" colSpan={6}>Total</td>
+                      <td className="px-3 py-1.5 text-right font-bold text-white tabular-nums">{fmt(polizaTotal)}</td>
                     </tr>
                   )}
                 </>
@@ -425,31 +424,26 @@ export function DetailDrillTable({ selectedLinea, periodo, year }: DetailDrillTa
                   ) : filteredRows.map((r, idx) => (
                     <tr
                       key={r.name}
-                      className={`group border-b border-gray-50 transition-all duration-150 hover:bg-[#eff6ff] ${hasNextLevel ? "cursor-pointer" : ""} ${idx % 2 === 0 ? "bg-white" : "bg-[#fafbfc]"}`}
+                      className={`group border-b border-[#F0F0F0] transition-all duration-150 hover:bg-[#FFF5F5] ${hasNextLevel ? "cursor-pointer" : ""} ${idx % 2 === 0 ? "bg-white" : "bg-[#FAFAFA]"}`}
                       onClick={() => handleRowClick(r)}
                       style={{ animation: `fadeSlideIn 0.3s ease ${idx * 30}ms both` }}
                     >
                       {hasNextLevel && (
-                        <td className="px-1 py-2 text-center">
-                          <ChevronRight className="w-4 h-4 text-[#3983F6] inline transition-transform duration-200 group-hover:translate-x-0.5 group-hover:scale-110" />
+                        <td className="px-1 py-1.5 text-center">
+                          <ChevronRight className="w-3.5 h-3.5 text-[#E62800] inline transition-transform duration-200 group-hover:translate-x-0.5 group-hover:scale-110" />
                         </td>
                       )}
-                      <td className="px-3 py-2 font-medium text-gray-900">{r.name}</td>
-                      <td className={`px-3 py-2 text-right font-medium tabular-nums ${r.primaNeta < 0 ? "text-[#E62800]" : "text-gray-900"}`}>
+                      <td className="px-3 py-1.5 font-medium text-[#111]">{r.name}</td>
+                      <td className={`px-3 py-1.5 text-right font-medium tabular-nums ${r.primaNeta < 0 ? "text-red-500" : ""}`}>
                         {r.primaNeta < 0 ? `(${fmt(Math.abs(r.primaNeta))})` : fmt(r.primaNeta)}
-                        {hasNextLevel && (
-                          <span className="ml-2 text-[9px] text-[#3983F6] opacity-0 group-hover:opacity-100 transition-opacity font-medium">
-                            ver detalle →
-                          </span>
-                        )}
                       </td>
                     </tr>
                   ))}
                   {filteredRows.length > 0 && (
-                    <tr style={{ backgroundColor: "#6B7280" }}>
-                      {hasNextLevel && <td className="px-1 py-2"></td>}
-                      <td className="px-3 py-2 font-bold text-white">Total</td>
-                      <td className="px-3 py-2 text-right font-bold text-white tabular-nums">{fmt(rowTotal)}</td>
+                    <tr className="bg-[#041224]">
+                      {hasNextLevel && <td className="px-1 py-1.5"></td>}
+                      <td className="px-3 py-1.5 font-bold text-white">Total</td>
+                      <td className="px-3 py-1.5 text-right font-bold text-white tabular-nums">{fmt(rowTotal)}</td>
                     </tr>
                   )}
                 </>

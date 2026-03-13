@@ -37,7 +37,7 @@ function StatusBadge({ status }: { status: string }) {
     "Al día": "bg-[#041224] text-white",
   }
   return (
-    <span className={`px-2 py-0.5 rounded text-sm font-medium ${colors[status] || "bg-gray-200 text-gray-600"}`}>
+    <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${colors[status] || "bg-gray-200 text-gray-600"}`}>
       {status}
     </span>
   )
@@ -67,70 +67,72 @@ export default function CobranzaPendientePage() {
   const porVencer = data.filter(r => r.status === "Por vencer").reduce((s, r) => s + r.prima_pendiente, 0)
 
   return (
-    <div>
-      <PageTabs />
-      <h1 className="text-base font-bold text-[#111] font-lato mb-4">Cobranza pendiente</h1>
+    <div className="bg-[#FAFAFA] px-3 py-4">
+      <div className="max-w-[1200px] mx-auto w-full">
+        <PageTabs />
+        <h1 className="text-sm font-bold text-[#111] font-lato mb-2 mt-2">Cobranza pendiente</h1>
 
-      {/* Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-        <div className="bi-card border-l-4 border-l-[#E62800] p-3">
-          <div className="text-[9px] text-gray-500 uppercase tracking-wide font-medium mb-1">Total pendiente</div>
-          <div className="text-2xl font-bold text-[#E62800] font-lato">{fmt(totalPendiente)}</div>
-          <div className="text-sm text-gray-400 mt-0.5">{data.length} pólizas</div>
+        {/* Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+          <div className="bg-white rounded-lg border border-gray-200 border-l-4 border-l-[#E62800] p-2">
+            <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Total pendiente</div>
+            <div className="text-lg font-bold text-[#E62800] tabular-nums">{fmt(totalPendiente)}</div>
+            <div className="text-xs text-gray-400 mt-0.5 tabular-nums">{data.length} pólizas</div>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 border-l-4 border-l-[#E8735A] p-2">
+            <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Vencido</div>
+            <div className="text-lg font-bold text-[#E8735A] tabular-nums">{fmt(vencidoHoy)}</div>
+            <div className="text-xs text-gray-400 mt-0.5 tabular-nums">{data.filter(r => r.status === "Vencido").length} pólizas</div>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 border-l-4 border-l-[#041224] p-2">
+            <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Por vencer esta semana</div>
+            <div className="text-lg font-bold text-[#166534] tabular-nums">{fmt(porVencer)}</div>
+            <div className="text-xs text-gray-400 mt-0.5 tabular-nums">{data.filter(r => r.status === "Por vencer").length} pólizas</div>
+          </div>
         </div>
-        <div className="bi-card border-l-4 border-l-[#E62800] p-3">
-          <div className="text-[9px] text-gray-500 uppercase tracking-wide font-medium mb-1">Vencido</div>
-          <div className="text-2xl font-bold text-[#E8735A] font-lato">{fmt(vencidoHoy)}</div>
-          <div className="text-sm text-gray-400 mt-0.5">{data.filter(r => r.status === "Vencido").length} pólizas</div>
-        </div>
-        <div className="bi-card border-l-4 border-l-[#041224] p-3">
-          <div className="text-[9px] text-gray-500 uppercase tracking-wide font-medium mb-1">Por vencer esta semana</div>
-          <div className="text-2xl font-bold text-[#166534] font-lato">{fmt(porVencer)}</div>
-          <div className="text-sm text-gray-400 mt-0.5">{data.filter(r => r.status === "Por vencer").length} pólizas</div>
-        </div>
-      </div>
 
-      {/* Table */}
-      <div className="bi-card overflow-hidden overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-              <th className="text-left px-3 py-2 font-semibold text-gray-600">Póliza</th>
-              <th className="text-left px-3 py-2 font-semibold text-gray-600">Cliente</th>
-              <th className="text-left px-3 py-2 font-semibold text-gray-600">Gerencia</th>
-              <th className="text-right px-3 py-2 font-semibold text-gray-600">Prima pendiente</th>
-              <th className="text-right px-3 py-2 font-semibold text-gray-600">Días vencido</th>
-              <th className="text-center px-3 py-2 font-semibold text-gray-600">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((r, i) => (
-              <tr
-                key={i}
-                className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] transition-colors ${
-                  r.dias_vencido > 30 ? "bg-[#FEE2E2]" : i % 2 === 1 ? "bg-[#FAFAFA]" : ""
-                }`}
-              >
-                <td className="px-3 py-1.5 font-medium text-[#111]">{r.poliza}</td>
-                <td className="px-3 py-1.5 text-gray-600">{r.cliente}</td>
-                <td className="px-3 py-1.5 text-gray-600">{r.gerencia}</td>
-                <td className="px-3 py-1.5 text-right font-medium">{fmt(r.prima_pendiente)}</td>
-                <td className={`px-3 py-1.5 text-right font-medium ${r.dias_vencido > 30 ? "text-[#E62800] font-bold" : ""}`}>
-                  {r.dias_vencido}
-                </td>
-                <td className="px-3 py-1.5 text-center"><StatusBadge status={r.status} /></td>
+        {/* Table */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Póliza</th>
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Cliente</th>
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Gerencia</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Prima pendiente</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Días vencido</th>
+                <th className="text-center px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Status</th>
               </tr>
-            ))}
-            <tr className="bg-[#041224] text-white">
-              <td className="px-3 py-2 font-bold" colSpan={3}>TOTAL</td>
-              <td className="px-3 py-2 text-right font-bold">{fmt(totalPendiente)}</td>
-              <td className="px-3 py-2" colSpan={2}></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {data.map((r, i) => (
+                <tr
+                  key={i}
+                  className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] transition-colors ${
+                    r.dias_vencido > 30 ? "bg-[#FEE2E2]" : i % 2 === 1 ? "bg-[#FAFAFA]" : ""
+                  }`}
+                >
+                  <td className="px-2 py-1.5 text-xs font-medium text-[#111]">{r.poliza}</td>
+                  <td className="px-2 py-1.5 text-xs text-gray-600">{r.cliente}</td>
+                  <td className="px-2 py-1.5 text-xs text-gray-600">{r.gerencia}</td>
+                  <td className="px-2 py-1.5 text-right text-xs font-medium tabular-nums">{fmt(r.prima_pendiente)}</td>
+                  <td className={`px-2 py-1.5 text-right text-xs font-medium tabular-nums ${r.dias_vencido > 30 ? "text-[#E62800]" : ""}`}>
+                    {r.dias_vencido}
+                  </td>
+                  <td className="px-2 py-1.5 text-center"><StatusBadge status={r.status} /></td>
+                </tr>
+              ))}
+              <tr className="bg-[#041224] text-white">
+                <td className="px-2 py-1.5 text-xs font-bold" colSpan={3}>TOTAL</td>
+                <td className="px-2 py-1.5 text-right text-xs font-bold tabular-nums">{fmt(totalPendiente)}</td>
+                <td className="px-2 py-1.5" colSpan={2}></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-      <PageFooter />
+        <PageFooter />
+      </div>
     </div>
   )
 }

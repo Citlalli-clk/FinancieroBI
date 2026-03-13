@@ -60,79 +60,81 @@ export default function CobranzaDiaPage() {
   }))
 
   return (
-    <div>
-      <PageTabs />
-      <h1 className="text-base font-bold text-[#111] font-lato mb-4">Cobranza por día</h1>
+    <div className="bg-[#FAFAFA] px-3 py-4">
+      <div className="max-w-[1200px] mx-auto w-full">
+        <PageTabs />
+        <h1 className="text-sm font-bold text-[#111] font-lato mb-2 mt-2">Cobranza por día</h1>
 
-      {/* Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-        <div className="bi-card border-l-4 border-l-[#E62800] p-3">
-          <div className="text-[9px] text-gray-500 uppercase tracking-wide font-medium mb-1">Meta del día</div>
-          <div className="text-2xl font-bold text-[#111] font-lato">{fmt(metaTotal / data.length)}</div>
+        {/* Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+          <div className="bg-white rounded-lg border border-gray-200 border-l-4 border-l-[#E62800] p-2">
+            <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Meta del día</div>
+            <div className="text-lg font-bold text-[#111] tabular-nums">{fmt(metaTotal / data.length)}</div>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 border-l-4 border-l-[#041224] p-2">
+            <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Cobrado hoy</div>
+            <div className="text-lg font-bold text-[#166534] tabular-nums">{fmt(data[data.length - 1]?.prima_cobrada ?? 0)}</div>
+          </div>
+          <div className="bg-[#041224] rounded-lg p-2">
+            <div className="text-xs text-white/70 uppercase tracking-wider font-semibold mb-1">Cumplimiento diario</div>
+            <div className="text-lg font-bold text-white tabular-nums">{cumplimiento}%</div>
+            <div className="text-xs text-white/60 mt-0.5 tabular-nums">Acumulado: {fmt(lastAcumulado)}</div>
+          </div>
         </div>
-        <div className="bi-card border-l-4 border-l-[#041224] p-3">
-          <div className="text-[9px] text-gray-500 uppercase tracking-wide font-medium mb-1">Cobrado hoy</div>
-          <div className="text-2xl font-bold text-[#166534] font-lato">{fmt(data[data.length - 1]?.prima_cobrada ?? 0)}</div>
+
+        {/* Chart */}
+        <div className="bg-white rounded-lg border border-gray-200 p-2 mb-3">
+          <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Tendencia diaria (millones)</div>
+          <ResponsiveContainer width="100%" height={160}>
+            <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
+              <XAxis dataKey="fecha" fontSize={10} tick={{ fill: "#666" }} />
+              <YAxis fontSize={10} tick={{ fill: "#666" }} tickFormatter={v => `$${v}M`} />
+              <Tooltip formatter={(v: unknown) => [`$${v}M`]} />
+              <Line type="monotone" dataKey="cobrado" stroke="#111111" strokeWidth={2} dot={{ r: 3 }} name="Cobrado" />
+              <Line type="monotone" dataKey="meta" stroke="#E62800" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Meta" />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
-        <div className="bi-card p-3" style={{ background: "#041224" }}>
-          <div className="text-[9px] text-white/70 uppercase tracking-wide font-medium mb-1">Cumplimiento diario</div>
-          <div className="text-2xl font-bold text-white font-lato">{cumplimiento}%</div>
-          <div className="text-sm text-white/60 mt-0.5">Acumulado: {fmt(lastAcumulado)}</div>
+
+        {/* Table */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Fecha</th>
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Gerencia</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Prima cobrada</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Meta</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Diferencia</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">%</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Acumulado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((r, i) => {
+                const pct = r.meta_dia > 0 ? Math.round((r.prima_cobrada / r.meta_dia) * 100) : 0
+                const neg = r.diferencia < 0
+                return (
+                  <tr key={i} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${i % 2 === 1 ? "bg-[#FAFAFA]" : ""}`}>
+                    <td className="px-2 py-1.5 text-xs text-gray-600">{r.fecha}</td>
+                    <td className="px-2 py-1.5 text-xs font-medium text-[#111]">{r.gerencia}</td>
+                    <td className="px-2 py-1.5 text-right text-xs font-medium tabular-nums">{fmt(r.prima_cobrada)}</td>
+                    <td className="px-2 py-1.5 text-right text-xs text-gray-500 tabular-nums">{fmt(r.meta_dia)}</td>
+                    <td className={`px-2 py-1.5 text-right text-xs font-medium tabular-nums ${neg ? "text-[#E62800]" : "text-[#166534]"}`}>
+                      {neg ? `(${fmt(Math.abs(r.diferencia))})` : fmt(r.diferencia)}
+                    </td>
+                    <td className={`px-2 py-1.5 text-right text-xs font-medium tabular-nums ${pct < 100 ? "text-[#E62800]" : "text-[#166534]"}`}>{pct}%</td>
+                    <td className="px-2 py-1.5 text-right text-xs text-gray-500 tabular-nums">{fmt(r.acumulado)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
-      </div>
 
-      {/* Chart */}
-      <div className="bi-card p-4 mb-4">
-        <div className="text-xs font-medium text-gray-500 mb-2">Tendencia diaria (millones)</div>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
-            <XAxis dataKey="fecha" fontSize={10} tick={{ fill: "#666" }} />
-            <YAxis fontSize={10} tick={{ fill: "#666" }} tickFormatter={v => `$${v}M`} />
-            <Tooltip formatter={(v: unknown) => [`$${v}M`]} />
-            <Line type="monotone" dataKey="cobrado" stroke="#111111" strokeWidth={2} dot={{ r: 3 }} name="Cobrado" />
-            <Line type="monotone" dataKey="meta" stroke="#E62800" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Meta" />
-          </LineChart>
-        </ResponsiveContainer>
+        <PageFooter />
       </div>
-
-      {/* Table */}
-      <div className="bi-card overflow-hidden overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-              <th className="text-left px-3 py-2 font-semibold text-gray-600">Fecha</th>
-              <th className="text-left px-3 py-2 font-semibold text-gray-600">Gerencia</th>
-              <th className="text-right px-3 py-2 font-semibold text-gray-600">Prima cobrada</th>
-              <th className="text-right px-3 py-2 font-semibold text-gray-600">Meta</th>
-              <th className="text-right px-3 py-2 font-semibold text-gray-600">Diferencia</th>
-              <th className="text-right px-3 py-2 font-semibold text-gray-600">%</th>
-              <th className="text-right px-3 py-2 font-semibold text-gray-600">Acumulado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((r, i) => {
-              const pct = r.meta_dia > 0 ? Math.round((r.prima_cobrada / r.meta_dia) * 100) : 0
-              const neg = r.diferencia < 0
-              return (
-                <tr key={i} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${i % 2 === 1 ? "bg-[#FAFAFA]" : ""}`}>
-                  <td className="px-3 py-1.5 text-gray-600">{r.fecha}</td>
-                  <td className="px-3 py-1.5 font-medium text-[#111]">{r.gerencia}</td>
-                  <td className="px-3 py-1.5 text-right font-medium">{fmt(r.prima_cobrada)}</td>
-                  <td className="px-3 py-1.5 text-right text-gray-500">{fmt(r.meta_dia)}</td>
-                  <td className={`px-3 py-1.5 text-right font-medium ${neg ? "text-[#E62800]" : "text-[#166534]"}`}>
-                    {neg ? `(${fmt(Math.abs(r.diferencia))})` : fmt(r.diferencia)}
-                  </td>
-                  <td className={`px-3 py-1.5 text-right ${pct < 100 ? "text-[#E62800]" : "text-[#166534]"}`}>{pct}%</td>
-                  <td className="px-3 py-1.5 text-right text-gray-500">{fmt(r.acumulado)}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      <PageFooter />
     </div>
   )
 }

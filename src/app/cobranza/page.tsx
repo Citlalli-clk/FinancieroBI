@@ -85,8 +85,8 @@ function PctBadge({ val, base }: { val: number; base: number }) {
   const p = pct(val, base)
   const neg = p < 0
   return (
-    <td className="px-3 py-3 text-center border-b border-[#E5E7EB]">
-      <span className={`inline-block px-2 py-0.5 rounded text-sm font-bold ${neg ? "bg-[#FEE2E2] text-[#991B1B]" : "bg-[#DCFCE7] text-[#166534]"}`}>
+    <td className="px-2 py-1.5 text-center border-b border-[#E5E7EB]">
+      <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium tabular-nums ${neg ? "bg-[#FEE2E2] text-[#991B1B]" : "bg-[#DCFCE7] text-[#166534]"}`}>
         {neg ? "" : "+"}{p.toFixed(2)}%
       </span>
     </td>
@@ -182,16 +182,16 @@ export default function CobranzaPage() {
   }), { primaNeta: 0, convenio: 0, pnAA: 0, pendiente: 0, pnCia: 0, difCia: 0 })
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] px-3 py-4 flex flex-col">
-      <div className="max-w-[1200px] mx-auto w-full flex flex-col flex-1">
+    <div className="bg-[#F3F4F6] px-3 py-4">
+      <div className="max-w-[1200px] mx-auto w-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-2 pt-3 md:pt-5 w-full gap-2 md:gap-0">
         <PageTabs />
         <PeriodFilter onFilterChange={handleFilterChange} />
       </div>
 
       {/* Title + simplified filters */}
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <h1 className="text-base font-bold text-[#041224]">Aseguradoras</h1>
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+        <h1 className="text-sm font-bold text-[#041224]">Aseguradoras</h1>
         <span className="text-xs text-[#9CA3AF]">Actualizado: 27/02/2026</span>
       </div>
 
@@ -200,50 +200,50 @@ export default function CobranzaPage() {
         const metaPct = compTotals.convenio > 0 ? Number(((compTotals.primaNeta / compTotals.convenio) * 100).toFixed(1)) : 0
         const growthPct = compTotals.pnAA > 0 ? ((compTotals.primaNeta - compTotals.pnAA) / compTotals.pnAA) * 100 : 0
         return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mb-3">
         {/* Card 1 — Meta convenio */}
-        <div className="bg-white rounded-xl shadow-md p-3 flex flex-col">
-          <p className="text-[#9CA3AF] text-sm font-bold uppercase tracking-wider mb-2">Meta convenio</p>
-          <DonutChart value={metaPct} objetivo={90} color="#E62800" size={140} tooltipLines={[`Avance: ${metaPct}%`, `Objetivo: 90%`, `PN: ${fmtM(compTotals.primaNeta)}`, `Convenio: ${fmtM(compTotals.convenio)}`]} />
-          <div className="mt-3 space-y-1.5">
-            <p className="text-[#E62800] text-sm font-bold">{growthPct >= 0 ? "+" : ""}{growthPct.toFixed(2)}% vs {Number(year) - 1}</p>
+        <div className="bg-white rounded-lg border border-gray-200 p-2 flex flex-col">
+          <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider mb-1.5">Meta convenio</p>
+          <DonutChart value={metaPct} objetivo={90} color="#E62800" size={120} tooltipLines={[`Avance: ${metaPct}%`, `Objetivo: 90%`, `PN: ${fmtM(compTotals.primaNeta)}`, `Convenio: ${fmtM(compTotals.convenio)}`]} />
+          <div className="mt-2 space-y-1">
+            <p className="text-[#E62800] text-xs font-medium tabular-nums">{growthPct >= 0 ? "+" : ""}{growthPct.toFixed(2)}% vs {Number(year) - 1}</p>
             <div className="flex justify-between text-xs text-[#041224]">
-              <span>PN efectuada mensual</span><strong>{fmtM(compTotals.primaNeta)}</strong>
+              <span>PN efectuada mensual</span><span className="font-medium tabular-nums">{fmtM(compTotals.primaNeta)}</span>
             </div>
             <div className="flex justify-between text-xs text-[#041224]">
-              <span>Convenio mensual</span><strong>{fmtM(compTotals.convenio)}</strong>
+              <span>Convenio mensual</span><span className="font-medium tabular-nums">{fmtM(compTotals.convenio)}</span>
             </div>
           </div>
         </div>
 
         {/* Card 2 — Acumulado */}
-        <div className="bg-white rounded-xl shadow-md p-3 flex flex-col">
-          <p className="text-[#9CA3AF] text-sm font-bold uppercase tracking-wider mb-2">Acumulado</p>
-          <DonutChart value={metaPct} objetivo={90} color="#041224" size={140} tooltipLines={[`Acumulado: ${metaPct}%`, `Objetivo: 90%`, `Acum. PN: ${fmtM(compTotals.primaNeta)}`, `Conv. acum: ${fmtM(compTotals.convenio)}`]} />
-          <div className="mt-3 space-y-1.5">
-            <p className="text-[#E62800] text-sm font-bold">{growthPct >= 0 ? "+" : ""}{growthPct.toFixed(2)}% vs {Number(year) - 1}</p>
+        <div className="bg-white rounded-lg border border-gray-200 p-2 flex flex-col">
+          <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider mb-1.5">Acumulado</p>
+          <DonutChart value={metaPct} objetivo={90} color="#041224" size={120} tooltipLines={[`Acumulado: ${metaPct}%`, `Objetivo: 90%`, `Acum. PN: ${fmtM(compTotals.primaNeta)}`, `Conv. acum: ${fmtM(compTotals.convenio)}`]} />
+          <div className="mt-2 space-y-1">
+            <p className="text-[#E62800] text-xs font-medium tabular-nums">{growthPct >= 0 ? "+" : ""}{growthPct.toFixed(2)}% vs {Number(year) - 1}</p>
             <div className="flex justify-between text-xs text-[#041224]">
-              <span>Acumulado PN</span><strong>{fmtM(compTotals.primaNeta)}</strong>
+              <span>Acumulado PN</span><span className="font-medium tabular-nums">{fmtM(compTotals.primaNeta)}</span>
             </div>
             <div className="flex justify-between text-xs text-[#041224]">
-              <span>Convenio acumulado</span><strong>{fmtM(compTotals.convenio)}</strong>
+              <span>Convenio acumulado</span><span className="font-medium tabular-nums">{fmtM(compTotals.convenio)}</span>
             </div>
           </div>
         </div>
 
         {/* Card 3 — Meta anual */}
-        <div className="bg-white rounded-xl shadow-md p-3 flex flex-col items-center">
-          <p className="text-[#9CA3AF] text-sm font-bold uppercase tracking-wider mb-1 self-start">Meta anual</p>
-          <p className="text-3xl font-black text-[#041224] mb-3">{metaPct}%</p>
+        <div className="bg-white rounded-lg border border-gray-200 p-2 flex flex-col items-center">
+          <p className="text-[#9CA3AF] text-xs font-semibold uppercase tracking-wider mb-1 self-start">Meta anual</p>
+          <p className="text-2xl font-bold text-[#041224] tabular-nums mb-2">{metaPct}%</p>
           <div className="w-full group relative">
             <div className="flex justify-between text-xs text-[#9CA3AF] mb-1">
-              <span>{fmtM(compTotals.primaNeta)}</span>
-              <span>{fmtM(compTotals.convenio)}</span>
+              <span className="tabular-nums">{fmtM(compTotals.primaNeta)}</span>
+              <span className="tabular-nums">{fmtM(compTotals.convenio)}</span>
             </div>
-            <div className="h-8 w-full bg-[#F3F4F6] rounded-full overflow-hidden shadow-inner">
-              <div className="h-8 bg-[#1a1a1a] rounded-full transition-all duration-1000 flex items-center justify-end pr-2"
+            <div className="h-6 w-full bg-[#F3F4F6] rounded-full overflow-hidden shadow-inner">
+              <div className="h-6 bg-[#1a1a1a] rounded-full transition-all duration-1000 flex items-center justify-end pr-2"
                 style={{ width: `${Math.min(metaPct, 100)}%` }}>
-                <span className="text-white text-xs font-bold drop-shadow">{metaPct}%</span>
+                <span className="text-white text-xs font-medium tabular-nums drop-shadow">{metaPct}%</span>
               </div>
             </div>
             <div className="hidden group-hover:block absolute z-50 bg-white rounded-lg shadow-lg border border-[#E5E7EB] px-3 py-2 text-xs text-[#041224] whitespace-nowrap"
@@ -253,14 +253,14 @@ export default function CobranzaPage() {
               <div className="py-0.5">Convenio anual: {fmtM(compTotals.convenio)}</div>
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-x-4 text-center w-full">
+          <div className="mt-2 grid grid-cols-2 gap-x-3 text-center w-full">
             <div>
-              <div className="text-sm text-[#9CA3AF] uppercase font-bold">PN efectuada anual</div>
-              <div className="text-xs font-bold text-[#041224]">{fmtM(compTotals.primaNeta)}</div>
+              <div className="text-xs text-[#9CA3AF] uppercase font-semibold">PN efectuada anual</div>
+              <div className="text-xs font-medium text-[#041224] tabular-nums">{fmtM(compTotals.primaNeta)}</div>
             </div>
             <div>
-              <div className="text-sm text-[#9CA3AF] uppercase font-bold">Convenio anual</div>
-              <div className="text-xs font-bold text-[#041224]">{fmtM(compTotals.convenio)}</div>
+              <div className="text-xs text-[#9CA3AF] uppercase font-semibold">Convenio anual</div>
+              <div className="text-xs font-medium text-[#041224] tabular-nums">{fmtM(compTotals.convenio)}</div>
             </div>
           </div>
         </div>
@@ -269,107 +269,107 @@ export default function CobranzaPage() {
       })()}
 
       {/* Resumen por ramo — MOBILE: cards */}
-      <div className="md:hidden space-y-1.5 mb-4">
-        <h3 className="text-xs font-bold text-[#041224] uppercase mb-2">Resumen por Ramo</h3>
+      <div className="md:hidden space-y-1.5 mb-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-[#041224] mb-1.5">Resumen por Ramo</h3>
         {ramos.map(r => {
           const pct = totalPN > 0 ? ((r.pnEfectuada / totalPN) * 100) : 0
           return (
-            <div key={r.nombre} className="bg-white rounded-xl border border-gray-200 px-3 py-3 shadow-sm">
+            <div key={r.nombre} className="bg-white rounded-lg border border-gray-200 px-2 py-2">
               <div className="flex justify-between items-center mb-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{backgroundColor: ramoColor(r.nombre)}} />
-                  <span className="font-bold text-sm text-[#111]">{r.nombre}</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{backgroundColor: ramoColor(r.nombre)}} />
+                  <span className="font-medium text-xs text-[#111]">{r.nombre}</span>
                 </div>
-                <span className="text-sm font-black text-[#3983F6]">{pct.toFixed(1)}%</span>
+                <span className="text-xs font-medium tabular-nums text-[#3983F6]">{pct.toFixed(1)}%</span>
               </div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-base font-black text-[#041224]">{fmtM(r.pnEfectuada)}</span>
-                <span className="text-[11px] text-gray-400">{new Intl.NumberFormat("es-MX").format(r.polizas)} pólizas</span>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-xs font-medium tabular-nums text-[#041224]">{fmtM(r.pnEfectuada)}</span>
+                <span className="text-xs text-gray-400 tabular-nums">{new Intl.NumberFormat("es-MX").format(r.polizas)} pólizas</span>
               </div>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-500" style={{width: `${Math.min(pct, 100)}%`, backgroundColor: ramoColor(r.nombre)}} />
               </div>
             </div>
           )
         })}
-        <div className="bg-[#1a1a1a] rounded-xl px-3 py-3">
+        <div className="bg-[#1a1a1a] rounded-lg px-2 py-2">
           <div className="flex justify-between items-center">
-            <span className="font-bold text-sm text-white">Total</span>
-            <span className="text-base font-black text-white">{fmtM(totalPN)}</span>
+            <span className="font-bold text-xs text-white">Total</span>
+            <span className="text-xs font-bold text-white tabular-nums">{fmtM(totalPN)}</span>
           </div>
-          <span className="text-[11px] text-gray-400">{new Intl.NumberFormat("es-MX").format(totalPOL)} pólizas</span>
+          <span className="text-xs text-gray-400 tabular-nums">{new Intl.NumberFormat("es-MX").format(totalPOL)} pólizas</span>
         </div>
       </div>
 
       {/* Resumen por ramo — DESKTOP: table */}
-      <div className="hidden md:block bg-white rounded-xl shadow-md overflow-hidden overflow-x-auto mb-4">
-        <table className="w-full text-sm">
+      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden overflow-x-auto mb-3">
+        <table className="w-full">
           <thead>
-            <tr className="bg-[#1a1a1a]">
-              <th className="text-left px-3 py-2.5 font-semibold text-white text-base">Resumen por ramo</th>
-              {ramos.map(r => <th key={r.nombre} className="text-center px-3 py-2.5 font-semibold text-white text-base">{r.nombre}</th>)}
-              <th className="text-center px-3 py-2.5 font-semibold text-white text-base">Total</th>
+            <tr className="bg-[#041224]">
+              <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white">Resumen por ramo</th>
+              {ramos.map(r => <th key={r.nombre} className="text-center px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white">{r.nombre}</th>)}
+              <th className="text-center px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white">Total</th>
             </tr>
           </thead>
           <tbody>
             <tr className="border-b border-[#E5E7EB] bg-white hover:bg-[#FFF5F5] transition-colors">
-              <td className="px-3 py-2.5 text-base font-medium text-[#041224]">PN efectuada</td>
-              {ramos.map(r => <td key={r.nombre} className="px-3 py-2.5 text-center text-base font-medium">{fmt(r.pnEfectuada)}</td>)}
-              <td className="px-3 py-2.5 text-center text-base font-bold">{fmt(totalPN)}</td>
+              <td className="px-2 py-1.5 text-xs font-medium text-[#041224]">PN efectuada</td>
+              {ramos.map(r => <td key={r.nombre} className="px-2 py-1.5 text-center text-xs font-medium tabular-nums">{fmt(r.pnEfectuada)}</td>)}
+              <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(totalPN)}</td>
             </tr>
             <tr className="border-b border-[#E5E7EB] bg-[#F9FAFB] hover:bg-[#FFF5F5] transition-colors">
-              <td className="px-3 py-2.5 text-base font-medium text-[#041224]">% PN efectuada</td>
-              {ramos.map(r => <td key={r.nombre} className="px-3 py-2.5 text-center text-base text-[#6B7280]">{totalPN > 0 ? ((r.pnEfectuada / totalPN) * 100).toFixed(2) : 0}%</td>)}
-              <td className="px-3 py-2.5 text-center text-base font-bold">100%</td>
+              <td className="px-2 py-1.5 text-xs font-medium text-[#041224]">% PN efectuada</td>
+              {ramos.map(r => <td key={r.nombre} className="px-2 py-1.5 text-center text-xs text-[#6B7280] tabular-nums">{totalPN > 0 ? ((r.pnEfectuada / totalPN) * 100).toFixed(2) : 0}%</td>)}
+              <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">100%</td>
             </tr>
             <tr className="border-b border-[#E5E7EB] bg-white hover:bg-[#FFF5F5] transition-colors">
-              <td className="px-3 py-2.5 text-base font-medium text-[#041224]">No. polizas</td>
-              {ramos.map(r => <td key={r.nombre} className="px-3 py-2.5 text-center text-base font-medium">{new Intl.NumberFormat("es-MX").format(r.polizas)}</td>)}
-              <td className="px-3 py-2.5 text-center text-base font-bold">{new Intl.NumberFormat("es-MX").format(totalPOL)}</td>
+              <td className="px-2 py-1.5 text-xs font-medium text-[#041224]">No. polizas</td>
+              {ramos.map(r => <td key={r.nombre} className="px-2 py-1.5 text-center text-xs font-medium tabular-nums">{new Intl.NumberFormat("es-MX").format(r.polizas)}</td>)}
+              <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{new Intl.NumberFormat("es-MX").format(totalPOL)}</td>
             </tr>
-            <tr className="bg-[#1a1a1a] text-white">
-              <td className="px-3 py-3 text-base font-bold">Total</td>
-              {ramos.map(r => <td key={r.nombre} className="px-3 py-3 text-center text-base font-bold">{fmt(r.pnEfectuada)}</td>)}
-              <td className="px-3 py-3 text-center text-base font-bold">{fmt(totalPN)}</td>
+            <tr className="bg-[#041224] text-white">
+              <td className="px-2 py-1.5 text-xs font-bold">Total</td>
+              {ramos.map(r => <td key={r.nombre} className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(r.pnEfectuada)}</td>)}
+              <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(totalPN)}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       {/* Distribucion por ramo — stacked bar (works on all sizes) */}
-      <div className="bg-white rounded-xl shadow-md p-3 md:p-4 mb-4">
-        <h2 className="text-xs font-bold text-[#041224] uppercase mb-3">Distribucion por ramo</h2>
+      <div className="bg-white rounded-lg border border-gray-200 p-2 mb-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#041224] mb-2">Distribucion por ramo</h2>
         <div>
-          <div className="h-8 w-full rounded-lg overflow-hidden flex gap-[2px]">
+          <div className="h-6 w-full rounded-lg overflow-hidden flex gap-[2px]">
             {ramos.map((r,i) => (
               <div key={r.nombre} className="h-full first:rounded-l-lg last:rounded-r-lg transition-all duration-500 relative group/bar"
                 style={{width:`${totalPN>0?(r.pnEfectuada/totalPN)*100:0}%`,background:ramoColor(r.nombre)}}>
-                <div className="hidden group-hover/bar:block absolute z-50 bg-white rounded-lg shadow-lg border border-[#E5E7EB] px-3 py-2 text-xs text-[#041224] whitespace-nowrap"
+                <div className="hidden group-hover/bar:block absolute z-50 bg-white rounded-lg shadow-lg border border-[#E5E7EB] px-2 py-1.5 text-xs text-[#041224] whitespace-nowrap"
                   style={{ bottom: "100%", left: "50%", transform: "translateX(-50%)", marginBottom: 4 }}>
-                  <div className="font-bold">{r.nombre}</div>
-                  <div>{fmt(r.pnEfectuada)}</div>
-                  <div>{totalPN > 0 ? ((r.pnEfectuada / totalPN) * 100).toFixed(1) : 0}%</div>
+                  <div className="font-medium">{r.nombre}</div>
+                  <div className="tabular-nums">{fmt(r.pnEfectuada)}</div>
+                  <div className="tabular-nums">{totalPN > 0 ? ((r.pnEfectuada / totalPN) * 100).toFixed(1) : 0}%</div>
                 </div>
               </div>
             ))}
           </div>
           {/* Mobile: vertical legend list */}
-          <div className="md:hidden flex flex-col gap-1 mt-2">
+          <div className="md:hidden flex flex-col gap-0.5 mt-1.5">
             {ramos.map((r,i) => (
-              <div key={r.nombre} className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{backgroundColor:ramoColor(r.nombre)}} />
-                <span className="text-[11px] text-[#041224] font-medium flex-1 truncate">{r.nombre}</span>
-                <span className="text-[11px] text-[#6B7280] font-semibold flex-shrink-0">{totalPN>0?((r.pnEfectuada/totalPN)*100).toFixed(1):0}%</span>
+              <div key={r.nombre} className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{backgroundColor:ramoColor(r.nombre)}} />
+                <span className="text-xs text-[#041224] font-medium flex-1 truncate">{r.nombre}</span>
+                <span className="text-xs text-[#6B7280] font-medium tabular-nums flex-shrink-0">{totalPN>0?((r.pnEfectuada/totalPN)*100).toFixed(1):0}%</span>
               </div>
             ))}
           </div>
           {/* Desktop: horizontal legend */}
-          <div className="hidden md:flex flex-wrap gap-4 mt-3">
+          <div className="hidden md:flex flex-wrap gap-3 mt-2">
             {ramos.map((r,i) => (
-              <div key={r.nombre} className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-sm" style={{backgroundColor:ramoColor(r.nombre)}} />
-                <span className="text-sm text-[#041224] font-medium">{r.nombre}</span>
-                <span className="text-sm text-[#6B7280] font-semibold">{totalPN>0?((r.pnEfectuada/totalPN)*100).toFixed(1):0}%</span>
+              <div key={r.nombre} className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded-sm" style={{backgroundColor:ramoColor(r.nombre)}} />
+                <span className="text-xs text-[#041224] font-medium">{r.nombre}</span>
+                <span className="text-xs text-[#6B7280] font-medium tabular-nums">{totalPN>0?((r.pnEfectuada/totalPN)*100).toFixed(1):0}%</span>
               </div>
             ))}
           </div>
@@ -378,52 +378,52 @@ export default function CobranzaPage() {
 
       {/* Detalle por compania */}
       {/* Mobile cards */}
-      <div className="md:hidden space-y-1.5 mb-3">
-        <h3 className="text-sm font-bold text-[#041224] mb-1">Detalle por Compañía</h3>
+      <div className="md:hidden space-y-1.5 mb-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-[#041224] mb-1">Detalle por Compañía</h3>
         {sortedCompanies.map((c) => {
           const difConv = c.primaNeta - c.convenio
           const difAA = c.primaNeta - c.pnAA
           const pctConv = c.convenio > 0 ? ((c.primaNeta / c.convenio - 1) * 100).toFixed(1) : "0"
           return (
-            <div key={c.nombre} className="bg-white rounded-lg border border-gray-200 px-3 py-2.5 shadow-sm">
-              <div className="flex justify-between items-center mb-1.5">
-                <span className="font-bold text-sm text-[#041224]">{c.nombre}</span>
-                <span className={`text-xs font-bold ${difConv < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}`}>{pctConv}%</span>
+            <div key={c.nombre} className="bg-white rounded-lg border border-gray-200 px-2 py-2">
+              <div className="flex justify-between items-center mb-1">
+                <span className="font-medium text-xs text-[#041224]">{c.nombre}</span>
+                <span className={`text-xs font-medium tabular-nums ${difConv < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}`}>{pctConv}%</span>
               </div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
-                <div className="flex justify-between"><span className="text-gray-500">Prima Neta</span><strong>{fmt(c.primaNeta)}</strong></div>
-                <div className="flex justify-between"><span className="text-gray-500">Convenio</span><span>{fmt(c.convenio)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Año Ant.</span><span>{fmt(c.pnAA)}</span></div>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-xs">
+                <div className="flex justify-between"><span className="text-gray-500">Prima Neta</span><span className="font-medium tabular-nums">{fmt(c.primaNeta)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Convenio</span><span className="tabular-nums">{fmt(c.convenio)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Año Ant.</span><span className="tabular-nums">{fmt(c.pnAA)}</span></div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Crec.</span>
-                  <span className={difAA < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}>{difAA < 0 ? "-" : "+"}{Math.abs(c.pnAA > 0 ? ((c.primaNeta / c.pnAA - 1) * 100) : 0).toFixed(1)}%</span>
+                  <span className={`tabular-nums ${difAA < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}`}>{difAA < 0 ? "-" : "+"}{Math.abs(c.pnAA > 0 ? ((c.primaNeta / c.pnAA - 1) * 100) : 0).toFixed(1)}%</span>
                 </div>
               </div>
             </div>
           )
         })}
-        <div className="bg-[#1a1a1a] text-white rounded-lg px-3 py-2.5 flex justify-between items-center">
-          <span className="font-bold text-sm">TOTAL</span>
-          <span className="font-bold text-sm">{fmt(compTotals.primaNeta)}</span>
+        <div className="bg-[#041224] text-white rounded-lg px-2 py-2 flex justify-between items-center">
+          <span className="font-bold text-xs">TOTAL</span>
+          <span className="font-bold text-xs tabular-nums">{fmt(compTotals.primaNeta)}</span>
         </div>
       </div>
       {/* Desktop table */}
-      <div className="hidden md:block bg-white rounded-xl shadow-md overflow-hidden mb-3">
+      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden mb-2">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm border-separate border-spacing-0">
+          <table className="w-full border-separate border-spacing-0">
             <thead>
-              <tr className="bg-[#1a1a1a]">
-                <th className="text-left px-3 py-3 font-semibold text-white min-w-[120px] sticky left-0 bg-[#1a1a1a] z-10 cursor-pointer select-none" onClick={() => handleSort('nombre')}>Compania {sortKey === 'nombre' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
-                <th className="text-center px-3 py-3 font-semibold text-white cursor-pointer select-none" onClick={() => handleSort('primaNeta')}>Prima neta {sortKey === 'primaNeta' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
-                <th className="text-center px-3 py-3 font-semibold text-white cursor-pointer select-none" onClick={() => handleSort('convenio')}>Convenio {sortKey === 'convenio' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
-                <th className="text-center px-3 py-3 font-semibold text-white">Diferencia</th>
-                <th className="text-center px-3 py-3 font-semibold text-white">% Dif compr</th>
-                <th className="text-center px-3 py-3 font-semibold text-white cursor-pointer select-none" onClick={() => handleSort('pnAA')}>PN ano ant. {sortKey === 'pnAA' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
-                <th className="text-center px-3 py-3 font-semibold text-white">Dif PN AA</th>
-                <th className="text-center px-3 py-3 font-semibold text-white">% Dif PN AA</th>
-                <th className="text-center px-3 py-3 font-semibold text-white cursor-pointer select-none" onClick={() => handleSort('pendiente')}>Pendiente {sortKey === 'pendiente' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
-                <th className="text-center px-3 py-3 font-semibold text-white cursor-pointer select-none" onClick={() => handleSort('pnCia')}>Prima neta CIA {sortKey === 'pnCia' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
-                <th className="text-center px-3 py-3 font-semibold text-white cursor-pointer select-none" onClick={() => handleSort('difCia')}>Dif CIA {sortKey === 'difCia' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+              <tr className="bg-[#041224]">
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white min-w-[100px] sticky left-0 bg-[#041224] z-10 cursor-pointer select-none" onClick={() => handleSort('nombre')}>Compania {sortKey === 'nombre' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                <th className="text-center px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('primaNeta')}>Prima neta {sortKey === 'primaNeta' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                <th className="text-center px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('convenio')}>Convenio {sortKey === 'convenio' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                <th className="text-center px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white">Diferencia</th>
+                <th className="text-center px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white">% Dif</th>
+                <th className="text-center px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('pnAA')}>PN ano ant. {sortKey === 'pnAA' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                <th className="text-center px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white">Dif AA</th>
+                <th className="text-center px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white">% Dif AA</th>
+                <th className="text-center px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('pendiente')}>Pendiente {sortKey === 'pendiente' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                <th className="text-center px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('pnCia')}>PN CIA {sortKey === 'pnCia' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                <th className="text-center px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('difCia')}>Dif CIA {sortKey === 'difCia' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
               </tr>
             </thead>
             <tbody>
@@ -434,44 +434,44 @@ export default function CobranzaPage() {
                 const rowBg = isQualitas ? "bg-[#F0FDF4]" : idx % 2 === 0 ? "bg-white" : "bg-[#F9FAFB]"
                 return (
                   <tr key={c.nombre} className={`group hover:bg-[#FFF5F5] transition-colors ${rowBg}`}>
-                    <td className={`px-3 py-3 font-bold text-[#041224] sticky left-0 z-10 border-b border-[#E5E7EB] ${rowBg} group-hover:bg-[#FFF5F5] transition-colors`}>{c.nombre}</td>
-                    <td className="px-3 py-3 text-center font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.primaNeta)}</td>
-                    <td className="px-3 py-3 text-center text-[#6B7280] tabular-nums border-b border-[#E5E7EB]">{fmt(c.convenio)}</td>
-                    <td className={`px-3 py-3 text-center font-semibold tabular-nums border-b border-[#E5E7EB] ${difConv < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}`}>
+                    <td className={`px-2 py-1.5 text-xs font-medium text-[#041224] sticky left-0 z-10 border-b border-[#E5E7EB] ${rowBg} group-hover:bg-[#FFF5F5] transition-colors`}>{c.nombre}</td>
+                    <td className="px-2 py-1.5 text-center text-xs font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.primaNeta)}</td>
+                    <td className="px-2 py-1.5 text-center text-xs text-[#6B7280] tabular-nums border-b border-[#E5E7EB]">{fmt(c.convenio)}</td>
+                    <td className={`px-2 py-1.5 text-center text-xs font-medium tabular-nums border-b border-[#E5E7EB] ${difConv < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}`}>
                       {difConv < 0 ? `(${fmt(Math.abs(difConv))})` : fmt(difConv)}
                     </td>
                     <PctBadge val={c.primaNeta} base={c.convenio} />
-                    <td className="px-3 py-3 text-center text-[#6B7280] tabular-nums border-b border-[#E5E7EB]">{fmt(c.pnAA)}</td>
-                    <td className={`px-3 py-3 text-center font-semibold tabular-nums border-b border-[#E5E7EB] ${difAA < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}`}>
+                    <td className="px-2 py-1.5 text-center text-xs text-[#6B7280] tabular-nums border-b border-[#E5E7EB]">{fmt(c.pnAA)}</td>
+                    <td className={`px-2 py-1.5 text-center text-xs font-medium tabular-nums border-b border-[#E5E7EB] ${difAA < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}`}>
                       {difAA < 0 ? `(${fmt(Math.abs(difAA))})` : fmt(difAA)}
                     </td>
                     <PctBadge val={c.primaNeta} base={c.pnAA} />
-                    <td className="px-3 py-3 text-center font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.pendiente)}</td>
-                    <td className="px-3 py-3 text-center font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.pnCia)}</td>
-                    <td className="px-3 py-3 text-center font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.difCia)}</td>
+                    <td className="px-2 py-1.5 text-center text-xs font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.pendiente)}</td>
+                    <td className="px-2 py-1.5 text-center text-xs font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.pnCia)}</td>
+                    <td className="px-2 py-1.5 text-center text-xs font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.difCia)}</td>
                   </tr>
                 )
               })}
               {/* TOTAL */}
-              <tr className="bg-[#1a1a1a] text-white">
-                <td className="px-3 py-3.5 font-bold sticky left-0 bg-[#1a1a1a] z-10">TOTAL</td>
-                <td className="px-3 py-3.5 text-center font-bold tabular-nums">{fmt(compTotals.primaNeta)}</td>
-                <td className="px-3 py-3.5 text-center font-bold tabular-nums">{fmt(compTotals.convenio)}</td>
-                <td className="px-3 py-3.5 text-center font-bold tabular-nums">{fmt(compTotals.primaNeta - compTotals.convenio)}</td>
-                <td className="px-3 py-3.5 text-center font-bold">{pct(compTotals.primaNeta, compTotals.convenio).toFixed(2)}%</td>
-                <td className="px-3 py-3.5 text-center font-bold tabular-nums">{fmt(compTotals.pnAA)}</td>
-                <td className="px-3 py-3.5 text-center font-bold tabular-nums">{fmt(compTotals.primaNeta - compTotals.pnAA)}</td>
-                <td className="px-3 py-3.5 text-center font-bold">{pct(compTotals.primaNeta, compTotals.pnAA).toFixed(2)}%</td>
-                <td className="px-3 py-3.5 text-center font-bold tabular-nums">{fmt(compTotals.pendiente)}</td>
-                <td className="px-3 py-3.5 text-center font-bold tabular-nums">{fmt(compTotals.pnCia)}</td>
-                <td className="px-3 py-3.5 text-center font-bold tabular-nums">{fmt(compTotals.difCia)}</td>
+              <tr className="bg-[#041224] text-white">
+                <td className="px-2 py-1.5 text-xs font-bold sticky left-0 bg-[#041224] z-10">TOTAL</td>
+                <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(compTotals.primaNeta)}</td>
+                <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(compTotals.convenio)}</td>
+                <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(compTotals.primaNeta - compTotals.convenio)}</td>
+                <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{pct(compTotals.primaNeta, compTotals.convenio).toFixed(2)}%</td>
+                <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(compTotals.pnAA)}</td>
+                <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(compTotals.primaNeta - compTotals.pnAA)}</td>
+                <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{pct(compTotals.primaNeta, compTotals.pnAA).toFixed(2)}%</td>
+                <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(compTotals.pendiente)}</td>
+                <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(compTotals.pnCia)}</td>
+                <td className="px-2 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(compTotals.difCia)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <p className="text-sm text-[#9CA3AF] mb-4 cursor-pointer hover:underline">Personalizar columnas</p>
+      <p className="text-xs text-[#9CA3AF] mb-2 cursor-pointer hover:underline">Personalizar columnas</p>
 
       <PageFooter />
       </div>

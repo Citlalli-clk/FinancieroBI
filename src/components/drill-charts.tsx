@@ -133,17 +133,39 @@ function PctGrid({ data }: { data: { name: string; pct: number; value: number; c
   )
 }
 
-export function DrillCharts({ rows, levelLabel, parentLabel, loading }: DrillChartsProps) {
+export function DrillCharts({ rows, levelLabel, loading }: DrillChartsProps) {
   const chartData = useMemo(() => {
     if (!rows.length) return { items: [], total: 0, maxValue: 0 }
-    const total = rows.reduce((s, r) => s + Math.abs(r.primaNeta), 0)
-    const maxValue = Math.max(...rows.map(r => Math.abs(r.primaNeta)))
-    const items = rows.map((r, i) => ({
+    // Filter out zero values
+    const nonZeroRows = rows.filter(r => Math.abs(r.primaNeta) > 0)
+    if (!nonZeroRows.length) return { items: [], total: 0, maxValue: 0 }
+
+    const total = nonZeroRows.reduce((s, r) => s + Math.abs(r.primaNeta), 0)
+
+    // Sort by value descending and take top 10
+    const sorted = [...nonZeroRows].sort((a, b) => Math.abs(b.primaNeta) - Math.abs(a.primaNeta))
+    const top10 = sorted.slice(0, 10)
+    const rest = sorted.slice(10)
+
+    let items = top10.map((r, i) => ({
       name: r.name,
       value: Math.abs(r.primaNeta),
       pct: total > 0 ? (Math.abs(r.primaNeta) / total) * 100 : 0,
       color: COLORS[i % COLORS.length],
     }))
+
+    // Group rest as 'Otros' if there are more than 10 items
+    if (rest.length > 0) {
+      const othersValue = rest.reduce((s, r) => s + Math.abs(r.primaNeta), 0)
+      items.push({
+        name: "Otros",
+        value: othersValue,
+        pct: total > 0 ? (othersValue / total) * 100 : 0,
+        color: "#9CA3AF",
+      })
+    }
+
+    const maxValue = Math.max(...items.map(i => i.value))
     return { items, total, maxValue }
   }, [rows])
 
@@ -177,6 +199,11 @@ export function DrillCharts({ rows, levelLabel, parentLabel, loading }: DrillCha
     ...items.slice(0, 5),
     { name: "Otros", value: items.slice(5).reduce((s, d) => s + d.value, 0), pct: items.slice(5).reduce((s, d) => s + d.pct, 0), color: "#9CA3AF" }
   ]
+
+  // Don't render chart if no valid data
+  if (items.length === 0) {
+    return null
+  }
 
   return (
     <div className="mt-3 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden" style={{ animation: "fadeSlideIn 0.4s ease" }}>

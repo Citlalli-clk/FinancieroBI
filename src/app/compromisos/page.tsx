@@ -14,25 +14,56 @@ function fmtShort(v: number) {
   if (v >= 1e3) return `$${(v / 1e3).toFixed(0)}K`
   return `$${v}`
 }
-function shortName(name: string) {
+function shortName(name: string, maxLen = 18) {
   const parts = name.trim().split(/\s+/)
-  if (parts.length <= 2) return name
-  // First name + first letter of middle name + last name (e.g., "Juan A. Behar")
+  if (parts.length <= 2) {
+    // If still too long, abbreviate last name
+    if (name.length > maxLen && parts.length === 2) {
+      return `${parts[0]} ${parts[1][0]}.`
+    }
+    return name
+  }
+  // First name + last name
   const firstName = parts[0]
   const lastName = parts[parts.length - 1]
-  return `${firstName} ${lastName}`
+  const fullName = `${firstName} ${lastName}`
+  // If still too long, abbreviate last name
+  if (fullName.length > maxLen) {
+    return `${firstName} ${lastName[0]}.`
+  }
+  return fullName
 }
-function semaforoColor(pct: number) {
-  if (pct >= 90) return "#2E7D32"
-  if (pct >= 70) return "#F5C518"
+// Semaforo logic: needs actual vs lastYear vs budget comparison
+// RED: below last year, YELLOW: above last year but below budget, GREEN: exceeded budget
+function semaforoStatus(actual: number, lastYear: number, budget: number): 'red' | 'yellow' | 'green' {
+  if (actual < lastYear) return 'red'
+  if (actual < budget) return 'yellow'
+  return 'green'
+}
+function semaforoColorFromStatus(status: 'red' | 'yellow' | 'green') {
+  if (status === 'green') return "#2E7D32"
+  if (status === 'yellow') return "#F5C518"
   return "#E62800"
 }
-function Semaforo(_props: { pct: number }) {
+// Legacy percentage-based color (fallback when we don't have lastYear/budget)
+function semaforoColor(pct: number) {
+  if (pct >= 100) return "#2E7D32"
+  if (pct >= 80) return "#F5C518"
+  return "#E62800"
+}
+function Semaforo({ status }: { status?: 'red' | 'yellow' | 'green' }) {
+  // When status is provided, show only the active light
+  const redBg = status === 'red' ? '#E62800' : '#D1D5DB'
+  const yellowBg = status === 'yellow' ? '#F9DC5C' : '#D1D5DB'
+  const greenBg = status === 'green' ? '#60A63A' : '#D1D5DB'
+  const redBorder = status === 'red' ? '#B91C00' : '#E5E7EB'
+  const yellowBorder = status === 'yellow' ? '#D4A800' : '#E5E7EB'
+  const greenBorder = status === 'green' ? '#4A8A2A' : '#E5E7EB'
   return (
     <span className="inline-flex items-center gap-0.5 semaforo-lights">
-      <span className="w-2.5 h-2.5 rounded-full inline-block border border-[#E5E7EB] transition-colors duration-200 light-red" style={{ backgroundColor: '#D1D5DB' }} />
-      <span className="w-2.5 h-2.5 rounded-full inline-block border border-[#E5E7EB] transition-colors duration-200 light-yellow" style={{ backgroundColor: '#D1D5DB' }} />
-      <span className="w-2.5 h-2.5 rounded-full inline-block border border-[#E5E7EB] transition-colors duration-200 light-green" style={{ backgroundColor: '#D1D5DB' }} />
+      <span className="w-2.5 h-2.5 rounded-full inline-block transition-colors duration-200 light-red" style={{ backgroundColor: redBg, borderWidth: 1, borderStyle: 'solid', borderColor: redBorder }} />
+      <span className="w-2.5 h-2.5 rounded-full inline-block transition-colors duration-200 light-yellow" style={{ backgroundColor: yellowBg, borderWidth: 1, borderStyle: 'solid', borderColor: yellowBorder }} />
+      <span className="w-2.5 h-2.5 rounded-full inline-block transition-colors duration-200 light-green" style={{ backgroundColor: greenBg, borderWidth: 1, borderStyle: 'solid', borderColor: greenBorder }} />
     </span>
   )
 }
@@ -57,14 +88,14 @@ function PremiumBarChart({ data, colorFn, barHeight = 18, showGrid = true }: {
           ))}
         </div>
       )}
-      <div className="flex flex-col justify-center gap-[5px] w-full">
+      <div className="flex flex-col justify-center gap-[4px] w-full">
         {data.map((d, i) => {
           const pct = Math.max((d.value / max) * 100, 4)
           const colors = colorFn(i, d.pct)
           return (
-            <div key={i} className="flex items-center gap-2" style={{ height: barHeight }}>
-              <span style={{
-                fontSize: 11, color: '#374151', width: 65, textAlign: 'right', flexShrink: 0,
+            <div key={i} className="flex items-center gap-1.5" style={{ height: barHeight }}>
+              <span className="tabular-nums" style={{
+                fontSize: 10, color: '#374151', width: 70, textAlign: 'right', flexShrink: 0,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 fontWeight: 500, letterSpacing: '-0.01em'
               }}>{d.name}</span>
@@ -72,13 +103,13 @@ function PremiumBarChart({ data, colorFn, barHeight = 18, showGrid = true }: {
                 <div style={{
                   width: `${pct}%`, height: barHeight - 4,
                   background: `linear-gradient(90deg, ${colors.from}, ${colors.to})`,
-                  borderRadius: 6, minWidth: 6,
+                  borderRadius: 4, minWidth: 6,
                   boxShadow: `0 1px 3px ${colors.from}33`,
                   transition: 'width 0.5s ease'
                 }} />
-                <span style={{
-                  fontSize: 10, color: '#374151', fontWeight: 700,
-                  marginLeft: 6, whiteSpace: 'nowrap', letterSpacing: '-0.02em'
+                <span className="tabular-nums" style={{
+                  fontSize: 9, color: '#374151', fontWeight: 600,
+                  marginLeft: 4, whiteSpace: 'nowrap', letterSpacing: '-0.02em'
                 }}>{fmtShort(d.value)}</span>
               </div>
             </div>
@@ -142,66 +173,78 @@ export default function CompromisosPage() {
               {/* Mobile: card layout */}
               <div className="md:hidden space-y-1.5">
                 {loading ? (
-                  <p className="text-center text-gray-400 py-4">Cargando...</p>
-                ) : data.slice(0, 10).map((r) => (
-                  <div key={r.vendedor} className="vendedor-row border border-gray-100 rounded-lg px-3 py-2">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-sm text-[#374151]">{r.vendedor}</span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold" style={{ color: semaforoColor(r.pctAvance) }}>{r.pctAvance}%</span>
-                        <Semaforo pct={r.pctAvance} />
-                      </span>
+                  <p className="text-center text-gray-400 py-4 text-xs">Cargando...</p>
+                ) : data.slice(0, 10).map((r) => {
+                  const status = semaforoStatus(r.primaActual, r.meta * 0.8, r.meta)
+                  return (
+                    <div key={r.vendedor} className="vendedor-row border border-gray-100 rounded-lg px-3 py-1.5">
+                      <div className="flex justify-between items-center mb-0.5">
+                        <span className="text-xs font-medium text-[#374151]">{r.vendedor}</span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-xs tabular-nums" style={{ color: semaforoColorFromStatus(status) }}>{r.pctAvance.toFixed(1)}%</span>
+                          <Semaforo status={status} />
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>PN: <span className="text-gray-900 font-medium tabular-nums">{fmt(r.primaActual)}</span></span>
+                        <span>Meta: <span className="tabular-nums">{fmt(r.meta)}</span></span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>PN: <strong className="text-gray-900">{fmt(r.primaActual)}</strong></span>
-                      <span>Meta: {fmt(r.meta)}</span>
+                  )
+                })}
+                {!loading && data.length > 0 && (() => {
+                  const totalStatus = semaforoStatus(totalActual, totalMeta * 0.8, totalMeta)
+                  return (
+                    <div className="bg-[#6B7280] rounded-lg px-3 py-1.5 flex justify-between items-center">
+                      <span className="font-bold text-xs text-white tabular-nums">Total: {totalPct.toFixed(1)}%</span>
+                      <span className="font-bold text-xs text-white tabular-nums">{fmt(totalActual)}</span>
                     </div>
-                  </div>
-                ))}
-                {!loading && data.length > 0 && (
-                  <div className="bg-[#6B7280] rounded-lg px-3 py-2 flex justify-between items-center">
-                    <span className="font-bold text-sm text-white">Total: {totalPct}%</span>
-                    <span className="font-bold text-sm text-white">{fmt(totalActual)}</span>
-                  </div>
-                )}
+                  )
+                })()}
               </div>
               {/* Desktop: full table */}
-              <table className="hidden md:table w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
+              <table className="hidden md:table w-full border-collapse text-xs">
                 <thead>
                   <tr className="bg-[#6B7280] text-white">
-                    <th className="px-2 py-1 text-left text-sm">Vendedor</th>
-                    <th className="px-2 py-1 text-center text-sm">Meta</th>
-                    <th className="px-2 py-1 text-center text-sm">Prima Neta</th>
-                    <th className="px-2 py-1 text-center text-sm">%</th>
-                    <th className="px-2 py-1 text-center text-sm">Sem.</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wider">Vendedor</th>
+                    <th className="px-2 py-1.5 text-right text-xs font-semibold uppercase tracking-wider">Meta</th>
+                    <th className="px-2 py-1.5 text-right text-xs font-semibold uppercase tracking-wider">Prima Neta</th>
+                    <th className="px-2 py-1.5 text-right text-xs font-semibold uppercase tracking-wider">%</th>
+                    <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Sem.</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={5} className="px-2 py-2 text-center text-gray-400">Cargando...</td></tr>
-                  ) : data.slice(0, 10).map((r, idx) => (
-                    <tr key={r.vendedor} className={`vendedor-row border-b border-[#E5E7EB] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}>
-                      <td className="px-2 py-[2px] font-medium text-left text-[#374151]">{r.vendedor}</td>
-                      <td className="px-2 py-[2px] text-center text-[#374151]">{fmt(r.meta)}</td>
-                      <td className="px-2 py-[2px] text-center font-medium text-[#374151]">{fmt(r.primaActual)}</td>
-                      <td className="px-2 py-[2px] text-center font-medium text-[#374151]">{r.pctAvance}%</td>
-                      <td className="px-2 py-[2px] text-center"><Semaforo pct={r.pctAvance} /></td>
-                    </tr>
-                  ))}
-                  {!loading && data.length > 0 && (
-                    <tr className="total-row bg-[#6B7280] text-white">
-                      <td className="px-2 py-[2px] font-bold text-left">Total</td>
-                      <td className="px-2 py-[2px] text-center font-bold">{fmt(totalMeta)}</td>
-                      <td className="px-2 py-[2px] text-center font-bold">{fmt(totalActual)}</td>
-                      <td className="px-2 py-[2px] text-center font-bold">{totalPct}%</td>
-                      <td className="px-2 py-[2px] text-center"><Semaforo pct={totalPct} /></td>
-                    </tr>
-                  )}
+                    <tr><td colSpan={5} className="px-2 py-2 text-center text-gray-400 text-xs">Cargando...</td></tr>
+                  ) : data.slice(0, 10).map((r, idx) => {
+                    const status = semaforoStatus(r.primaActual, r.meta * 0.8, r.meta)
+                    return (
+                      <tr key={r.vendedor} className={`vendedor-row border-b border-[#E5E7EB] ${idx % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}>
+                        <td className="px-2 py-1.5 text-left text-[#374151]">{r.vendedor}</td>
+                        <td className="px-2 py-1.5 text-right text-[#374151] tabular-nums">{fmt(r.meta)}</td>
+                        <td className="px-2 py-1.5 text-right text-[#374151] font-medium tabular-nums">{fmt(r.primaActual)}</td>
+                        <td className="px-2 py-1.5 text-right text-[#374151] tabular-nums">{r.pctAvance.toFixed(1)}%</td>
+                        <td className="px-2 py-1.5 text-center"><Semaforo status={status} /></td>
+                      </tr>
+                    )
+                  })}
+                  {!loading && data.length > 0 && (() => {
+                    const totalStatus = semaforoStatus(totalActual, totalMeta * 0.8, totalMeta)
+                    return (
+                      <tr className="total-row bg-[#6B7280] text-white">
+                        <td className="px-2 py-1.5 font-bold text-left">Total</td>
+                        <td className="px-2 py-1.5 text-right font-bold tabular-nums">{fmt(totalMeta)}</td>
+                        <td className="px-2 py-1.5 text-right font-bold tabular-nums">{fmt(totalActual)}</td>
+                        <td className="px-2 py-1.5 text-right font-bold tabular-nums">{totalPct.toFixed(1)}%</td>
+                        <td className="px-2 py-1.5 text-center"><Semaforo status={totalStatus} /></td>
+                      </tr>
+                    )
+                  })()}
                 </tbody>
               </table>
             </div>
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3 flex flex-col" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-              <p className="text-sm font-bold text-[#041224] mb-2 tracking-tight">Prima Neta por Vendedor</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#041224] mb-2">Prima Neta por Vendedor</p>
               <div className="flex-1">
                 <PremiumBarChart data={barData} barHeight={20} colorFn={(idx) => {
                   const total = barData.length || 1
@@ -216,38 +259,38 @@ export default function CompromisosPage() {
           {/* Row 2: Top 5 table + chart */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3">
-              <p className="text-sm font-bold text-[#041224] mb-1">Top 5 Vendedores (Prima Neta)</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#041224] mb-1">Top 5 Vendedores (Prima Neta)</p>
               {/* Mobile: compact list */}
               <div className="md:hidden space-y-1">
                 {top5Compromisos.map((r, i) => (
                   <div key={r.vendedor} className="flex justify-between items-center border-b border-gray-100 py-1.5">
-                    <span className="text-sm"><strong className="text-gray-500 mr-1.5">#{i+1}</strong>{r.vendedor}</span>
-                    <span className="text-sm font-bold text-[#374151]">{fmt(r.primaActual)}</span>
+                    <span className="text-xs"><span className="text-gray-500 mr-1.5 tabular-nums">#{i+1}</span>{r.vendedor}</span>
+                    <span className="text-xs font-medium text-[#374151] tabular-nums">{fmt(r.primaActual)}</span>
                   </div>
                 ))}
               </div>
               {/* Desktop: table */}
-              <table className="hidden md:table w-full border-collapse" style={{ fontSize: 14, lineHeight: 1.4 }}>
+              <table className="hidden md:table w-full border-collapse text-xs">
                 <thead>
                   <tr className="bg-[#6B7280] text-white">
-                    <th className="px-2 py-1 text-center w-6 text-sm">#</th>
-                    <th className="px-2 py-1 text-left text-sm">Vendedor</th>
-                    <th className="px-2 py-1 text-center text-sm">Prima Neta</th>
+                    <th className="px-2 py-1.5 text-center w-6 text-xs font-semibold uppercase tracking-wider">#</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wider">Vendedor</th>
+                    <th className="px-2 py-1.5 text-right text-xs font-semibold uppercase tracking-wider">Prima Neta</th>
                   </tr>
                 </thead>
                 <tbody>
                   {top5Compromisos.map((r, i) => (
                     <tr key={r.vendedor} className={`border-b border-[#E5E7EB] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}>
-                      <td className="px-2 py-[2px] font-bold text-center text-[#374151]">{i + 1}</td>
-                      <td className="px-2 py-[2px] text-left text-[#374151]">{r.vendedor}</td>
-                      <td className="px-2 py-[2px] text-center font-medium text-[#374151]">{fmt(r.primaActual)}</td>
+                      <td className="px-2 py-1.5 text-center text-[#374151] tabular-nums">{i + 1}</td>
+                      <td className="px-2 py-1.5 text-left text-[#374151]">{r.vendedor}</td>
+                      <td className="px-2 py-1.5 text-right text-[#374151] font-medium tabular-nums">{fmt(r.primaActual)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3 flex flex-col" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-              <p className="text-sm font-bold text-[#1E3A5F] mb-2 tracking-tight">Top 5</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#1E3A5F] mb-2">Top 5</p>
               <div className="flex-1">
                 <PremiumBarChart data={topBarData} barHeight={22} showGrid={false} colorFn={(idx) => {
                   const shades = [
