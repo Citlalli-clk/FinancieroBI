@@ -140,9 +140,9 @@ export default function Home() {
               <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-[#3983F6]"/><span className="text-gray-600 font-medium">Prima neta</span></div>
               <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-[#9CA3AF]"/><span className="text-gray-600 font-medium">Presupuesto</span></div>
             </div>
-            <div className="w-full" style={{ height: 220 }}>
+            <div className="w-full" style={{ height: 220, minWidth: 0 }}>
               {ready && chartData.length > 0 && (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={220}>
                   <BarChart layout="vertical" data={chartData} margin={{ top: 2, right: 40, left: 0, bottom: 2 }} barGap={6}>
                     <XAxis type="number" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={v => `$${v}M`} tick={{ fontSize: 9 }} axisLine={{ stroke: '#E5E7EB' }}/>
                     <YAxis type="category" dataKey="name" width={75} tick={{ fontSize: 9 }} axisLine={false} tickLine={false}/>
@@ -231,9 +231,9 @@ export default function Home() {
                 <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#3983F6' }}/><span className="text-gray-700 font-medium">Prima neta efectuada</span></div>
                 <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#9CA3AF' }}/><span className="text-gray-700 font-medium">Presupuesto</span></div>
               </div>
-              <div className="w-full" style={{ minHeight: 280 }}>
+              <div className="w-full flex-1" style={{ minHeight: 240, minWidth: 0 }}>
                 {ready && chartData.length > 0 && (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={240}>
                     <BarChart layout="vertical" data={chartData} margin={{ top: 2, right: 50, left: 10, bottom: 2 }} barGap={8}>
                       <XAxis type="number" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={v => `$${v}M`} tick={{ fontSize: 11 }} axisLine={{ stroke: '#E5E7EB' }}/>
                       <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 11 }} axisLine={false} tickLine={false}/>

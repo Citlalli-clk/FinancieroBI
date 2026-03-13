@@ -85,6 +85,7 @@ export default function CobranzaDiaPage() {
         {/* Chart */}
         <div className="bg-white rounded-lg border border-gray-200 p-2 mb-3">
           <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Tendencia diaria (millones)</div>
+          <div style={{ width: '100%', height: 160, minWidth: 0 }}>
           <ResponsiveContainer width="100%" height={160}>
             <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
@@ -95,6 +96,7 @@ export default function CobranzaDiaPage() {
               <Line type="monotone" dataKey="meta" stroke="#E62800" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Meta" />
             </LineChart>
           </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Table */}
