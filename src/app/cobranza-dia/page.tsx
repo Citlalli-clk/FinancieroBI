@@ -104,13 +104,13 @@ export default function CobranzaDiaPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                <th className="text-left px-2 py-2.5 text-xs font-semibold uppercase tracking-wider">Fecha</th>
-                <th className="text-left px-2 py-2.5 text-xs font-semibold uppercase tracking-wider">Gerencia</th>
-                <th className="text-right px-2 py-2.5 text-xs font-semibold uppercase tracking-wider">Prima cobrada</th>
-                <th className="text-right px-2 py-2.5 text-xs font-semibold uppercase tracking-wider">Meta</th>
-                <th className="text-right px-2 py-2.5 text-xs font-semibold uppercase tracking-wider">Diferencia</th>
-                <th className="text-right px-2 py-2.5 text-xs font-semibold uppercase tracking-wider">%</th>
-                <th className="text-right px-2 py-2.5 text-xs font-semibold uppercase tracking-wider">Acumulado</th>
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Fecha</th>
+                <th className="text-left px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Gerencia</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Prima cobrada</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Meta</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Diferencia</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">%</th>
+                <th className="text-right px-2 py-1.5 text-xs font-semibold uppercase tracking-wider">Acumulado</th>
               </tr>
             </thead>
             <tbody>
@@ -119,8 +119,8 @@ export default function CobranzaDiaPage() {
                 const neg = r.diferencia < 0
                 return (
                   <tr key={i} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${i % 2 === 1 ? "bg-[#FAFAFA]" : ""}`}>
-                    <td className="px-2 py-3 text-sm text-gray-600">{r.fecha}</td>
-                    <td className="px-2 py-3 text-sm font-semibold text-[#111]">{r.gerencia}</td>
+                    <td className="px-2 py-1.5 text-xs text-gray-600">{r.fecha}</td>
+                    <td className="px-2 py-1.5 text-xs font-semibold text-[#111]">{r.gerencia}</td>
                     <td className="px-2 py-3 text-right text-sm font-medium tabular-nums">{fmt(r.prima_cobrada)}</td>
                     <td className="px-2 py-3 text-right text-sm text-gray-500 font-medium tabular-nums">{fmt(r.meta_dia)}</td>
                     <td className={`px-2 py-3 text-right text-sm font-medium tabular-nums ${neg ? "text-[#E62800]" : "text-[#059669]"}`}>

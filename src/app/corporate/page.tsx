@@ -399,26 +399,26 @@ export default function CorporatePage() {
           <thead className="sticky top-0 z-10">
             {drillLevel === "poliza" ? (
               <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">Documento</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">Aseguradora</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">Ramo</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">Subramo</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">F. Liquidación</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">F. Lím. Pago</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">Prima neta</th>
+                <th className="text-left px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">Documento</th>
+                <th className="text-left px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">Aseguradora</th>
+                <th className="text-left px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">Ramo</th>
+                <th className="text-left px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">Subramo</th>
+                <th className="text-left px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">F. Liquidación</th>
+                <th className="text-left px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">F. Lím. Pago</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">Prima neta</th>
               </tr>
             ) : (
               <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
                 <th className="w-6 px-1 py-2.5"></th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">{levelLabels[drillLevel]}</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">Prima neta</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">Presupuesto</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">Diferencia</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">% Dif ppto</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">{cmpLabel.col}</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">{cmpLabel.difCol}</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">{cmpLabel.pctCol}</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider">Pendiente</th>
+                <th className="text-left px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">{levelLabels[drillLevel]}</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">Prima neta</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">Presupuesto</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">Diferencia</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">% Dif ppto</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">{cmpLabel.col}</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">{cmpLabel.difCol}</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">{cmpLabel.pctCol}</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider">Pendiente</th>
               </tr>
             )}
           </thead>
@@ -431,18 +431,18 @@ export default function CorporatePage() {
                   <tr><td colSpan={7} className="px-3 py-8 text-center text-[#888]">Datos en integración</td></tr>
                 ) : filteredPolizas.map((p, idx) => (
                   <tr key={`${p.documento}-${idx}`} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${idx % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"}`}>
-                    <td className="px-3 py-3 text-sm font-semibold text-[#111] text-left">{p.documento}</td>
-                    <td className="px-3 py-3 text-sm text-[#333] text-left">{p.aseguradora}</td>
-                    <td className="px-3 py-3 text-sm text-[#333] text-left">{p.ramo}</td>
-                    <td className="px-3 py-3 text-sm text-[#666] text-left">{p.subramo}</td>
-                    <td className="px-3 py-3 text-sm text-[#666] text-left tabular-nums">{fmtDate(p.fechaLiquidacion)}</td>
-                    <td className="px-3 py-3 text-sm text-[#666] text-left tabular-nums">{fmtDate(p.fechaLimPago)}</td>
-                    <td className={`px-3 py-3 text-center text-sm font-medium tabular-nums ${p.primaNeta < 0 ? "text-[#E62800]" : ""}`}>{p.primaNeta < 0 ? `(${fmt(Math.abs(p.primaNeta))})` : fmt(p.primaNeta)}</td>
+                    <td className="px-3 py-1.5 text-xs font-semibold text-[#111] text-left">{p.documento}</td>
+                    <td className="px-3 py-1.5 text-xs text-[#333] text-left">{p.aseguradora}</td>
+                    <td className="px-3 py-1.5 text-xs text-[#333] text-left">{p.ramo}</td>
+                    <td className="px-3 py-1.5 text-xs text-[#666] text-left">{p.subramo}</td>
+                    <td className="px-3 py-1.5 text-xs text-[#666] text-left tabular-nums">{fmtDate(p.fechaLiquidacion)}</td>
+                    <td className="px-3 py-1.5 text-xs text-[#666] text-left tabular-nums">{fmtDate(p.fechaLimPago)}</td>
+                    <td className={`px-3 py-1.5 text-center text-xs font-medium tabular-nums ${p.primaNeta < 0 ? "text-[#E62800]" : ""}`}>{p.primaNeta < 0 ? `(${fmt(Math.abs(p.primaNeta))})` : fmt(p.primaNeta)}</td>
                   </tr>
                 ))}
                 <tr className="bg-[#041224] text-white border-t-2 cursor-default">
-                  <td className="px-3 py-3 text-sm font-bold" colSpan={6}>Total</td>
-                  <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(polizaTotal)}</td>
+                  <td className="px-3 py-1.5 text-xs font-bold" colSpan={6}>Total</td>
+                  <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(polizaTotal)}</td>
                 </tr>
               </>
             ) : (
@@ -486,7 +486,7 @@ export default function CorporatePage() {
                       <td className="px-1 py-3 text-center w-6">
                         {nextLevel && <ChevronRight className="w-3.5 h-3.5 text-[#E62800] inline transition-transform group-hover:scale-110 group-hover:translate-x-0.5" />}
                       </td>
-                      <td className="px-3 py-3 text-sm font-semibold text-[#111] text-left">{r.name}</td>
+                      <td className="px-3 py-1.5 text-xs font-semibold text-[#111] text-left">{r.name}</td>
                       <td className={`px-3 py-3 text-center tabular-nums text-sm font-medium ${r.primaNeta < 0 ? "text-[#E62800]" : ""}`}>
                         {r.primaNeta < 0 ? `(${fmt(Math.abs(r.primaNeta))})` : fmt(r.primaNeta)}
                       </td>
@@ -515,15 +515,15 @@ export default function CorporatePage() {
                   return (
                     <tr className="bg-[#041224] text-white border-t-2 cursor-default">
                       <td className="px-1 py-3 w-6"></td>
-                      <td className="px-3 py-3 text-sm font-bold text-left">Total</td>
-                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(totalPN)}</td>
-                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalPpto > 0 ? fmt(totalPpto) : <span className="text-white/50">—</span>}</td>
-                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalDif !== null ? (totalDif < 0 ? `(${fmt(Math.abs(totalDif))})` : fmt(totalDif)) : <span className="text-white/50">—</span>}</td>
-                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalPctDif !== null ? `${totalPctDif > 0 ? "+" : ""}${totalPctDif}%` : <span className="text-white/50">—</span>}</td>
-                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalPnAA > 0 ? fmt(totalPnAA) : <span className="text-white/50">—</span>}</td>
-                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalDifYoY !== null ? (totalDifYoY < 0 ? `(${fmt(Math.abs(totalDifYoY))})` : fmt(totalDifYoY)) : <span className="text-white/50">—</span>}</td>
-                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalPctDifYoY !== null ? `${totalPctDifYoY > 0 ? "+" : ""}${totalPctDifYoY}%` : <span className="text-white/50">—</span>}</td>
-                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalPend > 0 ? fmt(totalPend) : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-xs font-bold text-left">Total</td>
+                      <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(totalPN)}</td>
+                      <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{totalPpto > 0 ? fmt(totalPpto) : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{totalDif !== null ? (totalDif < 0 ? `(${fmt(Math.abs(totalDif))})` : fmt(totalDif)) : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{totalPctDif !== null ? `${totalPctDif > 0 ? "+" : ""}${totalPctDif}%` : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{totalPnAA > 0 ? fmt(totalPnAA) : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{totalDifYoY !== null ? (totalDifYoY < 0 ? `(${fmt(Math.abs(totalDifYoY))})` : fmt(totalDifYoY)) : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{totalPctDifYoY !== null ? `${totalPctDifYoY > 0 ? "+" : ""}${totalPctDifYoY}%` : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{totalPend > 0 ? fmt(totalPend) : <span className="text-white/50">—</span>}</td>
                     </tr>
                   )
                 })()}
