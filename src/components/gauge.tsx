@@ -15,7 +15,7 @@ interface GaugeProps {
 export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, cumplimiento = 0, crecimiento = 0 }: GaugeProps) {
   const uniqueId = useId()
   const W = 860
-  const H = 720
+  const H = 740
   const cx = W / 2
   const cy = 390
 
@@ -152,9 +152,9 @@ export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, c
         <circle cx={cx} cy={cy} r={11} fill="white" />
         <circle cx={cx} cy={cy} r={5} fill="#052F5F" />
 
-        {/* Prominent % achievement in center */}
+        {/* Prominent % achievement in center - positioned between hub and indicator circles */}
         <text
-          x={cx} y={cy + 55}
+          x={cx} y={cy + 120}
           fontSize="58" fontWeight="900" fill="#052F5F"
           textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
           style={{ fontFeatureSettings: "'tnum'" }}
