@@ -146,6 +146,9 @@ export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, c
           fill="#052F5F"
         />
 
+        <circle cx={cx} cy={cy} r={18} fill="#052F5F" />
+        <circle cx={cx} cy={cy} r={11} fill="white" />
+        <circle cx={cx} cy={cy} r={5} fill="#052F5F" />
 
         {/* Prominent % achievement in center */}
         <text
