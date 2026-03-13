@@ -20,10 +20,9 @@ function fmtShort(v: number) {
 }
 
 // Semáforo color logic: RED if below prior year, AMBER if between prior year and budget, GREEN if above budget
-function getSemaforoColor(actual: number, priorYear: number, budget: number): string {
+function getSemaforoColor(diff: number): string {
   try {
-    if (actual < priorYear) return "text-red-600"
-    if (actual < budget) return "text-amber-600"
+    if (diff < 0) return "text-red-600"
     return "text-emerald-600"
   } catch {
     return "text-gray-600"
@@ -87,7 +86,7 @@ export default function Home() {
         <div className="md:hidden flex flex-col gap-3">
           {/* Hero: Gauge — LARGE, fills the screen */}
           <div className="w-full mx-auto">
-            <Gauge value={total / 1e6} prevYear={totalAA / 1e6} budget={totalPpto / 1e6} />
+            <Gauge value={total / 1e6} prevYear={totalAA / 1e6} budget={totalPpto / 1e6} cumplimiento={totalPpto > 0 ? Math.round((total / totalPpto) * 100) : 0} crecimiento={totalAA > 0 ? Math.round(((total - totalAA) / totalAA) * 100) : 0} />
           </div>
 
           {/* Lines list — card style, tappable */}
@@ -173,7 +172,7 @@ export default function Home() {
           <div className="w-[50%] flex flex-col items-center justify-center">
             {/* Gauge */}
             <div className="w-full">
-              <Gauge value={total / 1e6} prevYear={totalAA / 1e6} budget={totalPpto / 1e6} />
+              <Gauge value={total / 1e6} prevYear={totalAA / 1e6} budget={totalPpto / 1e6} cumplimiento={totalPpto > 0 ? Math.round((total / totalPpto) * 100) : 0} crecimiento={totalAA > 0 ? Math.round(((total - totalAA) / totalAA) * 100) : 0} />
             </div>
           </div>
 
@@ -206,7 +205,7 @@ export default function Home() {
                         <td className="px-2 py-2 text-right font-medium text-gray-900 tabular-nums">{fmt(l.primaNeta)}</td>
                         <td className="px-2 py-2 text-right text-gray-500 tabular-nums">{fmt(l.anioAnterior)}</td>
                         <td className="px-2 py-2 text-right font-medium text-gray-700 tabular-nums">{fmt(l.presupuesto)}</td>
-                        <td className={`px-2 py-2 text-right font-medium tabular-nums ${getSemaforoColor(l.primaNeta, l.anioAnterior, l.presupuesto)}`}>
+                        <td className={`px-2 py-2 text-right font-medium tabular-nums ${getSemaforoColor(l.primaNeta - l.presupuesto)}`}>
                           {diff < 0 ? `(${fmt(Math.abs(diff))})` : fmt(diff)}
                         </td>
                       </tr>
@@ -218,7 +217,7 @@ export default function Home() {
                     <td className="px-2 py-2 text-right font-bold tabular-nums text-white">{fmt(total)}</td>
                     <td className="px-2 py-2 text-right font-bold tabular-nums text-white">{fmt(totalAA)}</td>
                     <td className="px-2 py-2 text-right font-bold tabular-nums text-white">{fmt(totalPpto)}</td>
-                    <td className={`px-2 py-2 text-right font-bold tabular-nums ${getSemaforoColor(total, totalAA, totalPpto).replace('text-', 'text-').replace('600', '400')}`}>
+                    <td className={`px-2 py-2 text-right font-bold tabular-nums ${(total - totalPpto) < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                       {(total - totalPpto) < 0 ? `(${fmt(Math.abs(total - totalPpto))})` : fmt(total - totalPpto)}
                     </td>
                   </tr>

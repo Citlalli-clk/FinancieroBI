@@ -32,8 +32,8 @@ export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, c
   // RED zone: 0% to (prevYear / budget * 100)%
   // YELLOW zone: from red threshold to 100%
   // GREEN zone: above 100%
-  const redThreshold = budget > 0 ? (prevYear / budget) : 0.5 // fraction of arc for red zone
-  const yellowThreshold = 1.0 // 100% = end of yellow, start of green
+  const redThreshold = 0.33 // Fixed: roughly equal thirds for visual balance
+  const yellowThreshold = 0.66 // Fixed: roughly equal thirds for visual balance
 
   // 5 clean labels outside the arc (scaled to 120% max for green zone visibility)
   const maxScale = 1.2 // Show up to 120% on gauge
