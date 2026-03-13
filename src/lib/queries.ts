@@ -714,6 +714,35 @@ export interface VendedorByTipoRow {
   primaNeta: number
 }
 
+// Full vendedor data including tier and all 9 columns
+export interface VendedorFullRow {
+  vendedor: string
+  tipo: string
+  primaNeta: number
+  pnAnioAnt: number
+  presupuesto: number | null
+  diferencia: number | null
+  pctDifPpto: number | null
+  difYoY: number | null
+  pctDifYoY: number | null
+  pendiente: number | null
+}
+
+// Tier group with full vendedor data (all 9 columns per vendedor)
+export interface TierGroup {
+  tipo: string
+  vendedores: VendedorFullRow[]
+  // Tier totals (sums of all vendedores in tier)
+  totalPrimaNeta: number
+  totalPresupuesto: number | null
+  totalDiferencia: number | null
+  pctDifPpto: number | null
+  totalPnAnioAnt: number | null
+  totalDifYoY: number | null
+  pctDifYoY: number | null
+  totalPendiente: number | null
+}
+
 /**
  * Get aseguradoras by clasificación from catalogos_cias
  * Returns array of CiaAbreviacion values matching the classification
@@ -808,6 +837,155 @@ export async function getVendedoresByTipo(
         total: vendedores.reduce((s, v) => s + v.primaNeta, 0)
       }))
       .sort((a, b) => b.total - a.total)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Fetch vendedores with full data (all 9 columns) grouped by tier.
+ * This merges getVendedores (full data with YoY) with tier mapping from catalogos_agentes.
+ * Used for Click Franquicias and Click Promotorías tier grouper.
+ */
+export async function getVendedoresWithTipo(
+  gerencia: string,
+  linea: string,
+  periodo?: number,
+  año?: string,
+  clasificacionAseguradoras?: string[] | null,
+  lineaPpto?: number,
+  lineaPendiente?: number
+): Promise<TierGroup[] | null> {
+  try {
+    // 1. Fetch full vendedor data (current year)
+    let query = supabase
+      .from("dashboard_data")
+      .select("VendNombre, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
+      .eq("GerenciaNombre", gerencia)
+      .eq("LBussinesNombre", linea)
+      .limit(5000)
+
+    if (periodo) query = query.eq("mes", periodo)
+    if (año) query = query.eq("anio", parseInt(año))
+    if (clasificacionAseguradoras?.length) query = query.in("CiaAbreviacion", clasificacionAseguradoras)
+
+    const { data, error } = await query
+    if (error || !data?.length) return null
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const grouped = groupBySum(data as any[], "VendNombre")
+
+    // 2. Fetch prior year data for YoY comparison
+    const priorYear = año ? String(parseInt(año) - 1) : String(new Date().getFullYear() - 1)
+    let queryPY = supabase
+      .from("dashboard_data")
+      .select("VendNombre, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
+      .eq("GerenciaNombre", gerencia)
+      .eq("LBussinesNombre", linea)
+      .eq("anio", parseInt(priorYear))
+      .limit(5000)
+
+    if (periodo) queryPY = queryPY.eq("mes", periodo)
+    if (clasificacionAseguradoras?.length) queryPY = queryPY.in("CiaAbreviacion", clasificacionAseguradoras)
+
+    const { data: dataPY } = await queryPY
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const groupedPY = dataPY ? groupBySum(dataPY as any[], "VendNombre") : {}
+
+    // 3. Fetch tier mapping from catalogos_agentes
+    const vendedorNames = Object.keys(grouped)
+    const { data: catData } = await supabase
+      .from("catalogos_agentes")
+      .select("NombreCompleto, TipoVend_TXT")
+      .in("NombreCompleto", vendedorNames)
+
+    const tipoMap: Record<string, string> = {}
+    if (catData) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const cat of catData as any[]) {
+        tipoMap[cat.NombreCompleto] = cat.TipoVend_TXT || "Sin clasificar"
+      }
+    }
+
+    // 4. Calculate totals for budget allocation
+    const pnAnioAntTotal = Object.values(groupedPY).reduce((s, v) => s + v, 0)
+    const ppto = lineaPpto ?? 0
+    const pendienteTotal = lineaPendiente ?? 0
+
+    // 5. Build full vendedor rows with all columns and group by tier
+    const byTipo: Record<string, VendedorFullRow[]> = {}
+
+    for (const [vendedor, primaNeta] of Object.entries(grouped)) {
+      const tipo = tipoMap[vendedor] || "Sin clasificar"
+      const pnAnioAnt = groupedPY[vendedor] || 0
+
+      // Allocate presupuesto based on PRIOR YEAR share
+      const priorShare = pnAnioAntTotal > 0 ? pnAnioAnt / pnAnioAntTotal : 0
+      const presupuesto = ppto > 0 ? Math.round(ppto * priorShare) : null
+      const diferencia = presupuesto !== null && presupuesto > 0 ? Math.round(primaNeta) - presupuesto : null
+      const pctDifPpto = presupuesto !== null && presupuesto > 0 && diferencia !== null
+        ? Math.round((diferencia / presupuesto) * 1000) / 10
+        : null
+      const difYoY = pnAnioAnt > 0 ? Math.round(primaNeta) - Math.round(pnAnioAnt) : (pnAnioAnt === 0 && primaNeta > 0 ? Math.round(primaNeta) : null)
+      const pctDifYoY = pnAnioAnt > 0 && difYoY !== null
+        ? Math.round((difYoY / pnAnioAnt) * 10000) / 100
+        : null
+      const pendiente = pendienteTotal > 0 && priorShare > 0 ? Math.round(pendienteTotal * priorShare) : null
+
+      if (!byTipo[tipo]) byTipo[tipo] = []
+      byTipo[tipo].push({
+        vendedor,
+        tipo,
+        primaNeta: Math.round(primaNeta),
+        pnAnioAnt: Math.round(pnAnioAnt),
+        presupuesto,
+        diferencia,
+        pctDifPpto,
+        difYoY,
+        pctDifYoY,
+        pendiente
+      })
+    }
+
+    // 6. Sort vendedores within each tier and calculate tier totals
+    const result: TierGroup[] = []
+
+    for (const [tipo, vendedores] of Object.entries(byTipo)) {
+      vendedores.sort((a, b) => b.primaNeta - a.primaNeta)
+
+      // Calculate tier sums
+      const totalPrimaNeta = vendedores.reduce((s, v) => s + v.primaNeta, 0)
+      const totalPresupuestoSum = vendedores.reduce((s, v) => s + (v.presupuesto ?? 0), 0)
+      const totalPnAnioAntSum = vendedores.reduce((s, v) => s + v.pnAnioAnt, 0)
+      const totalPendienteSum = vendedores.reduce((s, v) => s + (v.pendiente ?? 0), 0)
+
+      const totalDiferencia = totalPresupuestoSum > 0 ? totalPrimaNeta - totalPresupuestoSum : null
+      const tierPctDifPpto = totalPresupuestoSum > 0 && totalDiferencia !== null
+        ? Math.round((totalDiferencia / totalPresupuestoSum) * 1000) / 10
+        : null
+      const totalDifYoY = totalPnAnioAntSum > 0 ? totalPrimaNeta - totalPnAnioAntSum : null
+      const tierPctDifYoY = totalPnAnioAntSum > 0 && totalDifYoY !== null
+        ? Math.round((totalDifYoY / totalPnAnioAntSum) * 10000) / 100
+        : null
+
+      result.push({
+        tipo,
+        vendedores,
+        totalPrimaNeta,
+        totalPresupuesto: totalPresupuestoSum > 0 ? totalPresupuestoSum : null,
+        totalDiferencia,
+        pctDifPpto: tierPctDifPpto,
+        totalPnAnioAnt: totalPnAnioAntSum > 0 ? totalPnAnioAntSum : null,
+        totalDifYoY,
+        pctDifYoY: tierPctDifYoY,
+        totalPendiente: totalPendienteSum > 0 ? totalPendienteSum : null
+      })
+    }
+
+    // Sort tiers by total prima descending
+    result.sort((a, b) => b.totalPrimaNeta - a.totalPrimaNeta)
+
+    return result
   } catch {
     return null
   }

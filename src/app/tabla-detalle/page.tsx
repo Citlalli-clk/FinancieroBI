@@ -6,8 +6,8 @@ import { ChevronRight, ChevronLeft, ChevronDown, Search, Download } from "lucide
 import { PageTabs } from "@/components/page-tabs"
 import { PageFooter } from "@/components/page-footer"
 import { PeriodFilter } from "@/components/period-filter"
-import { getLineasNegocio, getGerencias, getVendedores, getGrupos, getClientes, getPolizas, globalSearch, getLastDataDate, getVendedoresByTipo, getAseguradorasByClasificacion } from "@/lib/queries"
-import type { SearchResult, PolizaRow, VendedorByTipoRow } from "@/lib/queries"
+import { getLineasNegocio, getGerencias, getVendedores, getGrupos, getClientes, getPolizas, globalSearch, getLastDataDate, getVendedoresWithTipo, getAseguradorasByClasificacion } from "@/lib/queries"
+import type { SearchResult, PolizaRow, TierGroup, VendedorFullRow } from "@/lib/queries"
 import { exportExcel, exportPDF } from "@/lib/export"
 import { NLQuery } from "@/components/nl-query"
 import { DrillCharts } from "@/components/drill-charts"
@@ -83,8 +83,8 @@ function TablaDetalleContent() {
   // Feature 3: Cartera filter (Personal vs Promotorías)
   const [cartera, setCartera] = useState<string>("Todas")
 
-  // Feature 1: Tipo Vendedor grouper state
-  const [tipoGroups, setTipoGroups] = useState<{ tipo: string; vendedores: VendedorByTipoRow[]; total: number }[] | null>(null)
+  // Feature 1: Tipo Vendedor grouper state (now with full 9-column data)
+  const [tipoGroups, setTipoGroups] = useState<TierGroup[] | null>(null)
   const [expandedTipos, setExpandedTipos] = useState<Set<string>>(new Set())
 
   useEffect(() => { setMounted(true) }, [])
@@ -273,9 +273,17 @@ function TablaDetalleContent() {
         const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
         setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, lineaPpto, lineaPendiente)))
       } else if (level === "vendedor") {
-        // Feature 1: For Franquicias/Promotorías, use tipo grouper
+        // Feature 1: For Franquicias/Promotorías, use tipo grouper with FULL data (all 9 columns)
         if (usesTipoGrouper(newSel.linea || "")) {
-          const data = await getVendedoresByTipo(newSel.linea!, periodo, year, newSel.gerencia, clasificacionAseguradoras)
+          const data = await getVendedoresWithTipo(
+            newSel.gerencia!,
+            newSel.linea!,
+            periodo,
+            year,
+            clasificacionAseguradoras,
+            lineaPpto,
+            lineaPendiente
+          )
           setTipoGroups(data)
           setRows([]) // Clear regular rows
         } else {
@@ -405,17 +413,32 @@ function TablaDetalleContent() {
     return { rows: [...top10, otrosRow], otrosCount: rest.length }
   }
 
-  // Top 10 + Otros for vendedores within a tier group
-  const computeTop10VendedoresInTier = (vendedores: VendedorByTipoRow[]): { vendedores: VendedorByTipoRow[]; otrosCount: number } => {
+  // Top 10 + Otros for vendedores within a tier group (full row data)
+  const computeTop10VendedoresInTier = (vendedores: VendedorFullRow[]): { vendedores: VendedorFullRow[]; otrosCount: number } => {
     if (vendedores.length <= 10) return { vendedores, otrosCount: 0 }
     const sorted = [...vendedores].sort((a, b) => b.primaNeta - a.primaNeta)
     const top10 = sorted.slice(0, 10)
     const rest = sorted.slice(10)
+    // Sum all numeric columns for "Otros" row
     const sumPN = rest.reduce((s, v) => s + v.primaNeta, 0)
-    const otrosVendedor: VendedorByTipoRow = {
+    const sumPpto = rest.reduce((s, v) => s + (v.presupuesto ?? 0), 0)
+    const sumPnAA = rest.reduce((s, v) => s + v.pnAnioAnt, 0)
+    const sumPend = rest.reduce((s, v) => s + (v.pendiente ?? 0), 0)
+    const sumDif = sumPpto > 0 ? sumPN - sumPpto : null
+    const pctDif = sumPpto > 0 && sumDif !== null ? Math.round((sumDif / sumPpto) * 1000) / 10 : null
+    const sumDifYoY = sumPnAA > 0 ? sumPN - sumPnAA : null
+    const pctDifYoY = sumPnAA > 0 && sumDifYoY !== null ? Math.round((sumDifYoY / sumPnAA) * 10000) / 100 : null
+    const otrosVendedor: VendedorFullRow = {
       vendedor: `Otros (${rest.length})`,
       tipo: vendedores[0]?.tipo ?? "",
-      primaNeta: sumPN
+      primaNeta: sumPN,
+      pnAnioAnt: sumPnAA,
+      presupuesto: sumPpto > 0 ? sumPpto : null,
+      diferencia: sumDif,
+      pctDifPpto: pctDif,
+      difYoY: sumDifYoY,
+      pctDifYoY: pctDifYoY,
+      pendiente: sumPend > 0 ? sumPend : null
     }
     return { vendedores: [...top10, otrosVendedor], otrosCount: rest.length }
   }
@@ -676,7 +699,7 @@ function TablaDetalleContent() {
             </div>
           </>
         ) : drillLevel === "vendedor" && tipoGroups && tipoGroups.length > 0 ? (
-          /* MOBILE: Tier groups for Franquicias/Promotorías */
+          /* MOBILE: Tier groups for Franquicias/Promotorías — with full data */
           <>
             {tipoGroups.map((group) => {
               const isExpanded = expandedTipos.has(group.tipo)
@@ -688,44 +711,61 @@ function TablaDetalleContent() {
                   return next
                 })
               }
+              // Apply Top 10 + Otros within each tier
+              const { vendedores: displayVendedores } = computeTop10VendedoresInTier(group.vendedores)
               return (
                 <React.Fragment key={group.tipo}>
-                  {/* Tier header */}
+                  {/* Tier header — shows tier totals */}
                   <div
                     className="bg-[#F3F4F6] rounded-lg border border-gray-200 px-3 py-2.5 shadow-sm active:bg-gray-200"
                     onClick={toggleTipo}
                   >
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center mb-1">
                       <span className="font-semibold text-sm text-[#111] flex items-center gap-1">
                         <ChevronDown className={`w-4 h-4 text-[#041224] transition-transform ${isExpanded ? "" : "-rotate-90"}`} />
                         Vendedores {group.tipo} <span className="text-[#666] font-normal">({group.vendedores.length})</span>
                       </span>
-                      <span className="text-sm font-bold">{fmtShort(group.total)}</span>
+                      <span className={`text-sm font-black flex-shrink-0 ml-2 ${group.pctDifPpto !== null && group.pctDifPpto < 0 ? "text-[#E62800]" : "text-[#166534]"}`}>
+                        {group.pctDifPpto !== null ? `${group.pctDifPpto > 0 ? "+" : ""}${group.pctDifPpto}%` : ""}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-base font-black text-[#041224]">{fmtShort(group.totalPrimaNeta)}</span>
+                      {group.totalPresupuesto !== null && <span className="text-[11px] text-gray-400">/ {fmtShort(group.totalPresupuesto)}</span>}
+                      {group.totalPnAnioAnt !== null && <span className="text-[10px] text-gray-400 ml-auto">AA: {fmtShort(group.totalPnAnioAnt)}</span>}
                     </div>
                   </div>
-                  {/* Vendedores within tier */}
-                  {isExpanded && group.vendedores.map((v) => (
-                    <div
-                      key={v.vendedor}
-                      className="ml-4 bg-white rounded-lg border border-gray-200 px-3 py-2 shadow-sm active:bg-gray-50"
-                      onClick={() => drill("grupo", v.vendedor, { ...sel, vendedor: v.vendedor })}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-sm text-[#111] flex items-center gap-1">
-                          <ChevronRight className="w-3.5 h-3.5 text-[#E62800]" />
-                          {v.vendedor}
-                        </span>
-                        <span className={`text-sm font-bold ${v.primaNeta < 0 ? "text-[#E62800]" : ""}`}>
-                          {v.primaNeta < 0 ? `(${fmt(Math.abs(v.primaNeta))})` : fmt(v.primaNeta)}
-                        </span>
+                  {/* Vendedores within tier — shows individual vendedor data */}
+                  {isExpanded && displayVendedores.map((v) => {
+                    const isOtros = v.vendedor.startsWith("Otros (")
+                    return (
+                      <div
+                        key={v.vendedor}
+                        className={`ml-4 rounded-lg border border-gray-200 px-3 py-2 shadow-sm ${isOtros ? "bg-gray-100" : "bg-white active:bg-gray-50"}`}
+                        onClick={() => !isOtros && drill("grupo", v.vendedor, { ...sel, vendedor: v.vendedor })}
+                      >
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-bold text-sm text-[#111] flex items-center gap-1 truncate">
+                            {!isOtros && <ChevronRight className="w-3.5 h-3.5 text-[#E62800] flex-shrink-0" />}
+                            {v.vendedor}
+                          </span>
+                          <span className={`text-sm font-black flex-shrink-0 ml-2 ${v.pctDifPpto !== null && v.pctDifPpto < 0 ? "text-[#E62800]" : v.pctDifPpto !== null && v.pctDifPpto > 0 ? "text-[#166534]" : ""}`}>
+                            {v.pctDifPpto !== null ? `${v.pctDifPpto > 0 ? "+" : ""}${v.pctDifPpto}%` : ""}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-base font-black text-[#041224]">{fmtShort(v.primaNeta)}</span>
+                          {v.presupuesto !== null && <span className="text-[11px] text-gray-400">/ {fmtShort(v.presupuesto)}</span>}
+                          {v.pnAnioAnt > 0 && <span className="text-[10px] text-gray-400 ml-auto">AA: {fmtShort(v.pnAnioAnt)}</span>}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </React.Fragment>
               )
             })}
             <div className="bg-[#041224] text-white rounded-lg px-3 py-2.5 flex justify-between">
-              <span className="font-bold">Total</span><span className="font-bold">{fmt(tipoGroups.reduce((s, g) => s + g.total, 0))}</span>
+              <span className="font-bold">Total</span><span className="font-bold">{fmt(tipoGroups.reduce((s, g) => s + g.totalPrimaNeta, 0))}</span>
             </div>
           </>
         ) : (
@@ -873,7 +913,7 @@ function TablaDetalleContent() {
               </>
 
             ) : drillLevel === "vendedor" && tipoGroups && tipoGroups.length > 0 ? (
-              /* ─── VENDEDOR LEVEL WITH TIPO GROUPER (Franquicias/Promotorías) ─── */
+              /* ─── VENDEDOR LEVEL WITH TIPO GROUPER (Franquicias/Promotorías) — FULL 9 COLUMNS ─── */
               <>
                 {tipoGroups.map((group, gIdx) => {
                   const isExpanded = expandedTipos.has(group.tipo)
@@ -887,9 +927,17 @@ function TablaDetalleContent() {
                   }
                   // Apply Top 10 + Otros within each tier
                   const { vendedores: displayVendedores } = computeTop10VendedoresInTier(group.vendedores)
+                  // Tier semáforo color
+                  const tierSemaforoColor = group.totalPresupuesto !== null && group.totalPnAnioAnt !== null
+                    ? (group.totalPrimaNeta >= group.totalPresupuesto
+                        ? "text-emerald-600"
+                        : group.totalPrimaNeta >= group.totalPnAnioAnt
+                        ? "text-amber-600"
+                        : "text-red-600")
+                    : (group.totalDiferencia !== null && group.totalDiferencia < 0 ? "text-red-600" : "")
                   return (
                     <React.Fragment key={group.tipo}>
-                      {/* Tier group header row */}
+                      {/* Tier group header row — shows SUMMED data for all 9 columns */}
                       <tr
                         className={`bg-[#F3F4F6] border-b border-[#E5E7EB] cursor-pointer hover:bg-[#E5E7EB] transition-colors ${gIdx % 2 === 1 ? "" : ""}`}
                         onClick={toggleTipo}
@@ -900,18 +948,40 @@ function TablaDetalleContent() {
                         <td className="px-3 py-1.5 text-xs font-semibold text-[#111] text-left">
                           Vendedores {group.tipo} <span className="text-[#666] font-normal">({group.vendedores.length})</span>
                         </td>
-                        <td className="px-3 py-1.5 text-right tabular-nums text-xs font-semibold">{fmt(group.total)}</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-400 font-normal">—</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-400 font-normal">—</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-400 font-normal">—</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-400 font-normal">—</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-400 font-normal">—</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-400 font-normal">—</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-400 font-normal">—</td>
+                        <td className="px-3 py-1.5 text-right tabular-nums text-xs font-semibold">{fmt(group.totalPrimaNeta)}</td>
+                        <td className="px-3 py-1.5 text-right tabular-nums text-xs text-green-600 font-semibold">
+                          {group.totalPresupuesto !== null ? fmt(group.totalPresupuesto) : <span className="text-gray-400 font-normal">—</span>}
+                        </td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums text-xs font-semibold ${tierSemaforoColor}`}>
+                          {group.totalDiferencia !== null ? (group.totalDiferencia < 0 ? `(${fmt(Math.abs(group.totalDiferencia))})` : fmt(group.totalDiferencia)) : <span className="text-gray-400 font-normal">—</span>}
+                        </td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums text-xs font-semibold ${tierSemaforoColor}`}>
+                          {group.pctDifPpto !== null ? `${group.pctDifPpto > 0 ? "+" : ""}${group.pctDifPpto}%` : <span className="text-gray-400 font-normal">—</span>}
+                        </td>
+                        <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-800 font-semibold">
+                          {group.totalPnAnioAnt !== null ? fmt(group.totalPnAnioAnt) : <span className="text-gray-400 font-normal">—</span>}
+                        </td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums text-xs font-semibold ${group.totalDifYoY !== null && group.totalDifYoY < 0 ? "text-red-500" : ""}`}>
+                          {group.totalDifYoY !== null ? (group.totalDifYoY < 0 ? `(${fmt(Math.abs(group.totalDifYoY))})` : fmt(group.totalDifYoY)) : <span className="text-gray-400 font-normal">—</span>}
+                        </td>
+                        <td className={`px-3 py-1.5 text-right tabular-nums text-xs font-semibold ${group.pctDifYoY !== null && group.pctDifYoY < 0 ? "text-red-500" : group.pctDifYoY !== null && group.pctDifYoY > 0 ? "text-green-600" : ""}`}>
+                          {group.pctDifYoY !== null ? `${group.pctDifYoY > 0 ? "+" : ""}${group.pctDifYoY}%` : <span className="text-gray-400 font-normal">—</span>}
+                        </td>
+                        <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-500 font-semibold">
+                          {group.totalPendiente !== null ? fmt(group.totalPendiente) : <span className="text-gray-400 font-normal">—</span>}
+                        </td>
                       </tr>
-                      {/* Individual vendedor rows within tier (when expanded) - with Top 10 limit */}
+                      {/* Individual vendedor rows within tier (when expanded) — FULL 9 COLUMNS */}
                       {isExpanded && displayVendedores.map((v, vIdx) => {
                         const isOtros = v.vendedor.startsWith("Otros (")
+                        // Vendedor semáforo color
+                        const vSemaforoColor = v.presupuesto !== null && v.pnAnioAnt > 0
+                          ? (v.primaNeta >= v.presupuesto
+                              ? "text-emerald-600"
+                              : v.primaNeta >= v.pnAnioAnt
+                              ? "text-amber-600"
+                              : "text-red-600")
+                          : (v.diferencia !== null && v.diferencia < 0 ? "text-red-600" : "")
                         return (
                           <tr
                             key={v.vendedor}
@@ -925,31 +995,58 @@ function TablaDetalleContent() {
                             <td className={`px-3 py-1.5 text-right tabular-nums text-xs font-normal ${v.primaNeta < 0 ? "text-red-500" : ""}`}>
                               {v.primaNeta < 0 ? `(${fmt(Math.abs(v.primaNeta))})` : fmt(v.primaNeta)}
                             </td>
-                            <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-300 font-normal">—</td>
-                            <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-300 font-normal">—</td>
-                            <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-300 font-normal">—</td>
-                            <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-300 font-normal">—</td>
-                            <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-300 font-normal">—</td>
-                            <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-300 font-normal">—</td>
-                            <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-300 font-normal">—</td>
+                            <td className="px-3 py-1.5 text-right tabular-nums text-xs text-green-600 font-semibold">
+                              {v.presupuesto !== null ? fmt(v.presupuesto) : <span className="text-gray-300 font-normal">—</span>}
+                            </td>
+                            <td className={`px-3 py-1.5 text-right tabular-nums text-xs font-normal ${vSemaforoColor}`}>
+                              {v.diferencia !== null ? (v.diferencia < 0 ? `(${fmt(Math.abs(v.diferencia))})` : fmt(v.diferencia)) : <span className="text-gray-300">—</span>}
+                            </td>
+                            <td className={`px-3 py-1.5 text-right tabular-nums text-xs ${vSemaforoColor}`}>
+                              {v.pctDifPpto !== null ? `${v.pctDifPpto > 0 ? "+" : ""}${v.pctDifPpto}%` : <span className="text-gray-300">—</span>}
+                            </td>
+                            <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-800">
+                              {v.pnAnioAnt > 0 ? fmt(v.pnAnioAnt) : <span className="text-gray-300">—</span>}
+                            </td>
+                            <td className={`px-3 py-1.5 text-right tabular-nums text-xs font-normal ${v.difYoY !== null && v.difYoY < 0 ? "text-red-500" : ""}`}>
+                              {v.difYoY !== null ? (v.difYoY < 0 ? `(${fmt(Math.abs(v.difYoY))})` : fmt(v.difYoY)) : <span className="text-gray-300">—</span>}
+                            </td>
+                            <td className={`px-3 py-1.5 text-right tabular-nums text-xs ${v.pctDifYoY !== null && v.pctDifYoY < 0 ? "text-red-500" : v.pctDifYoY !== null && v.pctDifYoY > 0 ? "text-green-600" : ""}`}>
+                              {v.pctDifYoY !== null ? `${v.pctDifYoY > 0 ? "+" : ""}${v.pctDifYoY}%` : <span className="text-gray-300">—</span>}
+                            </td>
+                            <td className="px-3 py-1.5 text-right tabular-nums text-xs text-gray-500">
+                              {v.pendiente !== null ? fmt(v.pendiente) : <span className="text-gray-300">—</span>}
+                            </td>
                           </tr>
                         )
                       })}
                     </React.Fragment>
                   )
                 })}
-                <tr className="bg-[#041224] text-white border-t-2 cursor-default">
-                  <td className="px-1 py-1.5 w-6"></td>
-                  <td className="px-3 py-1.5 font-bold text-left">Total</td>
-                  <td className="px-3 py-1.5 text-right font-bold tabular-nums">{fmt(tipoGroups.reduce((s, g) => s + g.total, 0))}</td>
-                  <td className="px-3 py-1.5 text-right text-white/50 tabular-nums">—</td>
-                  <td className="px-3 py-1.5 text-right text-white/50 tabular-nums">—</td>
-                  <td className="px-3 py-1.5 text-right text-white/50 tabular-nums">—</td>
-                  <td className="px-3 py-1.5 text-right text-white/50 tabular-nums">—</td>
-                  <td className="px-3 py-1.5 text-right text-white/50 tabular-nums">—</td>
-                  <td className="px-3 py-1.5 text-right text-white/50 tabular-nums">—</td>
-                  <td className="px-3 py-1.5 text-right text-white/50 tabular-nums">—</td>
-                </tr>
+                {/* Grand total row with summed columns */}
+                {(() => {
+                  const grandTotalPN = tipoGroups.reduce((s, g) => s + g.totalPrimaNeta, 0)
+                  const grandTotalPpto = tipoGroups.reduce((s, g) => s + (g.totalPresupuesto ?? 0), 0)
+                  const grandTotalPnAA = tipoGroups.reduce((s, g) => s + (g.totalPnAnioAnt ?? 0), 0)
+                  const grandTotalPend = tipoGroups.reduce((s, g) => s + (g.totalPendiente ?? 0), 0)
+                  const grandDif = grandTotalPpto > 0 ? grandTotalPN - grandTotalPpto : null
+                  const grandPctDif = grandTotalPpto > 0 && grandDif !== null ? Math.round((grandDif / grandTotalPpto) * 1000) / 10 : null
+                  const grandDifYoY = grandTotalPnAA > 0 ? grandTotalPN - grandTotalPnAA : null
+                  const grandPctDifYoY = grandTotalPnAA > 0 && grandDifYoY !== null ? Math.round((grandDifYoY / grandTotalPnAA) * 10000) / 100 : null
+                  return (
+                    <tr className="bg-[#041224] text-white border-t-2 cursor-default">
+                      <td className="px-1 py-1.5 w-6"></td>
+                      <td className="px-3 py-1.5 font-bold text-left">Total</td>
+                      <td className="px-3 py-1.5 text-right font-bold tabular-nums">{fmt(grandTotalPN)}</td>
+                      <td className="px-3 py-1.5 text-right font-bold tabular-nums">{grandTotalPpto > 0 ? fmt(grandTotalPpto) : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-right font-bold tabular-nums">{grandDif !== null ? (grandDif < 0 ? `(${fmt(Math.abs(grandDif))})` : fmt(grandDif)) : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-right font-bold tabular-nums">{grandPctDif !== null ? `${grandPctDif > 0 ? "+" : ""}${grandPctDif}%` : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-right font-bold tabular-nums">{grandTotalPnAA > 0 ? fmt(grandTotalPnAA) : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-right font-bold tabular-nums">{grandDifYoY !== null ? (grandDifYoY < 0 ? `(${fmt(Math.abs(grandDifYoY))})` : fmt(grandDifYoY)) : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-right font-bold tabular-nums">{grandPctDifYoY !== null ? `${grandPctDifYoY > 0 ? "+" : ""}${grandPctDifYoY}%` : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-right font-bold tabular-nums">{grandTotalPend > 0 ? fmt(grandTotalPend) : <span className="text-white/50">—</span>}</td>
+                    </tr>
+                  )
+                })()}
               </>
 
             ) : (
