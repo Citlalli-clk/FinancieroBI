@@ -1,6 +1,5 @@
 "use client"
 
-import { useId } from "react"
 import Link from "next/link"
 
 interface GaugeProps {
@@ -12,8 +11,7 @@ interface GaugeProps {
   crecimiento?: number
 }
 
-export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, cumplimiento = 0, crecimiento = 0 }: GaugeProps) {
-  const uniqueId = useId()
+export function Gauge({ value, budget = 129.5, clickable = true, cumplimiento = 0, crecimiento = 0 }: GaugeProps) {
   const W = 860
   const H = 720
   const cx = W / 2
@@ -21,28 +19,21 @@ export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, c
 
   const outerR = 340
   const innerR = outerR * 0.75
-  const outerGrayR = outerR + 5
   const labelR = outerR + 32
 
-  // Dynamic needle position based on cumplimiento (% of budget achieved)
-  // Clamp between 0 and ~120% for visual purposes
-  const needlePct = Math.min(Math.max(cumplimiento / 100, 0), 1.2)
+  // Premium semáforo zones - exactly 3 equal parts (1/3 each)
+  // Zone 1 (left third): Deep navy - below expectations
+  // Zone 2 (middle third): Rich amber/gold - approaching target
+  // Zone 3 (right third): Deep emerald - exceeding target
+  const zone1End = 1 / 3  // 33.33%
+  const zone2End = 2 / 3  // 66.67%
 
-  // Semáforo zone thresholds:
-  // RED zone: 0% to (prevYear / budget * 100)%
-  // YELLOW zone: from red threshold to 100%
-  // GREEN zone: above 100%
-  const redThreshold = budget > 0 ? (prevYear / budget) : 0.5 // fraction of arc for red zone
-  const yellowThreshold = 1.0 // 100% = end of yellow, start of green
-
-  // 5 clean labels outside the arc (scaled to 120% max for green zone visibility)
-  const maxScale = 1.2 // Show up to 120% on gauge
+  // Labels at 0%, 33%, 67%, 100% of arc
   const arcLabels = [
     { pct: 0, label: "$0M" },
-    { pct: 0.25 * maxScale, label: `$${Math.round(budget * 0.25)}M` },
-    { pct: 0.5 * maxScale, label: `$${Math.round(budget * 0.5)}M` },
-    { pct: 0.75 * maxScale, label: `$${Math.round(budget * 0.75)}M` },
-    { pct: 1 * maxScale, label: `$${Math.round(budget * 10) / 10}M` },
+    { pct: 0.33, label: `$${Math.round(budget * 0.33)}M` },
+    { pct: 0.67, label: `$${Math.round(budget * 0.67)}M` },
+    { pct: 1.0, label: `$${Math.round(budget)}M` },
   ]
 
   function polarToXY(angleDeg: number, r: number): [number, number] {
@@ -68,22 +59,14 @@ export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, c
     ].join(" ")
   }
 
-  // Create the three zone arcs (as fractions of the full arc)
-  // The gauge goes from 0 to 120% (maxScale), so we need to scale zones
-  const redEndPct = Math.min(redThreshold / maxScale, 1)
-  const yellowEndPct = Math.min(yellowThreshold / maxScale, 1)
-  const greenEndPct = 1 // Full arc
+  // Create the three zone arcs - exactly 1/3 each for premium look
+  const navyArc = createArcPath(0, zone1End, outerR, innerR)     // Deep navy - below expectations
+  const amberArc = createArcPath(zone1End, zone2End, outerR, innerR)  // Rich amber - approaching
+  const emeraldArc = createArcPath(zone2End, 1, outerR, innerR)  // Deep emerald - exceeding
 
-  const redArc = createArcPath(0, redEndPct, outerR, innerR)
-  const yellowArc = createArcPath(redEndPct, yellowEndPct, outerR, innerR)
-  const greenArc = createArcPath(yellowEndPct, greenEndPct, outerR, innerR)
-
-  const [gL_x, gL_y] = polarToXY(180, outerGrayR)
-  const [gR_x, gR_y] = polarToXY(0, outerGrayR)
-  const grayArc = `M ${gL_x} ${gL_y} A ${outerGrayR} ${outerGrayR} 0 0 1 ${gR_x} ${gR_y}`
-
-  // Dynamic needle angle based on actual cumplimiento
-  const needleAngleDeg = 180 - (needlePct / maxScale) * 180
+  // Dynamic needle angle based on actual cumplimiento (clamped to 0-100% for arc)
+  const needleClampedPct = Math.min(Math.max(cumplimiento / 100, 0), 1.0)
+  const needleAngleDeg = 180 - needleClampedPct * 180
   const needleLen = outerR - 8
   const [tipX, tipY] = polarToXY(needleAngleDeg, needleLen)
 
@@ -112,16 +95,19 @@ export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, c
         viewBox={`0 0 ${W} ${H}`}
         style={{ display: "block" }}
       >
-        <path d={grayArc} fill="none" stroke="#D0D0D0" strokeWidth={2} />
-
-        {/* Semáforo zones - solid colors, no gradients */}
-        <path d={redArc} fill="#E62800" />
-        <path d={yellowArc} fill="#F9DC5C" />
-        <path d={greenArc} fill="#60A63A" />
+        <defs>
+          <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="rgba(0,0,0,0.15)" />
+          </filter>
+        </defs>
+        {/* Premium semáforo zones - elegant corporate colors */}
+        <path d={navyArc} fill="#0A1628" />
+        <path d={amberArc} fill="#C6922A" />
+        <path d={emeraldArc} fill="#1B6B4A" />
 
         {/* Tick marks + labels OUTSIDE */}
         {arcLabels.map((tick, i) => {
-          const angleDeg = 180 - (tick.pct / maxScale) * 180
+          const angleDeg = 180 - tick.pct * 180
           const [t1x, t1y] = polarToXY(angleDeg, tickR1)
           const [t2x, t2y] = polarToXY(angleDeg, tickR2)
           const [lx, ly] = polarToXY(angleDeg, labelR)
@@ -131,13 +117,13 @@ export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, c
           const yOffset = (tick.pct < 0.05 || tick.pct > 0.95) ? 20 : 0
           return (
             <g key={i}>
-              <line x1={t1x} y1={t1y} x2={t2x} y2={t2y} stroke="#9CA3AF" strokeWidth={1.5} />
+              <line x1={t1x} y1={t1y} x2={t2x} y2={t2y} stroke="#8896A6" strokeWidth={1.5} />
               <text
                 x={lx} y={ly + yOffset}
-                fontSize="15" fontWeight="700" fill="#374151"
+                fontSize="15" fontWeight="500" fill="#4A5568"
                 textAnchor={anchor}
                 dominantBaseline="middle"
-                fontFamily="Calibri, Arial, sans-serif"
+                fontFamily="system-ui, -apple-system, sans-serif"
               >
                 {tick.label}
               </text>
@@ -147,68 +133,69 @@ export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, c
 
         <polygon
           points={`${tipX},${tipY} ${b1x},${b1y} ${tailX},${tailY} ${b2x},${b2y}`}
-          fill="#052F5F"
+          fill="#2D3748"
         />
 
-        <circle cx={cx} cy={cy} r={18} fill="#052F5F" />
+        <circle cx={cx} cy={cy} r={18} fill="#2D3748" />
         <circle cx={cx} cy={cy} r={11} fill="white" />
-        <circle cx={cx} cy={cy} r={5} fill="#052F5F" />
+        <circle cx={cx} cy={cy} r={5} fill="#2D3748" />
 
         {/* Prominent % achievement in center */}
         <text
           x={cx} y={cy + 55}
-          fontSize="58" fontWeight="900" fill="#052F5F"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+          fontSize="58" fontWeight="900" fill="#0A1628"
+          textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif"
           style={{ fontFeatureSettings: "'tnum'" }}
         >
           {cumplimiento}%
         </text>
         <text
           x={cx} y={cy + 90}
-          fontSize="21" fill="#374151"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
-          fontWeight="700"
+          fontSize="21" fill="#4A5568"
+          textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="600"
         >
           Cumplimiento
         </text>
         <text
           x={cx} y={cy + 120}
-          fontSize="18" fill="#6B7280"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+          fontSize="18" fill="#8896A6"
+          textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif"
         >
           ${value.toFixed(1)}M de ${budget.toFixed(1)}M
         </text>
 
-        <circle cx={circleLX} cy={circleY} r={circleR} fill="#3983F6" />
+        {/* Bottom circles with subtle drop shadow */}
+        <circle cx={circleLX} cy={circleY} r={circleR} fill="#0A1628" filter="url(#dropShadow)" />
         <text
           x={circleLX} y={circleY + 8}
           fontSize="32" fontWeight="900" fill="white"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+          textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif"
           style={{ fontFeatureSettings: "'tnum'" }}
         >
           ${value.toFixed(1)}M
         </text>
         <text
           x={circleLX} y={circleY + circleR + 22}
-          fontSize="14" fontWeight="700" fill="#374151"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+          fontSize="14" fontWeight="600" fill="#4A5568"
+          textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif"
         >
           Prima Neta
         </text>
 
-        <circle cx={circleRX} cy={circleY} r={circleR} fill={crecimiento < 0 ? '#E62800' : '#60A63A'} />
+        <circle cx={circleRX} cy={circleY} r={circleR} fill={crecimiento < 0 ? '#8B2500' : '#1B6B4A'} filter="url(#dropShadow)" />
         <text
           x={circleRX} y={circleY + 8}
           fontSize="32" fontWeight="900" fill="white"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+          textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif"
           style={{ fontFeatureSettings: "'tnum'" }}
         >
           {crecimiento < 0 ? "↓" : "↑"}{Math.abs(crecimiento)}%
         </text>
         <text
           x={circleRX} y={circleY + circleR + 22}
-          fontSize="14" fontWeight="700" fill="#374151"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
+          fontSize="14" fontWeight="600" fill="#4A5568"
+          textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif"
         >
           Crecimiento
         </text>
