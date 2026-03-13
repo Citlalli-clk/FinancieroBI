@@ -119,15 +119,15 @@ export default function CobranzaDiaPage() {
                 const neg = r.diferencia < 0
                 return (
                   <tr key={i} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${i % 2 === 1 ? "bg-[#FAFAFA]" : ""}`}>
-                    <td className="px-2 py-1.5 text-xs text-gray-600">{r.fecha}</td>
-                    <td className="px-2 py-1.5 text-xs font-medium text-[#111]">{r.gerencia}</td>
-                    <td className="px-2 py-1.5 text-right text-xs font-medium tabular-nums">{fmt(r.prima_cobrada)}</td>
-                    <td className="px-2 py-1.5 text-right text-xs text-gray-500 tabular-nums">{fmt(r.meta_dia)}</td>
-                    <td className={`px-2 py-1.5 text-right text-xs font-medium tabular-nums ${neg ? "text-[#E62800]" : "text-[#059669]"}`}>
+                    <td className="px-2 py-1.5 text-sm text-gray-600">{r.fecha}</td>
+                    <td className="px-2 py-1.5 text-sm font-medium text-[#111]">{r.gerencia}</td>
+                    <td className="px-2 py-1.5 text-right text-sm font-medium tabular-nums">{fmt(r.prima_cobrada)}</td>
+                    <td className="px-2 py-1.5 text-right text-sm text-gray-500 font-medium tabular-nums">{fmt(r.meta_dia)}</td>
+                    <td className={`px-2 py-1.5 text-right text-sm font-medium tabular-nums ${neg ? "text-[#E62800]" : "text-[#059669]"}`}>
                       {neg ? `(${fmt(Math.abs(r.diferencia))})` : fmt(r.diferencia)}
                     </td>
-                    <td className={`px-2 py-1.5 text-right text-xs font-medium tabular-nums ${pct < 100 ? "text-[#E62800]" : "text-[#059669]"}`}>{pct}%</td>
-                    <td className="px-2 py-1.5 text-right text-xs text-gray-500 tabular-nums">{fmt(r.acumulado)}</td>
+                    <td className={`px-2 py-1.5 text-right text-sm font-medium tabular-nums ${pct < 100 ? "text-[#E62800]" : "text-[#059669]"}`}>{pct}%</td>
+                    <td className="px-2 py-1.5 text-right text-sm text-gray-500 font-medium tabular-nums">{fmt(r.acumulado)}</td>
                   </tr>
                 )
               })}

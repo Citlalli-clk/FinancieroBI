@@ -242,13 +242,13 @@ export default function CompromisosPage() {
                     const diferencia = r.primaActual - r.meta
                     return (
                       <tr key={r.vendedor} className={`vendedor-row border-b border-[#E5E7EB] ${isOtros ? 'bg-gray-100' : idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFBFC]'}`}>
-                        <td className="px-2 py-1.5 text-left font-medium text-[#111]">{r.vendedor}</td>
-                        <td className="px-2 py-1.5 text-center text-gray-600 font-normal tabular-nums">{fmt(r.meta)}</td>
-                        <td className="px-2 py-1.5 text-center font-normal text-xs tabular-nums">{fmt(r.primaActual)}</td>
-                        <td className={`px-2 py-1.5 text-center font-normal text-xs tabular-nums ${semaforoColor}`}>
+                        <td className="px-2 py-1.5 text-left text-sm font-medium text-[#111]">{r.vendedor}</td>
+                        <td className="px-2 py-1.5 text-center text-sm text-gray-600 font-medium tabular-nums">{fmt(r.meta)}</td>
+                        <td className="px-2 py-1.5 text-center text-sm font-medium tabular-nums">{fmt(r.primaActual)}</td>
+                        <td className={`px-2 py-1.5 text-center text-sm font-medium tabular-nums ${semaforoColor}`}>
                           {diferencia < 0 ? `(${fmt(Math.abs(diferencia))})` : fmt(diferencia)}
                         </td>
-                        <td className={`px-2 py-1.5 text-center tabular-nums ${semaforoColor}`}>{r.pctAvance.toFixed(1)}%</td>
+                        <td className={`px-2 py-1.5 text-center text-sm font-medium tabular-nums ${semaforoColor}`}>{r.pctAvance.toFixed(1)}%</td>
                         <td className="px-2 py-1.5 text-center"><Semaforo status={status} /></td>
                       </tr>
                     )
@@ -258,13 +258,13 @@ export default function CompromisosPage() {
                     const totalDif = totalActual - totalMeta
                     return (
                       <tr className="total-row bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                        <td className="px-2 py-1.5 font-bold text-left">Total</td>
-                        <td className="px-2 py-1.5 text-center font-bold tabular-nums">{fmt(totalMeta)}</td>
-                        <td className="px-2 py-1.5 text-center font-bold tabular-nums">{fmt(totalActual)}</td>
-                        <td className="px-2 py-1.5 text-center font-bold tabular-nums">
+                        <td className="px-2 py-1.5 text-sm font-bold text-left">Total</td>
+                        <td className="px-2 py-1.5 text-center text-sm font-bold tabular-nums">{fmt(totalMeta)}</td>
+                        <td className="px-2 py-1.5 text-center text-sm font-bold tabular-nums">{fmt(totalActual)}</td>
+                        <td className="px-2 py-1.5 text-center text-sm font-bold tabular-nums">
                           {totalDif < 0 ? `(${fmt(Math.abs(totalDif))})` : fmt(totalDif)}
                         </td>
-                        <td className="px-2 py-1.5 text-center font-bold tabular-nums">{totalPct.toFixed(1)}%</td>
+                        <td className="px-2 py-1.5 text-center text-sm font-bold tabular-nums">{totalPct.toFixed(1)}%</td>
                         <td className="px-2 py-1.5 text-center"><Semaforo status={totalStatus} /></td>
                       </tr>
                     )
@@ -307,9 +307,9 @@ export default function CompromisosPage() {
                 <tbody>
                   {top5Compromisos.map((r, i) => (
                     <tr key={r.vendedor} className={`border-b border-[#E5E7EB] ${i % 2 === 0 ? 'bg-white' : 'bg-[#FAFBFC]'}`}>
-                      <td className="px-2 py-1.5 text-center text-gray-800 tabular-nums">{i + 1}</td>
-                      <td className="px-2 py-1.5 text-left font-medium text-[#111]">{r.vendedor}</td>
-                      <td className="px-2 py-1.5 text-center font-normal tabular-nums">{fmt(r.primaActual)}</td>
+                      <td className="px-2 py-1.5 text-center text-sm text-gray-800 tabular-nums">{i + 1}</td>
+                      <td className="px-2 py-1.5 text-left text-sm font-medium text-[#111]">{r.vendedor}</td>
+                      <td className="px-2 py-1.5 text-center text-sm font-medium tabular-nums">{fmt(r.primaActual)}</td>
                     </tr>
                   ))}
                 </tbody>

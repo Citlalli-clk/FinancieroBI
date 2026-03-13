@@ -112,19 +112,19 @@ export default function CobranzaPendientePage() {
                     i % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white"
                   }`}
                 >
-                  <td className="px-2 py-1.5 text-xs font-normal text-[#111]">{r.poliza}</td>
-                  <td className="px-2 py-1.5 text-xs font-normal text-gray-600">{r.cliente}</td>
-                  <td className="px-2 py-1.5 text-xs font-normal text-gray-600">{r.gerencia}</td>
-                  <td className="px-2 py-1.5 text-center text-xs font-normal tabular-nums">{fmt(r.prima_pendiente)}</td>
-                  <td className={`px-2 py-1.5 text-center text-xs font-normal tabular-nums ${r.dias_vencido > 30 ? "text-[#E62800]" : ""}`}>
+                  <td className="px-2 py-1.5 text-sm font-normal text-[#111]">{r.poliza}</td>
+                  <td className="px-2 py-1.5 text-sm font-normal text-gray-600">{r.cliente}</td>
+                  <td className="px-2 py-1.5 text-sm font-normal text-gray-600">{r.gerencia}</td>
+                  <td className="px-2 py-1.5 text-center text-sm font-medium tabular-nums">{fmt(r.prima_pendiente)}</td>
+                  <td className={`px-2 py-1.5 text-center text-sm font-medium tabular-nums ${r.dias_vencido > 30 ? "text-[#E62800]" : ""}`}>
                     {r.dias_vencido}
                   </td>
                   <td className="px-2 py-1.5 text-center"><StatusBadge status={r.status} /></td>
                 </tr>
               ))}
               <tr className="bg-[#041224] text-white">
-                <td className="px-2 py-1.5 text-xs font-bold" colSpan={3}>TOTAL</td>
-                <td className="px-2 py-1.5 text-right text-xs font-bold tabular-nums">{fmt(totalPendiente)}</td>
+                <td className="px-2 py-1.5 text-sm font-bold" colSpan={3}>TOTAL</td>
+                <td className="px-2 py-1.5 text-right text-sm font-bold tabular-nums">{fmt(totalPendiente)}</td>
                 <td className="px-2 py-1.5" colSpan={2}></td>
               </tr>
             </tbody>
