@@ -116,7 +116,8 @@ export default function AseguradorasPage() {
   const { rows: displayRows, otrosCount } = computeTop10WithOtros(filteredAseguradoras)
 
   const maxAseguradora = filteredAseguradoras.length > 0 ? Math.max(...filteredAseguradoras.map(a => a.primaNeta)) : 0
-  const COLORS = ["#059669", "#059669", "#059669", "#059669", "#059669", "#10B981", "#34D399", "#6EE7B7", "#A7F3D0", "#D1FAE5"]
+  // Single uniform dark navy for all bars - length shows value, no need for color variation
+  const COLORS = ["#041224", "#041224", "#041224", "#041224", "#041224", "#041224", "#041224", "#041224", "#041224", "#041224"]
 
   // Clasificación badge colors
   const getClasificacionBadge = (clas: string | null) => {
@@ -287,7 +288,7 @@ export default function AseguradorasPage() {
                           <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] text-gray-600 font-medium">{fmtShort(a.primaNeta)}</span>
                         )}
                       </div>
-                      <span className="text-xs font-medium tabular-nums w-12 text-right shrink-0" style={{ color: isOtros ? "#6B7280" : (COLORS[i] || "#059669") }}>{a.pct}%</span>
+                      <span className="text-xs font-medium tabular-nums w-12 text-right shrink-0" style={{ color: isOtros ? "#6B7280" : "#041224" }}>{a.pct}%</span>
                     </div>
                   )
                 })}

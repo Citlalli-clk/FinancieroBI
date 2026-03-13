@@ -54,13 +54,14 @@ const RAMOS = [
   { nombre: "Vida", pnEfectuada: 59636744, polizas: 4202 },
   { nombre: "Otros", pnEfectuada: 8013999, polizas: 545 },
 ]
-// Neutral palette for ramo distribution - NOT semáforo colors
+// Semantic colors for insurance ramos - each ramo has its traditional industry color
 function ramoColor(nombre: string): string {
   const n = nombre.toLowerCase()
-  if (n.includes("vehic") || n.includes("vehíc") || n.includes("auto")) return "#041224" // darkest navy
-  if (n.includes("acc") || n.includes("enf")) return "#1E3A5F" // dark blue
-  if (n.includes("dano") || n.includes("daño")) return "#3B6B9A" // medium blue
-  if (n.includes("vida")) return "#6B9FCC" // light blue
+  if (n.includes("vehic") || n.includes("vehíc") || n.includes("auto")) return "#041224" // dark navy
+  if (n.includes("acc") || n.includes("enf")) return "#E62800" // red - Accidentes y Enfermedades
+  if (n.includes("dano") || n.includes("daño")) return "#F59E0B" // amber/yellow - Daños
+  if (n.includes("vida")) return "#059669" // green - Vida
+  if (n.includes("fianza")) return "#6B7280" // darker gray - Fianzas
   return "#9CA3AF" // gray - Asistencias, Descuentos, Otros
 }
 
