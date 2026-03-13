@@ -87,10 +87,10 @@ export default function Home() {
                 const link = LINEA_LINKS[l.nombre]
                 // Semáforo logic: red if below last year, amber if between last year and budget, green if at/above budget
                 const semaforo = l.primaNeta < l.anioAnterior
-                  ? "text-red-600"
+                  ? "text-[#E62800]"
                   : l.primaNeta < l.presupuesto
                     ? "text-amber-600"
-                    : "text-emerald-600"
+                    : "text-[#059669]"
                 const card = (
                   <div className="bg-white rounded-xl border border-gray-200 px-3 py-3 shadow-sm active:bg-gray-50 transition-colors">
                     <div className="flex justify-between items-center">
@@ -101,7 +101,7 @@ export default function Home() {
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="text-base font-bold text-[#041224] tabular-nums">{fmtShort(l.primaNeta)}</span>
-                          <span className="text-[11px] text-emerald-600 tabular-nums">/ {fmtShort(l.presupuesto)}</span>
+                          <span className="text-[11px] text-gray-600 tabular-nums">/ {fmtShort(l.presupuesto)}</span>
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0 ml-2">
@@ -117,7 +117,7 @@ export default function Home() {
                         className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${Math.min(Math.max((l.primaNeta / l.presupuesto) * 100, 0), 100)}%`,
-                          backgroundColor: l.primaNeta < l.anioAnterior ? '#EF4444' : l.primaNeta < l.presupuesto ? '#F59E0B' : '#10B981'
+                          backgroundColor: l.primaNeta < l.anioAnterior ? '#E62800' : l.primaNeta < l.presupuesto ? '#F59E0B' : '#059669'
                         }}
                       />
                     </div>
@@ -187,7 +187,7 @@ export default function Home() {
                     const diff = l.primaNeta - l.presupuesto
                     const link = LINEA_LINKS[l.nombre]
                     // Diferencia color: red if negative, green if positive or zero
-                    const diffColor = diff < 0 ? "text-red-600" : "text-emerald-600"
+                    const diffColor = diff < 0 ? "text-[#E62800]" : "text-[#059669]"
                     return (
                       <tr key={l.nombre} className={`cursor-pointer transition-colors hover:bg-blue-50 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/70"}`}>
                         <td className="px-2 py-2 font-normal text-gray-900">
@@ -208,7 +208,7 @@ export default function Home() {
                     <td className="px-2 py-2 text-center font-bold tabular-nums" style={{ color: '#fff' }}>{fmt(total)}</td>
                     <td className="px-2 py-2 text-center font-bold tabular-nums" style={{ color: '#fff' }}>{fmt(totalAA)}</td>
                     <td className="px-2 py-2 text-center font-bold tabular-nums text-gray-600">{fmt(totalPpto)}</td>
-                    <td className="px-2 py-2 text-center font-bold tabular-nums" style={{ color: (total - totalPpto) < 0 ? '#ff6b6b' : '#4ade80' }}>
+                    <td className="px-2 py-2 text-center font-bold tabular-nums" style={{ color: (total - totalPpto) < 0 ? '#E62800' : '#059669' }}>
                       {(total - totalPpto) < 0 ? `(${fmt(Math.abs(total - totalPpto))})` : fmt(total - totalPpto)}
                     </td>
                   </tr>
