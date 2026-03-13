@@ -114,6 +114,48 @@ function PremiumBarChart({ data, colorFn, barHeight = 18, showGrid = true }: {
   )
 }
 
+
+/* Vertical Column Chart */
+const COLUMN_COLORS = ['#041224','#1E3A5F','#E62800','#059669','#D97706','#7C3AED','#0891B2','#BE185D','#4338CA','#047857','#9CA3AF']
+
+function VerticalBarChart({ data }: { data: { name: string; value: number; pct?: number }[] }) {
+  if (!data.length) return null
+  const max = Math.max(...data.map(d => d.value), 1)
+  return (
+    <div className="flex flex-col flex-1">
+      {/* Chart area */}
+      <div className="flex-1 flex items-end justify-center gap-1 px-1" style={{ minHeight: 200 }}>
+        {data.map((d, i) => {
+          const heightPct = Math.max((d.value / max) * 100, 3)
+          const color = COLUMN_COLORS[i % COLUMN_COLORS.length]
+          return (
+            <div key={i} className="flex flex-col items-center flex-1" style={{ maxWidth: 50 }}>
+              <span className="text-[9px] font-bold tabular-nums text-gray-700 mb-0.5">{fmtShort(d.value)}</span>
+              <div style={{
+                width: '100%',
+                height: `${heightPct}%`,
+                minHeight: 4,
+                background: `linear-gradient(180deg, ${color}CC, ${color})`,
+                borderRadius: '3px 3px 0 0',
+                transition: 'height 0.5s ease',
+              }} />
+            </div>
+          )
+        })}
+      </div>
+      {/* Legend */}
+      <div className="flex flex-wrap justify-center gap-x-2 gap-y-0.5 mt-2 px-1">
+        {data.map((d, i) => (
+          <div key={i} className="flex items-center gap-0.5">
+            <span className="inline-block w-2 h-2 rounded-sm" style={{ backgroundColor: COLUMN_COLORS[i % COLUMN_COLORS.length] }} />
+            <span className="text-[8px] text-gray-600 truncate" style={{ maxWidth: 60 }}>{d.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // Top 10 + Otros aggregation
 function computeTop10WithOtros(items: CompromisoRow[]): { rows: CompromisoRow[]; otrosCount: number; otrosRow: CompromisoRow | null } {
   if (items.length <= 10) return { rows: items, otrosCount: 0, otrosRow: null }
@@ -269,24 +311,7 @@ export default function CompromisosPage() {
             </div>
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3 flex flex-col" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
               <p className="text-xs font-semibold uppercase tracking-wider text-[#041224] mb-2">Distribución por Vendedor</p>
-              <div className="flex-1">
-                <PremiumBarChart data={barData} barHeight={18} showGrid={false} colorFn={(idx) => {
-                  const palette = [
-                    { from: '#041224', to: '#1E3A5F' },
-                    { from: '#1E3A5F', to: '#3B6B9A' },
-                    { from: '#E62800', to: '#EF4444' },
-                    { from: '#059669', to: '#10B981' },
-                    { from: '#D97706', to: '#F59E0B' },
-                    { from: '#7C3AED', to: '#8B5CF6' },
-                    { from: '#0891B2', to: '#06B6D4' },
-                    { from: '#BE185D', to: '#EC4899' },
-                    { from: '#4338CA', to: '#6366F1' },
-                    { from: '#047857', to: '#34D399' },
-                    { from: '#9CA3AF', to: '#D1D5DB' },
-                  ]
-                  return palette[idx % palette.length]
-                }} />
-              </div>
+              <VerticalBarChart data={barData} />
             </div>
           </div>
 
@@ -322,23 +347,7 @@ export default function CompromisosPage() {
             </div>
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3 flex flex-col" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
               <p className="text-xs font-semibold uppercase tracking-wider text-[#041224] mb-2">Top 10 — Gráfica</p>
-              <div className="flex-1">
-                <PremiumBarChart data={[...data].sort((a,b) => b.primaActual - a.primaActual).slice(0, 10).map(r => ({ name: shortName(r.vendedor), value: r.primaActual, pct: r.pctAvance }))} barHeight={22} showGrid colorFn={(idx, pct) => {
-                  const palette = [
-                    { from: '#041224', to: '#1E3A5F' },
-                    { from: '#1E3A5F', to: '#3B6B9A' },
-                    { from: '#E62800', to: '#EF4444' },
-                    { from: '#059669', to: '#10B981' },
-                    { from: '#D97706', to: '#F59E0B' },
-                    { from: '#7C3AED', to: '#8B5CF6' },
-                    { from: '#0891B2', to: '#06B6D4' },
-                    { from: '#BE185D', to: '#EC4899' },
-                    { from: '#4338CA', to: '#6366F1' },
-                    { from: '#047857', to: '#34D399' },
-                  ]
-                  return palette[idx % palette.length]
-                }} />
-              </div>
+              <VerticalBarChart data={[...data].sort((a,b) => b.primaActual - a.primaActual).slice(0, 10).map(r => ({ name: shortName(r.vendedor), value: r.primaActual, pct: r.pctAvance }))} />
             </div>
           </div>
 
