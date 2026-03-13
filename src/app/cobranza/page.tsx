@@ -462,17 +462,12 @@ export default function CobranzaPage() {
           <table className="w-full border-separate border-spacing-0">
             <thead>
               <tr className="bg-[#041224] border-b-2 border-b-[#E62800]">
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white min-w-[100px] sticky left-0 bg-[#041224] z-10 cursor-pointer select-none" onClick={() => handleSort('nombre')}>Compania {sortKey === 'nombre' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('primaNeta')}>Prima neta {sortKey === 'primaNeta' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('convenio')}>Convenio {sortKey === 'convenio' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white">Diferencia</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white">% Dif</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('pnAA')}>PN ano ant. {sortKey === 'pnAA' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white">Dif AA</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white">% Dif AA</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('pendiente')}>Pendiente {sortKey === 'pendiente' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('pnCia')}>PN CIA {sortKey === 'pnCia' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('difCia')}>Dif CIA {sortKey === 'difCia' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                <th className="text-left px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white min-w-[100px] cursor-pointer select-none" onClick={() => handleSort('nombre')}>Compañía {sortKey === 'nombre' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('primaNeta')}>Prima Neta {sortKey === 'primaNeta' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('convenio')}>Convenio {sortKey === 'convenio' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white">% Dif</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none" onClick={() => handleSort('pnAA')}>PN Año Ant. {sortKey === 'pnAA' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</th>
+                <th className="text-center px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white">% Crec.</th>
               </tr>
             </thead>
             <tbody>
@@ -485,57 +480,35 @@ export default function CobranzaPage() {
                 const rowBg = isQualitas ? "bg-[#F0FDF4]" : idx % 2 === 0 ? "bg-white" : "bg-[#F9FAFB]"
                 return (
                   <tr key={c.nombre} className={`group hover:bg-[#FFF5F5] transition-colors ${rowBg}`}>
-                    <td className={`px-3 py-3 text-sm font-semibold text-[#041224] sticky left-0 z-10 border-b border-[#E5E7EB] ${rowBg} group-hover:bg-[#FFF5F5] transition-colors`}>{c.nombre}</td>
-                    <td className="px-3 py-3 text-center text-sm font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.primaNeta)}</td>
-                    <td className="px-3 py-3 text-center text-sm font-medium tabular-nums text-gray-600 border-b border-[#E5E7EB]">{c.convenio > 0 ? fmt(c.convenio) : <span className="text-gray-400">—</span>}</td>
-                    {/* Diferencia: simple positive/negative coloring (not semáforo) */}
-                    <td className="px-3 py-3 text-center border-b border-[#E5E7EB]">
+                    <td className={`px-3 py-1.5 text-xs font-semibold text-[#041224] border-b border-[#E5E7EB] ${rowBg} group-hover:bg-[#FFF5F5] transition-colors`}>{c.nombre}</td>
+                    <td className="px-3 py-1.5 text-center text-xs font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.primaNeta)}</td>
+                    <td className="px-3 py-1.5 text-center text-xs font-medium tabular-nums text-gray-600 border-b border-[#E5E7EB]">{c.convenio > 0 ? fmt(c.convenio) : <span className="text-gray-400">—</span>}</td>
+                    <td className="px-3 py-1.5 text-center border-b border-[#E5E7EB]">
                       {c.convenio > 0 ? (
-                        <span className={`inline-block px-2 py-0.5 rounded text-sm font-medium tabular-nums ${difConv < 0 ? "bg-[#FEE2E2] text-[#E62800]" : "bg-[#DCFCE7] text-[#059669]"}`}>
-                          {difConv < 0 ? `(${fmt(Math.abs(difConv))})` : fmt(difConv)}
-                        </span>
-                      ) : (
-                        <span className="inline-block px-2 py-0.5 rounded text-sm font-medium tabular-nums bg-[#F3F4F6] text-[#9CA3AF]">—</span>
-                      )}
-                    </td>
-                    {/* % Dif: also simple positive/negative coloring */}
-                    <td className="px-3 py-3 text-center border-b border-[#E5E7EB]">
-                      {c.convenio > 0 ? (
-                        <span className={`inline-block px-2 py-0.5 rounded text-sm font-medium tabular-nums ${Number(pctConvValue) < 0 ? "bg-[#FEE2E2] text-[#E62800]" : "bg-[#DCFCE7] text-[#059669]"}`}>
+                        <span className={`text-xs font-medium tabular-nums ${Number(pctConvValue) < 0 ? "text-[#E62800]" : "text-[#059669]"}`}>
                           {Number(pctConvValue) >= 0 ? "+" : ""}{pctConvValue}%
                         </span>
                       ) : (
-                        <span className="inline-block px-2 py-0.5 rounded text-sm font-medium tabular-nums bg-[#F3F4F6] text-[#9CA3AF]">—</span>
+                        <span className="text-xs text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-center text-sm font-medium tabular-nums text-[#6B7280] border-b border-[#E5E7EB]">{fmt(c.pnAA)}</td>
-                    <td className={`px-3 py-3 text-center text-sm font-medium tabular-nums border-b border-[#E5E7EB]`} style={{ color: difAA < 0 ? "#E62800" : "#059669" }}>
-                      {difAA < 0 ? `(${fmt(Math.abs(difAA))})` : fmt(difAA)}
-                    </td>
-                    <td className="px-3 py-3 text-center border-b border-[#E5E7EB]">
-                      <span className={`inline-block px-2 py-0.5 rounded text-sm font-medium tabular-nums ${difAA < 0 ? "bg-[#FEE2E2] text-[#E62800]" : "bg-[#DCFCE7] text-[#059669]"}`}>
+                    <td className="px-3 py-1.5 text-center text-xs font-medium tabular-nums text-[#6B7280] border-b border-[#E5E7EB]">{fmt(c.pnAA)}</td>
+                    <td className="px-3 py-1.5 text-center border-b border-[#E5E7EB]">
+                      <span className={`text-xs font-medium tabular-nums ${difAA < 0 ? "text-[#E62800]" : "text-[#059669]"}`}>
                         {Number(pctAAValue) >= 0 ? "+" : ""}{pctAAValue}%
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-center text-sm font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.pendiente)}</td>
-                    <td className="px-3 py-3 text-center text-sm font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.pnCia)}</td>
-                    <td className="px-3 py-3 text-center text-sm font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.difCia)}</td>
                   </tr>
                 )
               })}
               {/* TOTAL */}
               <tr className="bg-[#041224] text-white">
-                <td className="px-3 py-3 text-sm font-bold sticky left-0 bg-[#041224] z-10">TOTAL</td>
-                <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(compTotals.primaNeta)}</td>
-                <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(compTotals.convenio)}</td>
-                <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(compTotals.primaNeta - compTotals.convenio)}</td>
-                <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{pct(compTotals.primaNeta, compTotals.convenio).toFixed(2)}%</td>
-                <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(compTotals.pnAA)}</td>
-                <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(compTotals.primaNeta - compTotals.pnAA)}</td>
-                <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{pct(compTotals.primaNeta, compTotals.pnAA).toFixed(2)}%</td>
-                <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(compTotals.pendiente)}</td>
-                <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(compTotals.pnCia)}</td>
-                <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(compTotals.difCia)}</td>
+                <td className="px-3 py-1.5 text-xs font-bold bg-[#041224]">TOTAL</td>
+                <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(compTotals.primaNeta)}</td>
+                <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(compTotals.convenio)}</td>
+                <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{pct(compTotals.primaNeta, compTotals.convenio).toFixed(2)}%</td>
+                <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{fmt(compTotals.pnAA)}</td>
+                <td className="px-3 py-1.5 text-center text-xs font-bold tabular-nums">{pct(compTotals.primaNeta, compTotals.pnAA).toFixed(2)}%</td>
               </tr>
             </tbody>
           </table>
