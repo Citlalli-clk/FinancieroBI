@@ -28,12 +28,10 @@ export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, c
   // Clamp between 0 and ~120% for visual purposes
   const needlePct = Math.min(Math.max(cumplimiento / 100, 0), 1.2)
 
-  // Semáforo zone thresholds:
-  // RED zone: 0% to (prevYear / budget * 100)%
-  // YELLOW zone: from red threshold to 100%
-  // GREEN zone: above 100%
-  const redThreshold = budget > 0 ? (prevYear / budget) : 0.5 // fraction of arc for red zone
-  const yellowThreshold = 1.0 // 100% = end of yellow, start of green
+  // Semáforo zone thresholds: EQUAL THIRDS (1/3 each zone)
+  // RED zone: 0% to 33.3%
+  // YELLOW zone: 33.3% to 66.7%
+  // GREEN zone: 66.7% to 100%
 
   // 5 clean labels outside the arc (scaled to 120% max for green zone visibility)
   const maxScale = 1.2 // Show up to 120% on gauge
@@ -69,9 +67,9 @@ export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, c
   }
 
   // Create the three zone arcs (as fractions of the full arc)
-  // The gauge goes from 0 to 120% (maxScale), so we need to scale zones
-  const redEndPct = Math.min(redThreshold / maxScale, 1)
-  const yellowEndPct = Math.min(yellowThreshold / maxScale, 1)
+  // EQUAL THIRDS: each zone is exactly 1/3 of the arc
+  const redEndPct = 1 / 3
+  const yellowEndPct = 2 / 3
   const greenEndPct = 1 // Full arc
 
   const redArc = createArcPath(0, redEndPct, outerR, innerR)

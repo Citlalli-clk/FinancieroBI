@@ -175,11 +175,11 @@ export default function Home() {
               <table className="w-full text-xs min-w-[480px]">
                 <thead>
                   <tr style={{ backgroundColor: '#6B7280' }}>
-                    <th className="text-left px-1.5 py-1 text-xs font-semibold uppercase tracking-wider text-white">Línea</th>
-                    <th className="text-right px-1.5 py-1 text-xs font-semibold uppercase tracking-wider text-white">Prima Neta</th>
-                    <th className="text-right px-1.5 py-1 text-xs font-semibold uppercase tracking-wider text-white">Año Ant.</th>
-                    <th className="text-right px-1.5 py-1 text-xs font-semibold uppercase tracking-wider text-white">Presupuesto</th>
-                    <th className="text-right px-1.5 py-1 text-xs font-semibold uppercase tracking-wider text-white">Diferencia</th>
+                    <th className="text-left px-2 py-2 text-xs font-semibold uppercase tracking-wider text-white">Línea</th>
+                    <th className="text-center px-2 py-2 text-xs font-semibold uppercase tracking-wider text-white">Prima Neta</th>
+                    <th className="text-center px-2 py-2 text-xs font-semibold uppercase tracking-wider text-white">Año Ant.</th>
+                    <th className="text-center px-2 py-2 text-xs font-semibold uppercase tracking-wider text-white">Presupuesto</th>
+                    <th className="text-center px-2 py-2 text-xs font-semibold uppercase tracking-wider text-white">Diferencia</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -194,13 +194,13 @@ export default function Home() {
                         : "text-emerald-600"
                     return (
                       <tr key={l.nombre} className={`cursor-pointer transition-colors hover:bg-blue-50 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/70"}`}>
-                        <td className="px-1.5 py-1.5 font-normal text-gray-900">
+                        <td className="px-2 py-2 font-normal text-gray-900">
                           {link ? <Link href={link} className="hover:underline text-gray-900">{l.nombre}</Link> : l.nombre}
                         </td>
-                        <td className="px-1.5 py-1.5 text-right font-normal text-gray-900 tabular-nums">{fmt(l.primaNeta)}</td>
-                        <td className="px-1.5 py-1.5 text-right text-gray-500 tabular-nums">{fmt(l.anioAnterior)}</td>
-                        <td className="px-1.5 py-1.5 text-right font-normal text-emerald-600 tabular-nums">{fmt(l.presupuesto)}</td>
-                        <td className={`px-1.5 py-1.5 text-right font-normal tabular-nums ${diffColor}`}>
+                        <td className="px-2 py-2 text-center font-normal text-gray-900 tabular-nums">{fmt(l.primaNeta)}</td>
+                        <td className="px-2 py-2 text-center font-normal text-gray-500 tabular-nums">{fmt(l.anioAnterior)}</td>
+                        <td className="px-2 py-2 text-center font-normal text-emerald-600 tabular-nums">{fmt(l.presupuesto)}</td>
+                        <td className={`px-2 py-2 text-center font-normal tabular-nums ${diffColor}`}>
                           {diff < 0 ? `(${fmt(Math.abs(diff))})` : fmt(diff)}
                         </td>
                       </tr>
@@ -208,11 +208,11 @@ export default function Home() {
                   })}
                   {/* Total row with semáforo logic */}
                   <tr className="font-bold border-t-2 border-gray-300" style={{ backgroundColor: '#6B7280', color: '#fff' }}>
-                    <td className="px-1.5 py-1.5 font-bold" style={{ color: '#fff' }}>Total</td>
-                    <td className="px-1.5 py-1.5 text-right font-bold tabular-nums" style={{ color: '#fff' }}>{fmt(total)}</td>
-                    <td className="px-1.5 py-1.5 text-right font-bold tabular-nums" style={{ color: '#fff' }}>{fmt(totalAA)}</td>
-                    <td className="px-1.5 py-1.5 text-right font-bold tabular-nums" style={{ color: '#fff' }}>{fmt(totalPpto)}</td>
-                    <td className="px-1.5 py-1.5 text-right font-bold tabular-nums" style={{ color: total < totalAA ? '#ff6b6b' : total < totalPpto ? '#fbbf24' : '#4ade80' }}>
+                    <td className="px-2 py-2 font-bold" style={{ color: '#fff' }}>Total</td>
+                    <td className="px-2 py-2 text-center font-bold tabular-nums" style={{ color: '#fff' }}>{fmt(total)}</td>
+                    <td className="px-2 py-2 text-center font-bold tabular-nums" style={{ color: '#fff' }}>{fmt(totalAA)}</td>
+                    <td className="px-2 py-2 text-center font-bold tabular-nums" style={{ color: '#fff' }}>{fmt(totalPpto)}</td>
+                    <td className="px-2 py-2 text-center font-bold tabular-nums" style={{ color: total < totalAA ? '#ff6b6b' : total < totalPpto ? '#fbbf24' : '#4ade80' }}>
                       {(total - totalPpto) < 0 ? `(${fmt(Math.abs(total - totalPpto))})` : fmt(total - totalPpto)}
                     </td>
                   </tr>
