@@ -154,31 +154,6 @@ export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, c
         <circle cx={cx} cy={cy} r={11} fill="white" />
         <circle cx={cx} cy={cy} r={5} fill="#052F5F" />
 
-        {/* Prominent % achievement in center */}
-        <text
-          x={cx} y={cy + 55}
-          fontSize="58" fontWeight="900" fill="#052F5F"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
-          style={{ fontFeatureSettings: "'tnum'" }}
-        >
-          {cumplimiento}%
-        </text>
-        <text
-          x={cx} y={cy + 90}
-          fontSize="21" fill="#374151"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
-          fontWeight="700"
-        >
-          Cumplimiento
-        </text>
-        <text
-          x={cx} y={cy + 120}
-          fontSize="18" fill="#6B7280"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
-        >
-          ${value.toFixed(1)}M de ${budget.toFixed(1)}M
-        </text>
-
         <circle cx={circleLX} cy={circleY} r={circleR} fill="#3983F6" />
         <text
           x={circleLX} y={circleY + 8}
