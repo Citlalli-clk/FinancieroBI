@@ -70,7 +70,6 @@ export default function Home() {
   }))
 
   // Format date for display
-  const lastDataDate = "27/02/2026"
 
   return (
     <div className="bg-[#FAFAFA] px-3 py-4 flex flex-col">
@@ -170,23 +169,8 @@ export default function Home() {
 
         {/* ═══ DESKTOP LAYOUT ═══ */}
         <div className="hidden md:flex gap-6 flex-1 mt-0">
-          {/* Left column: Info boxes + Gauge */}
+          {/* Left column: Gauge */}
           <div className="w-[50%] flex flex-col items-center justify-center">
-            {/* Info boxes row */}
-            <div className="flex gap-3 mb-2 w-full max-w-[420px]">
-              {/* Tipo de Cambio */}
-              <div className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
-                <div className="text-[10px] uppercase text-gray-400 tracking-wider font-semibold mb-1">Tipo de Cambio</div>
-                <div className="text-xs font-medium text-gray-700">USD $17.22</div>
-                <div className="text-xs font-medium text-gray-700">DOP $56.81</div>
-              </div>
-              {/* Fecha de Corte */}
-              <div className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm flex items-center justify-center">
-                <div className="text-xs text-gray-500">
-                  Datos al: <span className="font-medium text-gray-700">{lastDataDate}</span>
-                </div>
-              </div>
-            </div>
             {/* Gauge */}
             <div className="w-full">
               <Gauge value={total / 1e6} prevYear={totalAA / 1e6} budget={totalPpto / 1e6} />
