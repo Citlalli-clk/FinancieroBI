@@ -2,13 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
-import { ChevronRight, ChevronLeft, Search, Download } from "lucide-react"
+import { ChevronRight, ChevronLeft, ChevronDown, Search, Download } from "lucide-react"
 import { PageTabs } from "@/components/page-tabs"
 import { PageFooter } from "@/components/page-footer"
 import { PeriodFilter } from "@/components/period-filter"
-import { getLineasNegocio, getGerencias, getVendedores, getGrupos, getClientes, getPolizas, globalSearch, getLastDataDate } from "@/lib/queries"
-import type { SearchResult } from "@/lib/queries"
-import type { PolizaRow } from "@/lib/queries"
+import { getLineasNegocio, getGerencias, getVendedores, getGrupos, getClientes, getPolizas, globalSearch, getLastDataDate, getVendedoresByTipo, getAseguradorasByClasificacion } from "@/lib/queries"
+import type { SearchResult, PolizaRow, VendedorByTipoRow } from "@/lib/queries"
 import { exportExcel, exportPDF } from "@/lib/export"
 import { NLQuery } from "@/components/nl-query"
 import { DrillCharts } from "@/components/drill-charts"
@@ -76,6 +75,18 @@ function TablaDetalleContent() {
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
   const [didAutoDrill, setDidAutoDrill] = useState(false)
+
+  // Feature 2: Clasificación Aseguradoras filter
+  const [clasificacion, setClasificacion] = useState<string>("Todas")
+  const [clasificacionAseguradoras, setClasificacionAseguradoras] = useState<string[] | null>(null)
+
+  // Feature 3: Cartera filter (Personal vs Promotorías)
+  const [cartera, setCartera] = useState<string>("Todas")
+
+  // Feature 1: Tipo Vendedor grouper state
+  const [tipoGroups, setTipoGroups] = useState<{ tipo: string; vendedores: VendedorByTipoRow[]; total: number }[] | null>(null)
+  const [expandedTipos, setExpandedTipos] = useState<Set<string>>(new Set())
+
   useEffect(() => { setMounted(true) }, [])
 
   const handleFilterChange = useCallback((newYear: string, newPeriodos: number[]) => {
@@ -133,6 +144,17 @@ function TablaDetalleContent() {
   const tableRef = useRef<HTMLDivElement>(null)
   useEffect(() => { document.title = "Tabla detalle | CLK BI Dashboard" }, [])
   useEffect(() => { getLastDataDate().then(d => setLastDataDate(d)) }, [])
+
+  // Update clasificación aseguradoras when filter changes
+  useEffect(() => {
+    if (clasificacion === "Todas") {
+      setClasificacionAseguradoras(null)
+    } else {
+      getAseguradorasByClasificacion(clasificacion).then(aseguradoras => {
+        setClasificacionAseguradoras(aseguradoras)
+      })
+    }
+  }, [clasificacion])
   // Use first selected period for queries (multi-period queries use first as primary)
   const periodo = periodos[0] ?? 2
 
@@ -144,6 +166,8 @@ function TablaDetalleContent() {
     setDrillLevel("linea")
     setCrumbs([])
     setSel({})
+    setTipoGroups(null)
+    setExpandedTipos(new Set())
     setLoading(true)
 
     const load = async () => {
@@ -189,11 +213,20 @@ function TablaDetalleContent() {
     return () => { cancelled = true }
   }, [periodo, year, periodos.length])
 
+  // Helper to check if linea uses tipo vendedor grouper
+  const usesTipoGrouper = (linea: string) => linea === "Click Franquicias" || linea === "Click Promotorías"
+
   // Generic drill function
   const drill = async (level: DrillLevel, label: string, newSel: typeof sel) => {
     setLoading(true)
     setSel(newSel)
     setCrumbs(prev => [...prev, { level: drillLevel, label }])
+
+    // Reset tipo groups when changing levels (except when drilling into vendedor with tipo grouper)
+    if (level !== "vendedor" || !usesTipoGrouper(newSel.linea || "")) {
+      setTipoGroups(null)
+      setExpandedTipos(new Set())
+    }
 
     // Helper: compute DrillRow with YoY and proportional presupuesto
     // Now requires pnAnioAntTotal to allocate budget based on prior year share (not current primaNeta)
@@ -236,30 +269,39 @@ function TablaDetalleContent() {
 
     try {
       if (level === "gerencia") {
-        const data = await getGerencias(newSel.linea!, periodo, year)
+        const data = await getGerencias(newSel.linea!, periodo, year, clasificacionAseguradoras)
         const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
         setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, lineaPpto, lineaPendiente)))
       } else if (level === "vendedor") {
-        const data = await getVendedores(newSel.gerencia!, newSel.linea!, periodo, year)
-        const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
-        const currentTotal = (data ?? []).reduce((s, d) => s + d.primaNeta, 0)
-        // For vendedor level, use gerencia's proportional share of línea ppto
-        const gerenciaShare = lineas.find(l => l.linea === newSel.linea)
-        const gerenciaPpto = gerenciaShare ? Math.round(lineaPpto * (currentTotal / (gerenciaShare.primaNeta || 1))) : lineaPpto
-        setRows((data ?? []).map(d => toRowWithYoY(d.vendedor, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, gerenciaPpto, lineaPendiente)))
+        // Feature 1: For Franquicias/Promotorías, use tipo grouper
+        if (usesTipoGrouper(newSel.linea || "")) {
+          const data = await getVendedoresByTipo(newSel.linea!, periodo, year, newSel.gerencia, clasificacionAseguradoras)
+          setTipoGroups(data)
+          setRows([]) // Clear regular rows
+        } else {
+          // Other líneas: show vendedores directly
+          const data = await getVendedores(newSel.gerencia!, newSel.linea!, periodo, year, clasificacionAseguradoras)
+          const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
+          const currentTotal = (data ?? []).reduce((s, d) => s + d.primaNeta, 0)
+          // For vendedor level, use gerencia's proportional share of línea ppto
+          const gerenciaShare = lineas.find(l => l.linea === newSel.linea)
+          const gerenciaPpto = gerenciaShare ? Math.round(lineaPpto * (currentTotal / (gerenciaShare.primaNeta || 1))) : lineaPpto
+          setRows((data ?? []).map(d => toRowWithYoY(d.vendedor, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, gerenciaPpto, lineaPendiente)))
+          setTipoGroups(null)
+        }
       } else if (level === "grupo") {
-        const data = await getGrupos(newSel.vendedor!, newSel.gerencia!, newSel.linea!, periodo, year)
+        const data = await getGrupos(newSel.vendedor!, newSel.gerencia!, newSel.linea!, periodo, year, clasificacionAseguradoras)
         const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
         setRows((data ?? []).map(d => toRowWithYoY(d.grupo, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, 0, 0)))
       } else if (level === "cliente") {
-        const data = await getClientes(newSel.grupo!, newSel.vendedor!, newSel.gerencia!, newSel.linea!, periodo, year)
+        const data = await getClientes(newSel.grupo!, newSel.vendedor!, newSel.gerencia!, newSel.linea!, periodo, year, clasificacionAseguradoras)
         const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
         setRows((data ?? []).map(d => toRowWithYoY(d.cliente, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, 0, 0)))
       } else if (level === "poliza") {
-        const data = await getPolizas(newSel.cliente!, newSel.grupo!, newSel.vendedor!, newSel.gerencia!, newSel.linea!, periodo, year)
+        const data = await getPolizas(newSel.cliente!, newSel.grupo!, newSel.vendedor!, newSel.gerencia!, newSel.linea!, periodo, year, clasificacionAseguradoras)
         setPolizas(data ?? [])
       }
-    } catch { setRows([]); setPolizas([]) }
+    } catch { setRows([]); setPolizas([]); setTipoGroups(null) }
 
     setDrillLevel(level)
     setLoading(false)
@@ -369,7 +411,14 @@ function TablaDetalleContent() {
     grupo: "Grupo", cliente: "Cliente / Asegurado", poliza: "Póliza",
   }
 
-  const filteredLineas = filterSearch(lineas, "linea")
+  // Apply cartera filter to lineas
+  const carteraFilteredLineas = lineas.filter(l => {
+    if (cartera === "Todas") return true
+    if (cartera === "Promotorías") return l.linea === "Click Promotorías"
+    if (cartera === "Personal") return l.linea !== "Click Promotorías"
+    return true
+  })
+  const filteredLineas = filterSearch(carteraFilteredLineas, "linea")
   const totalLineas = { primaNeta: filteredLineas.reduce((s, l) => s + l.primaNeta, 0), presupuesto: filteredLineas.reduce((s, l) => s + l.presupuesto, 0), pnAnioAnt: filteredLineas.reduce((s, l) => s + l.pnAnioAnt, 0), pendiente: filteredLineas.reduce((s, l) => s + l.pendiente, 0) }
   const totalDif = filteredLineas.reduce((s, l) => s + l.diferencia, 0)
   const totalDifPct = totalLineas.presupuesto > 0 ? ((totalDif / totalLineas.presupuesto) * 100).toFixed(1) : ""
@@ -470,6 +519,33 @@ function TablaDetalleContent() {
 
       {/* Filter bar */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
+        {/* Feature 3: Cartera filter */}
+        <select
+          id="cartera-filter"
+          name="cartera"
+          value={cartera}
+          onChange={e => setCartera(e.target.value)}
+          className="px-2 py-1 border border-[#E5E7EB] rounded text-xs bg-white text-[#333] cursor-pointer hover:border-[#CCD1D3] transition-colors"
+        >
+          <option value="Todas">Cartera: Todas</option>
+          <option value="Personal">Personal</option>
+          <option value="Promotorías">Promotorías</option>
+        </select>
+
+        {/* Feature 2: Clasificación Aseguradoras filter */}
+        <select
+          id="clasificacion-filter"
+          name="clasificacion"
+          value={clasificacion}
+          onChange={e => setClasificacion(e.target.value)}
+          className="px-2 py-1 border border-[#E5E7EB] rounded text-xs bg-white text-[#333] cursor-pointer hover:border-[#CCD1D3] transition-colors"
+        >
+          <option value="Todas">Aseguradoras: Todas</option>
+          <option value="Estratégica">Estratégica</option>
+          <option value="Importante">Importante</option>
+          <option value="De servicio">De servicio</option>
+        </select>
+
         <div className="relative ml-auto">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <input

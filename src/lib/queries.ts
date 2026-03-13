@@ -111,18 +111,20 @@ export interface GerenciaRow {
 export async function getGerencias(
   linea: string,
   periodo?: number,
-  año?: string
+  año?: string,
+  clasificacionAseguradoras?: string[] | null
 ): Promise<GerenciaRow[] | null> {
   try {
     // Current year query
     let query = supabase
       .from("dashboard_data")
-      .select("GerenciaNombre, PrimaNeta, TCPago, Descuento, FLiquidacion")
+      .select("GerenciaNombre, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
       .eq("LBussinesNombre", linea)
       .limit(5000)
 
     if (periodo) query = query.eq("mes", periodo)
     if (año) query = query.eq("anio", parseInt(año))
+    if (clasificacionAseguradoras?.length) query = query.in("CiaAbreviacion", clasificacionAseguradoras)
 
     const { data, error } = await query
     if (error || !data?.length) return null
@@ -134,12 +136,13 @@ export async function getGerencias(
     const priorYear = año ? String(parseInt(año) - 1) : String(new Date().getFullYear() - 1)
     let queryPY = supabase
       .from("dashboard_data")
-      .select("GerenciaNombre, PrimaNeta, TCPago, Descuento, FLiquidacion")
+      .select("GerenciaNombre, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
       .eq("LBussinesNombre", linea)
       .eq("anio", parseInt(priorYear))
       .limit(5000)
 
     if (periodo) queryPY = queryPY.eq("mes", periodo)
+    if (clasificacionAseguradoras?.length) queryPY = queryPY.in("CiaAbreviacion", clasificacionAseguradoras)
 
     const { data: dataPY } = await queryPY
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -170,18 +173,20 @@ export async function getVendedores(
   gerencia: string,
   linea: string,
   periodo?: number,
-  año?: string
+  año?: string,
+  clasificacionAseguradoras?: string[] | null
 ): Promise<VendedorRow[] | null> {
   try {
     let query = supabase
       .from("dashboard_data")
-      .select("VendNombre, PrimaNeta, TCPago, Descuento, FLiquidacion")
+      .select("VendNombre, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
       .eq("GerenciaNombre", gerencia)
       .eq("LBussinesNombre", linea)
       .limit(5000)
 
     if (periodo) query = query.eq("mes", periodo)
     if (año) query = query.eq("anio", parseInt(año))
+    if (clasificacionAseguradoras?.length) query = query.in("CiaAbreviacion", clasificacionAseguradoras)
 
     const { data, error } = await query
     if (error || !data?.length) return null
@@ -193,13 +198,14 @@ export async function getVendedores(
     const priorYear = año ? String(parseInt(año) - 1) : String(new Date().getFullYear() - 1)
     let queryPY = supabase
       .from("dashboard_data")
-      .select("VendNombre, PrimaNeta, TCPago, Descuento, FLiquidacion")
+      .select("VendNombre, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
       .eq("GerenciaNombre", gerencia)
       .eq("LBussinesNombre", linea)
       .eq("anio", parseInt(priorYear))
       .limit(5000)
 
     if (periodo) queryPY = queryPY.eq("mes", periodo)
+    if (clasificacionAseguradoras?.length) queryPY = queryPY.in("CiaAbreviacion", clasificacionAseguradoras)
 
     const { data: dataPY } = await queryPY
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -257,18 +263,20 @@ export async function getGrupos(
   gerencia: string,
   linea: string,
   periodo?: number,
-  año?: string
+  año?: string,
+  clasificacionAseguradoras?: string[] | null
 ): Promise<GrupoRow[] | null> {
   try {
     let query = supabase
       .from("dashboard_data")
-      .select("Grupo, NombreCompleto, PrimaNeta, TCPago, Descuento, FLiquidacion")
+      .select("Grupo, NombreCompleto, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
       .eq("VendNombre", vendedor)
       .eq("GerenciaNombre", gerencia)
       .eq("LBussinesNombre", linea)
 
     if (periodo) query = query.eq("mes", periodo)
     if (año) query = query.eq("anio", parseInt(año))
+    if (clasificacionAseguradoras?.length) query = query.in("CiaAbreviacion", clasificacionAseguradoras)
 
     const { data, error } = await query
     if (error || !data?.length) return null
@@ -288,13 +296,14 @@ export async function getGrupos(
     const priorYear = año ? String(parseInt(año) - 1) : String(new Date().getFullYear() - 1)
     let queryPY = supabase
       .from("dashboard_data")
-      .select("Grupo, PrimaNeta, TCPago, Descuento, FLiquidacion")
+      .select("Grupo, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
       .eq("VendNombre", vendedor)
       .eq("GerenciaNombre", gerencia)
       .eq("LBussinesNombre", linea)
       .eq("anio", parseInt(priorYear))
 
     if (periodo) queryPY = queryPY.eq("mes", periodo)
+    if (clasificacionAseguradoras?.length) queryPY = queryPY.in("CiaAbreviacion", clasificacionAseguradoras)
 
     const { data: dataPY } = await queryPY
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -334,12 +343,13 @@ export async function getClientes(
   gerencia: string,
   linea: string,
   periodo?: number,
-  año?: string
+  año?: string,
+  clasificacionAseguradoras?: string[] | null
 ): Promise<ClienteRow[] | null> {
   try {
     let query = supabase
       .from("dashboard_data")
-      .select("NombreCompleto, PrimaNeta, TCPago, Descuento, FLiquidacion")
+      .select("NombreCompleto, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
       .eq("Grupo", grupo)
       .eq("VendNombre", vendedor)
       .eq("GerenciaNombre", gerencia)
@@ -347,6 +357,7 @@ export async function getClientes(
 
     if (periodo) query = query.eq("mes", periodo)
     if (año) query = query.eq("anio", parseInt(año))
+    if (clasificacionAseguradoras?.length) query = query.in("CiaAbreviacion", clasificacionAseguradoras)
 
     const { data, error } = await query
     if (error || !data?.length) return null
@@ -358,7 +369,7 @@ export async function getClientes(
     const priorYear = año ? String(parseInt(año) - 1) : String(new Date().getFullYear() - 1)
     let queryPY = supabase
       .from("dashboard_data")
-      .select("NombreCompleto, PrimaNeta, TCPago, Descuento, FLiquidacion")
+      .select("NombreCompleto, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
       .eq("Grupo", grupo)
       .eq("VendNombre", vendedor)
       .eq("GerenciaNombre", gerencia)
@@ -366,6 +377,7 @@ export async function getClientes(
       .eq("anio", parseInt(priorYear))
 
     if (periodo) queryPY = queryPY.eq("mes", periodo)
+    if (clasificacionAseguradoras?.length) queryPY = queryPY.in("CiaAbreviacion", clasificacionAseguradoras)
 
     const { data: dataPY } = await queryPY
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -403,7 +415,8 @@ export async function getPolizas(
   gerencia: string,
   linea: string,
   periodo?: number,
-  año?: string
+  año?: string,
+  clasificacionAseguradoras?: string[] | null
 ): Promise<PolizaRow[] | null> {
   try {
     let query = supabase
@@ -417,6 +430,7 @@ export async function getPolizas(
 
     if (periodo) query = query.eq("mes", periodo)
     if (año) query = query.eq("anio", parseInt(año))
+    if (clasificacionAseguradoras?.length) query = query.in("CiaAbreviacion", clasificacionAseguradoras)
 
     const { data, error } = await query
     if (error || !data?.length) return null
@@ -700,27 +714,56 @@ export interface VendedorByTipoRow {
   primaNeta: number
 }
 
+/**
+ * Get aseguradoras by clasificación from catalogos_cias
+ * Returns array of CiaAbreviacion values matching the classification
+ */
+export async function getAseguradorasByClasificacion(
+  clasificacion: string
+): Promise<string[] | null> {
+  if (!clasificacion || clasificacion === "Todas") return null
+  try {
+    const { data, error } = await supabase
+      .from("catalogos_cias")
+      .select("CiaAbreviacion")
+      .eq("ClasCia_TXT", clasificacion)
+
+    if (error || !data?.length) return null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (data as any[]).map(r => r.CiaAbreviacion)
+  } catch {
+    return null
+  }
+}
+
 export async function getVendedoresByTipo(
   linea: string,
   periodo?: number,
-  año?: string
+  año?: string,
+  gerencia?: string,
+  clasificacionAseguradoras?: string[] | null
 ): Promise<{ tipo: string; vendedores: VendedorByTipoRow[]; total: number }[] | null> {
   try {
     // Fetch vendedores with tipo from catalogos_agentes
     // Note: This requires catalogos_agentes table with columns: NombreCompleto, TipoVend_TXT
-    const { data, error } = await supabase
+    let query = supabase
       .from("dashboard_data")
       .select(`
         VendNombre,
         PrimaNeta,
         TCPago,
         Descuento,
-        FLiquidacion
+        FLiquidacion,
+        CiaAbreviacion
       `)
       .eq("LBussinesNombre", linea)
-      .eq("mes", periodo || 2)
-      .eq("anio", parseInt(año || "2026"))
-      .limit(10000)
+
+    if (gerencia) query = query.eq("GerenciaNombre", gerencia)
+    if (periodo) query = query.eq("mes", periodo)
+    if (año) query = query.eq("anio", parseInt(año))
+    if (clasificacionAseguradoras?.length) query = query.in("CiaAbreviacion", clasificacionAseguradoras)
+
+    const { data, error } = await query.limit(10000)
 
     if (error || !data?.length) return null
 
