@@ -33,8 +33,8 @@ const SEED: Pendiente[] = [
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     "Vencido": "bg-[#E62800] text-white",
-    "Por vencer": "bg-[#E62800] text-white",
-    "Al día": "bg-[#041224] text-white",
+    "Por vencer": "bg-amber-500 text-white",
+    "Al día": "bg-[#059669] text-white",
   }
   return (
     <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${colors[status] || "bg-gray-200 text-gray-600"}`}>
