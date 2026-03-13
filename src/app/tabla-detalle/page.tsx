@@ -333,6 +333,36 @@ function TablaDetalleContent() {
     return items.filter(item => String((item as any)[key]).toLowerCase().includes(search.toLowerCase()))
   }
 
+  // Top 10 + Otros aggregation for drill levels 2-5
+  const computeTop10WithOtros = (items: DrillRow[]): { rows: DrillRow[]; otrosCount: number } => {
+    if (items.length <= 10) return { rows: items, otrosCount: 0 }
+    // Sort by primaNeta descending and take top 10
+    const sorted = [...items].sort((a, b) => b.primaNeta - a.primaNeta)
+    const top10 = sorted.slice(0, 10)
+    const rest = sorted.slice(10)
+    // Sum numeric columns from rest
+    const sumPN = rest.reduce((s, r) => s + r.primaNeta, 0)
+    const sumPpto = rest.reduce((s, r) => s + (r.presupuesto ?? 0), 0)
+    const sumPnAA = rest.reduce((s, r) => s + (r.pnAnioAnt ?? 0), 0)
+    const sumPend = rest.reduce((s, r) => s + (r.pendiente ?? 0), 0)
+    const sumDif = sumPpto > 0 ? sumPN - sumPpto : null
+    const pctDif = sumPpto > 0 && sumDif !== null ? Math.round((sumDif / sumPpto) * 1000) / 10 : null
+    const sumDifYoY = sumPnAA > 0 ? sumPN - sumPnAA : null
+    const pctDifYoY = sumPnAA > 0 && sumDifYoY !== null ? Math.round((sumDifYoY / sumPnAA) * 10000) / 100 : null
+    const otrosRow: DrillRow = {
+      name: `Otros (${rest.length})`,
+      primaNeta: sumPN,
+      presupuesto: sumPpto > 0 ? sumPpto : null,
+      diferencia: sumDif,
+      pctDifPpto: pctDif,
+      pnAnioAnt: sumPnAA > 0 ? sumPnAA : null,
+      difYoY: sumDifYoY,
+      pctDifYoY: pctDifYoY,
+      pendiente: sumPend > 0 ? sumPend : null
+    }
+    return { rows: [...top10, otrosRow], otrosCount: rest.length }
+  }
+
   // Column label for current level
   const levelLabels: Record<DrillLevel, string> = {
     linea: "Línea de negocio", gerencia: "Gerencia", vendedor: "Vendedor",
@@ -350,6 +380,10 @@ function TablaDetalleContent() {
   const alertCount = filteredLineas.filter(l => l.presupuesto > 0 && l.pctDifPpto <= ALERT_THRESHOLD).length
 
   const filteredRows = filterSearch(rows, "name")
+  // Apply Top 10 + Otros for drill levels 2-5 (gerencia, vendedor, grupo, cliente)
+  const { rows: displayRows, otrosCount } = drillLevel !== "linea" && drillLevel !== "poliza"
+    ? computeTop10WithOtros(filteredRows)
+    : { rows: filteredRows, otrosCount: 0 }
   const filteredPolizas = filterSearch(polizas, "documento")
   const rowTotal = filteredRows.reduce((s, r) => s + r.primaNeta, 0)
   const polizaTotal = filteredPolizas.reduce((s, p) => s + p.primaNeta, 0)
@@ -552,13 +586,14 @@ function TablaDetalleContent() {
           </>
         ) : (
           <>
-            {filteredRows.length === 0 ? (
+            {displayRows.length === 0 ? (
               <p className="text-center text-[#888] py-8">Sin datos para este periodo</p>
-            ) : filteredRows.map((r) => {
-              const nextLevel: DrillLevel | null = drillLevel === "gerencia" ? "vendedor" : drillLevel === "vendedor" ? "grupo" : drillLevel === "grupo" ? "cliente" : drillLevel === "cliente" ? "poliza" : null
-              const selKey = drillLevel === "gerencia" ? "gerencia" : drillLevel === "vendedor" ? "vendedor" : drillLevel === "grupo" ? "grupo" : drillLevel === "cliente" ? "cliente" : null
+            ) : displayRows.map((r) => {
+              const isOtros = r.name.startsWith("Otros (")
+              const nextLevel: DrillLevel | null = isOtros ? null : (drillLevel === "gerencia" ? "vendedor" : drillLevel === "vendedor" ? "grupo" : drillLevel === "grupo" ? "cliente" : drillLevel === "cliente" ? "poliza" : null)
+              const selKey = isOtros ? null : (drillLevel === "gerencia" ? "gerencia" : drillLevel === "vendedor" ? "vendedor" : drillLevel === "grupo" ? "grupo" : drillLevel === "cliente" ? "cliente" : null)
               return (
-                <div key={r.name} className="bg-white rounded-lg border border-gray-200 px-3 py-2 shadow-sm active:bg-gray-50"
+                <div key={r.name} className={`rounded-lg border border-gray-200 px-3 py-2 shadow-sm ${isOtros ? "bg-gray-100" : "bg-white active:bg-gray-50"}`}
                   onClick={() => nextLevel && selKey && drill(nextLevel, r.name, { ...sel, [selKey]: r.name })}>
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-sm text-[#111] flex items-center gap-1">
@@ -631,8 +666,6 @@ function TablaDetalleContent() {
                 {filteredLineas.map((l, idx) => {
                   const dif = l.diferencia
                   const difYoy = l.difYoY
-                  const isAlert = l.presupuesto > 0 && l.pctDifPpto <= ALERT_THRESHOLD
-                  const isCritical = l.presupuesto > 0 && l.pctDifPpto < -15
                   // Semáforo: RED if below last year, AMBER if between, GREEN if at/above budget
                   const semaforoColor = l.primaNeta >= l.presupuesto
                     ? "text-emerald-600"
@@ -640,7 +673,7 @@ function TablaDetalleContent() {
                     ? "text-amber-600"
                     : "text-red-600"
                   return (
-                    <tr key={l.linea} id={toSlug(l.linea)} className={`group border-b border-[#F0F0F0] cursor-pointer transition-all duration-150 hover:bg-[#FFF5F5] ${isAlert ? "bg-[#FFF3F3]" : isCritical ? "bg-[#FFF2F2]" : idx % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white"}`}
+                    <tr key={l.linea} id={toSlug(l.linea)} className={`group border-b border-[#F0F0F0] cursor-pointer transition-all duration-150 hover:bg-[#FFF5F5] ${idx % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white"}`}
                       onClick={() => drill("gerencia", l.linea, { linea: l.linea })}>
                       <td className="px-1 py-2 text-center">
                         <ChevronRight className="w-3.5 h-3.5 text-[#E62800] inline transition-transform group-hover:scale-125 group-hover:translate-x-1" />
@@ -698,7 +731,7 @@ function TablaDetalleContent() {
             ) : (
               /* ─── LEVELS 2-5: FULL 9 COLUMNS ─── */
               <>
-                {filteredRows.length === 0 ? (
+                {displayRows.length === 0 ? (
                   <tr><td colSpan={10} className="px-3 py-8 text-center text-[#888]">
                     {drillLevel === "cliente" || drillLevel === "grupo"
                       ? "Datos en integración"
@@ -706,36 +739,47 @@ function TablaDetalleContent() {
                       ? "Sin vendedores registrados para esta gerencia"
                       : `Sin datos para este periodo ${year}`}
                   </td></tr>
-                ) : filteredRows.map((r, idx) => {
-                  const nextLevel: DrillLevel | null =
+                ) : displayRows.map((r, idx) => {
+                  const isOtros = r.name.startsWith("Otros (")
+                  const nextLevel: DrillLevel | null = isOtros ? null : (
                     drillLevel === "gerencia" ? "vendedor" :
                     drillLevel === "vendedor" ? "grupo" :
                     drillLevel === "grupo" ? "cliente" :
                     drillLevel === "cliente" ? "poliza" : null
-                  const selKey =
+                  )
+                  const selKey = isOtros ? null : (
                     drillLevel === "gerencia" ? "gerencia" :
                     drillLevel === "vendedor" ? "vendedor" :
                     drillLevel === "grupo" ? "grupo" :
                     drillLevel === "cliente" ? "cliente" : null
+                  )
+                  // Semáforo: RED if below last year, AMBER if between, GREEN if at/above budget
+                  const semaforoColor = r.presupuesto !== null && r.pnAnioAnt !== null
+                    ? (r.primaNeta >= r.presupuesto
+                        ? "text-emerald-600"
+                        : r.primaNeta >= r.pnAnioAnt
+                        ? "text-amber-600"
+                        : "text-red-600")
+                    : (r.diferencia !== null && r.diferencia < 0 ? "text-red-600" : "")
 
                   return (
                     <tr key={r.name}
-                      className={`group border-b border-[#F0F0F0] ${nextLevel ? "cursor-pointer" : ""} transition-all duration-150 ${idx % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"} hover:bg-[#FFF5F5]`}
+                      className={`group border-b border-[#F0F0F0] ${nextLevel ? "cursor-pointer" : ""} transition-all duration-150 ${isOtros ? "bg-gray-100" : idx % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white"} hover:bg-[#FFF5F5]`}
                       onClick={() => nextLevel && selKey && drill(nextLevel, r.name, { ...sel, [selKey]: r.name })}>
-                      <td className="px-1 py-1.5 text-center w-6">
+                      <td className="px-1 py-2 text-center w-6">
                         {nextLevel && <ChevronRight className="w-3.5 h-3.5 text-[#E62800] inline transition-transform group-hover:scale-110 group-hover:translate-x-0.5" />}
                       </td>
-                      <td className="px-3 py-1.5 font-medium text-[#111] text-left">{r.name}</td>
-                      <td className={`px-3 py-1.5 text-right tabular-nums font-medium ${r.primaNeta < 0 ? "text-red-500" : ""}`}>
+                      <td className="px-3 py-2 font-medium text-[#111] text-left">{r.name}</td>
+                      <td className={`px-3 py-2 text-right tabular-nums font-normal ${r.primaNeta < 0 ? "text-red-500" : ""}`}>
                         {r.primaNeta < 0 ? `(${fmt(Math.abs(r.primaNeta))})` : fmt(r.primaNeta)}
                       </td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">{r.presupuesto !== null ? fmt(r.presupuesto) : <span className="text-gray-300">—</span>}</td>
-                      <td className={`px-3 py-1.5 text-right tabular-nums font-medium ${r.diferencia === null ? "" : r.diferencia < 0 ? "text-red-500" : ""}`}>{r.diferencia !== null ? (r.diferencia < 0 ? `(${fmt(Math.abs(r.diferencia))})` : fmt(r.diferencia)) : <span className="text-gray-300">—</span>}</td>
-                      <td className={`px-3 py-1.5 text-right tabular-nums ${r.pctDifPpto === null ? "" : r.pctDifPpto < 0 ? "text-red-500" : r.pctDifPpto > 0 ? "text-green-600" : ""}`}>{r.pctDifPpto !== null ? `${r.pctDifPpto > 0 ? "+" : ""}${r.pctDifPpto}%` : <span className="text-gray-300">—</span>}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">{r.pnAnioAnt !== null ? fmt(r.pnAnioAnt) : <span className="text-gray-300">—</span>}</td>
-                      <td className={`px-3 py-1.5 text-right tabular-nums font-medium ${r.difYoY === null ? "" : r.difYoY < 0 ? "text-red-500" : ""}`}>{r.difYoY !== null ? (r.difYoY < 0 ? `(${fmt(Math.abs(r.difYoY))})` : fmt(r.difYoY)) : <span className="text-gray-300">—</span>}</td>
-                      <td className={`px-3 py-1.5 text-right tabular-nums ${r.pctDifYoY === null ? "" : r.pctDifYoY < 0 ? "text-red-500" : r.pctDifYoY > 0 ? "text-green-600" : ""}`}>{r.pctDifYoY !== null ? `${r.pctDifYoY > 0 ? "+" : ""}${r.pctDifYoY}%` : <span className="text-gray-300">—</span>}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">
+                      <td className="px-3 py-2 text-right tabular-nums text-green-600 font-semibold">{r.presupuesto !== null ? fmt(r.presupuesto) : <span className="text-gray-300 font-normal">—</span>}</td>
+                      <td className={`px-3 py-2 text-right tabular-nums font-normal ${semaforoColor}`}>{r.diferencia !== null ? (r.diferencia < 0 ? `(${fmt(Math.abs(r.diferencia))})` : fmt(r.diferencia)) : <span className="text-gray-300">—</span>}</td>
+                      <td className={`px-3 py-2 text-right tabular-nums ${semaforoColor}`}>{r.pctDifPpto !== null ? `${r.pctDifPpto > 0 ? "+" : ""}${r.pctDifPpto}%` : <span className="text-gray-300">—</span>}</td>
+                      <td className="px-3 py-2 text-right tabular-nums text-gray-800">{r.pnAnioAnt !== null ? fmt(r.pnAnioAnt) : <span className="text-gray-300">—</span>}</td>
+                      <td className={`px-3 py-2 text-right tabular-nums font-normal ${r.difYoY === null ? "" : r.difYoY < 0 ? "text-red-500" : ""}`}>{r.difYoY !== null ? (r.difYoY < 0 ? `(${fmt(Math.abs(r.difYoY))})` : fmt(r.difYoY)) : <span className="text-gray-300">—</span>}</td>
+                      <td className={`px-3 py-2 text-right tabular-nums ${r.pctDifYoY === null ? "" : r.pctDifYoY < 0 ? "text-red-500" : r.pctDifYoY > 0 ? "text-green-600" : ""}`}>{r.pctDifYoY !== null ? `${r.pctDifYoY > 0 ? "+" : ""}${r.pctDifYoY}%` : <span className="text-gray-300">—</span>}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">
                         {r.pendiente !== null ? fmt(r.pendiente) : <span className="text-gray-300">—</span>}
                       </td>
                     </tr>
