@@ -32,8 +32,8 @@ const SEED: Pendiente[] = [
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    "Vencido": "bg-[#C00000] text-white",
-    "Por vencer": "bg-[#E8735A] text-white",
+    "Vencido": "bg-[#E62800] text-white",
+    "Por vencer": "bg-[#E62800] text-white",
     "Al día": "bg-[#041224] text-white",
   }
   return (
@@ -79,14 +79,14 @@ export default function CobranzaPendientePage() {
             <div className="text-lg font-bold text-[#E62800] tabular-nums">{fmt(totalPendiente)}</div>
             <div className="text-xs text-gray-400 mt-0.5 tabular-nums">{data.length} pólizas</div>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 border-l-4 border-l-[#E8735A] p-2">
+          <div className="bg-white rounded-lg border border-gray-200 border-l-4 border-l-[#E62800] p-2">
             <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Vencido</div>
-            <div className="text-lg font-bold text-[#E8735A] tabular-nums">{fmt(vencidoHoy)}</div>
+            <div className="text-lg font-bold text-[#E62800] tabular-nums">{fmt(vencidoHoy)}</div>
             <div className="text-xs text-gray-400 mt-0.5 tabular-nums">{data.filter(r => r.status === "Vencido").length} pólizas</div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 border-l-4 border-l-[#041224] p-2">
             <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Por vencer esta semana</div>
-            <div className="text-lg font-bold text-[#166534] tabular-nums">{fmt(porVencer)}</div>
+            <div className="text-lg font-bold text-[#059669] tabular-nums">{fmt(porVencer)}</div>
             <div className="text-xs text-gray-400 mt-0.5 tabular-nums">{data.filter(r => r.status === "Por vencer").length} pólizas</div>
           </div>
         </div>

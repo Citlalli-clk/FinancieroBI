@@ -116,7 +116,7 @@ export default function AseguradorasPage() {
   const { rows: displayRows, otrosCount } = computeTop10WithOtros(filteredAseguradoras)
 
   const maxAseguradora = filteredAseguradoras.length > 0 ? Math.max(...filteredAseguradoras.map(a => a.primaNeta)) : 0
-  const COLORS = ["#1B5E20", "#2E7D32", "#388E3C", "#43A047", "#4CAF50", "#66BB6A", "#81C784", "#A5D6A7", "#C8E6C9", "#E8F5E9"]
+  const COLORS = ["#059669", "#059669", "#059669", "#059669", "#059669", "#10B981", "#34D399", "#6EE7B7", "#A7F3D0", "#D1FAE5"]
 
   // Clasificación badge colors
   const getClasificacionBadge = (clas: string | null) => {
@@ -276,7 +276,7 @@ export default function AseguradorasPage() {
                           className="h-full rounded transition-all duration-500 flex items-center"
                           style={{
                             width: `${maxAseguradora > 0 ? Math.max((a.primaNeta / maxAseguradora) * 100, 3) : 0}%`,
-                            backgroundColor: isOtros ? "#9CA3AF" : (COLORS[i] || "#4CAF50")
+                            backgroundColor: isOtros ? "#9CA3AF" : (COLORS[i] || "#059669")
                           }}
                         >
                           {(a.primaNeta / maxAseguradora) * 100 > 25 && (
@@ -287,7 +287,7 @@ export default function AseguradorasPage() {
                           <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] text-gray-600 font-medium">{fmtShort(a.primaNeta)}</span>
                         )}
                       </div>
-                      <span className="text-xs font-medium tabular-nums w-12 text-right shrink-0" style={{ color: isOtros ? "#6B7280" : (COLORS[i] || "#4CAF50") }}>{a.pct}%</span>
+                      <span className="text-xs font-medium tabular-nums w-12 text-right shrink-0" style={{ color: isOtros ? "#6B7280" : (COLORS[i] || "#059669") }}>{a.pct}%</span>
                     </div>
                   )
                 })}

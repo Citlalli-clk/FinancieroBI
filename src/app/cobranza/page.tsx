@@ -86,7 +86,7 @@ function PctBadge({ val, base }: { val: number; base: number }) {
   const neg = p < 0
   return (
     <td className="px-2 py-1.5 text-center border-b border-[#E5E7EB]">
-      <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium tabular-nums ${neg ? "bg-[#FEE2E2] text-[#991B1B]" : "bg-[#DCFCE7] text-[#166534]"}`}>
+      <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium tabular-nums ${neg ? "bg-[#FEE2E2] text-[#E62800]" : "bg-[#DCFCE7] text-[#059669]"}`}>
         {neg ? "" : "+"}{p.toFixed(2)}%
       </span>
     </td>
@@ -388,7 +388,7 @@ export default function CobranzaPage() {
             <div key={c.nombre} className="bg-white rounded-lg border border-gray-200 px-2 py-2">
               <div className="flex justify-between items-center mb-1">
                 <span className="font-medium text-xs text-[#041224]">{c.nombre}</span>
-                <span className={`text-xs font-medium tabular-nums ${difConv < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}`}>{pctConv}%</span>
+                <span className={`text-xs font-medium tabular-nums ${difConv < 0 ? "text-[#E62800]" : "text-[#059669]"}`}>{pctConv}%</span>
               </div>
               <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-xs">
                 <div className="flex justify-between"><span className="text-gray-500">Prima Neta</span><span className="font-medium tabular-nums">{fmt(c.primaNeta)}</span></div>
@@ -396,7 +396,7 @@ export default function CobranzaPage() {
                 <div className="flex justify-between"><span className="text-gray-500">Año Ant.</span><span className="tabular-nums">{fmt(c.pnAA)}</span></div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Crec.</span>
-                  <span className={`tabular-nums ${difAA < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}`}>{difAA < 0 ? "-" : "+"}{Math.abs(c.pnAA > 0 ? ((c.primaNeta / c.pnAA - 1) * 100) : 0).toFixed(1)}%</span>
+                  <span className={`tabular-nums ${difAA < 0 ? "text-[#E62800]" : "text-[#059669]"}`}>{difAA < 0 ? "-" : "+"}{Math.abs(c.pnAA > 0 ? ((c.primaNeta / c.pnAA - 1) * 100) : 0).toFixed(1)}%</span>
                 </div>
               </div>
             </div>
@@ -437,12 +437,12 @@ export default function CobranzaPage() {
                     <td className={`px-2 py-1.5 text-xs font-medium text-[#041224] sticky left-0 z-10 border-b border-[#E5E7EB] ${rowBg} group-hover:bg-[#FFF5F5] transition-colors`}>{c.nombre}</td>
                     <td className="px-2 py-1.5 text-center text-xs font-medium tabular-nums border-b border-[#E5E7EB]">{fmt(c.primaNeta)}</td>
                     <td className="px-2 py-1.5 text-center text-xs text-[#6B7280] tabular-nums border-b border-[#E5E7EB]">{fmt(c.convenio)}</td>
-                    <td className={`px-2 py-1.5 text-center text-xs font-medium tabular-nums border-b border-[#E5E7EB] ${difConv < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}`}>
+                    <td className={`px-2 py-1.5 text-center text-xs font-medium tabular-nums border-b border-[#E5E7EB] ${difConv < 0 ? "text-[#E62800]" : "text-[#059669]"}`}>
                       {difConv < 0 ? `(${fmt(Math.abs(difConv))})` : fmt(difConv)}
                     </td>
                     <PctBadge val={c.primaNeta} base={c.convenio} />
                     <td className="px-2 py-1.5 text-center text-xs text-[#6B7280] tabular-nums border-b border-[#E5E7EB]">{fmt(c.pnAA)}</td>
-                    <td className={`px-2 py-1.5 text-center text-xs font-medium tabular-nums border-b border-[#E5E7EB] ${difAA < 0 ? "text-[#DC2626]" : "text-[#16A34A]"}`}>
+                    <td className={`px-2 py-1.5 text-center text-xs font-medium tabular-nums border-b border-[#E5E7EB] ${difAA < 0 ? "text-[#E62800]" : "text-[#059669]"}`}>
                       {difAA < 0 ? `(${fmt(Math.abs(difAA))})` : fmt(difAA)}
                     </td>
                     <PctBadge val={c.primaNeta} base={c.pnAA} />

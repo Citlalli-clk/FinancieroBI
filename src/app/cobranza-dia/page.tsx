@@ -73,7 +73,7 @@ export default function CobranzaDiaPage() {
           </div>
           <div className="bg-white rounded-lg border border-gray-200 border-l-4 border-l-[#041224] p-2">
             <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Cobrado hoy</div>
-            <div className="text-lg font-bold text-[#166534] tabular-nums">{fmt(data[data.length - 1]?.prima_cobrada ?? 0)}</div>
+            <div className="text-lg font-bold text-[#059669] tabular-nums">{fmt(data[data.length - 1]?.prima_cobrada ?? 0)}</div>
           </div>
           <div className="bg-[#041224] rounded-lg p-2">
             <div className="text-xs text-white/70 uppercase tracking-wider font-semibold mb-1">Cumplimiento diario</div>
@@ -123,10 +123,10 @@ export default function CobranzaDiaPage() {
                     <td className="px-2 py-1.5 text-xs font-medium text-[#111]">{r.gerencia}</td>
                     <td className="px-2 py-1.5 text-right text-xs font-medium tabular-nums">{fmt(r.prima_cobrada)}</td>
                     <td className="px-2 py-1.5 text-right text-xs text-gray-500 tabular-nums">{fmt(r.meta_dia)}</td>
-                    <td className={`px-2 py-1.5 text-right text-xs font-medium tabular-nums ${neg ? "text-[#E62800]" : "text-[#166534]"}`}>
+                    <td className={`px-2 py-1.5 text-right text-xs font-medium tabular-nums ${neg ? "text-[#E62800]" : "text-[#059669]"}`}>
                       {neg ? `(${fmt(Math.abs(r.diferencia))})` : fmt(r.diferencia)}
                     </td>
-                    <td className={`px-2 py-1.5 text-right text-xs font-medium tabular-nums ${pct < 100 ? "text-[#E62800]" : "text-[#166534]"}`}>{pct}%</td>
+                    <td className={`px-2 py-1.5 text-right text-xs font-medium tabular-nums ${pct < 100 ? "text-[#E62800]" : "text-[#059669]"}`}>{pct}%</td>
                     <td className="px-2 py-1.5 text-right text-xs text-gray-500 tabular-nums">{fmt(r.acumulado)}</td>
                   </tr>
                 )

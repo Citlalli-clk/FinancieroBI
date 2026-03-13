@@ -8,6 +8,7 @@ import { PeriodFilter } from "@/components/period-filter"
 import { getGerencias, getVendedores, getGrupos, getClientes, getPolizas, getLastDataDate } from "@/lib/queries"
 import type { PolizaRow } from "@/lib/queries"
 import { exportExcel, exportPDF } from "@/lib/export"
+import { DrillCharts } from "@/components/drill-charts"
 
 function fmt(v: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
@@ -363,7 +364,7 @@ export default function CorporatePage() {
                       {nextLevel && <ChevronRight className="w-3.5 h-3.5 text-[#E62800] flex-shrink-0" />}
                       {r.name}
                     </span>
-                    <span className={`text-sm font-black flex-shrink-0 ml-2 ${r.pctDifPpto !== null && r.pctDifPpto < 0 ? "text-[#E62800]" : "text-[#166534]"}`}>
+                    <span className={`text-sm font-black flex-shrink-0 ml-2 ${r.pctDifPpto !== null && r.pctDifPpto < 0 ? "text-[#E62800]" : "text-[#059669]"}`}>
                       {r.pctDifPpto !== null ? `${r.pctDifPpto > 0 ? "+" : ""}${r.pctDifPpto}%` : ""}
                     </span>
                   </div>
@@ -377,7 +378,7 @@ export default function CorporatePage() {
                       <div className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${Math.min(Math.max(pctPpto, 0), 100)}%`,
-                          backgroundColor: pctPpto >= 100 ? '#10B981' : pctPpto >= 80 ? '#F59E0B' : '#EF4444'
+                          backgroundColor: pctPpto >= 100 ? '#059669' : pctPpto >= 80 ? '#F59E0B' : '#E62800'
                         }} />
                     </div>
                   )}
@@ -501,23 +502,49 @@ export default function CorporatePage() {
                     </tr>
                   )
                 })}
-                <tr className="bg-[#041224] text-white border-t-2 cursor-default">
-                  <td className="px-1 py-1.5 w-6"></td>
-                  <td className="px-3 py-1.5 font-bold text-left">Total</td>
-                  <td className="px-3 py-1.5 text-center font-bold tabular-nums">{fmt(rowTotal)}</td>
-                  <td className="px-3 py-1.5 text-center text-white/50 tabular-nums">—</td>
-                  <td className="px-3 py-1.5 text-center text-white/50 tabular-nums">—</td>
-                  <td className="px-3 py-1.5 text-center text-white/50 tabular-nums">—</td>
-                  <td className="px-3 py-1.5 text-center text-white/50 tabular-nums">—</td>
-                  <td className="px-3 py-1.5 text-center text-white/50 tabular-nums">—</td>
-                  <td className="px-3 py-1.5 text-center text-white/50 tabular-nums">—</td>
-                  <td className="px-3 py-1.5 text-center text-white/50 tabular-nums">—</td>
-                </tr>
+                {/* Total row with computed sums */}
+                {(() => {
+                  const totalPN = filteredRows.reduce((s, r) => s + r.primaNeta, 0)
+                  const totalPpto = filteredRows.reduce((s, r) => s + (r.presupuesto ?? 0), 0)
+                  const totalPnAA = filteredRows.reduce((s, r) => s + (r.pnAnioAnt ?? 0), 0)
+                  const totalPend = filteredRows.reduce((s, r) => s + (r.pendiente ?? 0), 0)
+                  const totalDif = totalPpto > 0 ? totalPN - totalPpto : null
+                  const totalPctDif = totalPpto > 0 && totalDif !== null ? Math.round((totalDif / totalPpto) * 1000) / 10 : null
+                  const totalDifYoY = totalPnAA > 0 ? totalPN - totalPnAA : null
+                  const totalPctDifYoY = totalPnAA > 0 && totalDifYoY !== null ? Math.round((totalDifYoY / totalPnAA) * 10000) / 100 : null
+                  return (
+                    <tr className="bg-[#041224] text-white border-t-2 cursor-default">
+                      <td className="px-1 py-1.5 w-6"></td>
+                      <td className="px-3 py-1.5 font-bold text-left">Total</td>
+                      <td className="px-3 py-1.5 text-center font-bold tabular-nums">{fmt(totalPN)}</td>
+                      <td className="px-3 py-1.5 text-center font-bold tabular-nums">{totalPpto > 0 ? fmt(totalPpto) : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-center font-bold tabular-nums">{totalDif !== null ? (totalDif < 0 ? `(${fmt(Math.abs(totalDif))})` : fmt(totalDif)) : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-center font-bold tabular-nums">{totalPctDif !== null ? `${totalPctDif > 0 ? "+" : ""}${totalPctDif}%` : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-center font-bold tabular-nums">{totalPnAA > 0 ? fmt(totalPnAA) : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-center font-bold tabular-nums">{totalDifYoY !== null ? (totalDifYoY < 0 ? `(${fmt(Math.abs(totalDifYoY))})` : fmt(totalDifYoY)) : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-center font-bold tabular-nums">{totalPctDifYoY !== null ? `${totalPctDifYoY > 0 ? "+" : ""}${totalPctDifYoY}%` : <span className="text-white/50">—</span>}</td>
+                      <td className="px-3 py-1.5 text-center font-bold tabular-nums">{totalPend > 0 ? fmt(totalPend) : <span className="text-white/50">—</span>}</td>
+                    </tr>
+                  )
+                })()}
               </>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Dynamic Charts — bottom half, reacts to drill level */}
+      <DrillCharts
+        rows={
+          drillLevel === "poliza"
+            ? filteredPolizas.map(p => ({ name: p.documento, primaNeta: p.primaNeta }))
+            : filteredRows.map(r => ({ name: r.name, primaNeta: r.primaNeta }))
+        }
+        levelLabel={levelLabels[drillLevel]}
+        parentLabel={crumbs.length > 0 ? crumbs.map(c => c.label).join(" > ") : "Corporate"}
+        loading={loading}
+      />
+
       <PageFooter />
       </div>
     </div>

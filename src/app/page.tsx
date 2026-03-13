@@ -174,7 +174,7 @@ export default function Home() {
             <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
               <table className="w-full text-xs min-w-[480px]">
                 <thead>
-                  <tr style={{ backgroundColor: '#6B7280' }}>
+                  <tr className="bg-[#041224] border-b-2 border-b-[#E62800]">
                     <th className="text-left px-2 py-2 text-xs font-semibold uppercase tracking-wider text-white">Línea</th>
                     <th className="text-center px-2 py-2 text-xs font-semibold uppercase tracking-wider text-white">Prima Neta</th>
                     <th className="text-center px-2 py-2 text-xs font-semibold uppercase tracking-wider text-white">Año Ant.</th>
@@ -203,11 +203,11 @@ export default function Home() {
                     )
                   })}
                   {/* Total row with semáforo logic */}
-                  <tr className="font-bold border-t-2 border-gray-300" style={{ backgroundColor: '#6B7280', color: '#fff' }}>
-                    <td className="px-2 py-2 font-bold" style={{ color: '#fff' }}>Total</td>
-                    <td className="px-2 py-2 text-center font-bold tabular-nums" style={{ color: '#fff' }}>{fmt(total)}</td>
-                    <td className="px-2 py-2 text-center font-bold tabular-nums" style={{ color: '#fff' }}>{fmt(totalAA)}</td>
-                    <td className="px-2 py-2 text-center font-bold tabular-nums text-gray-600">{fmt(totalPpto)}</td>
+                  <tr className="font-bold border-t-2 border-gray-300 bg-[#041224]">
+                    <td className="px-2 py-2 font-bold text-white">Total</td>
+                    <td className="px-2 py-2 text-center font-bold tabular-nums text-white">{fmt(total)}</td>
+                    <td className="px-2 py-2 text-center font-bold tabular-nums text-white">{fmt(totalAA)}</td>
+                    <td className="px-2 py-2 text-center font-bold tabular-nums text-gray-400">{fmt(totalPpto)}</td>
                     <td className="px-2 py-2 text-center font-bold tabular-nums" style={{ color: (total - totalPpto) < 0 ? '#E62800' : '#059669' }}>
                       {(total - totalPpto) < 0 ? `(${fmt(Math.abs(total - totalPpto))})` : fmt(total - totalPpto)}
                     </td>

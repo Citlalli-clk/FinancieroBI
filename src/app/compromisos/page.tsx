@@ -41,30 +41,24 @@ function semaforoStatus(actual: number, lastYear: number, budget: number): 'red'
   return 'green'
 }
 function semaforoColorFromStatus(status: 'red' | 'yellow' | 'green') {
-  if (status === 'green') return "#2E7D32"
+  if (status === 'green') return "#059669"
   if (status === 'yellow') return "#F5C518"
   return "#E62800"
 }
 // Legacy percentage-based color (fallback when we don't have lastYear/budget)
 function semaforoColor(pct: number) {
-  if (pct >= 100) return "#2E7D32"
+  if (pct >= 100) return "#059669"
   if (pct >= 80) return "#F5C518"
   return "#E62800"
 }
 function Semaforo({ status }: { status?: 'red' | 'yellow' | 'green' }) {
-  // When status is provided, show only the active light
-  const redBg = status === 'red' ? '#E62800' : '#D1D5DB'
-  const yellowBg = status === 'yellow' ? '#F9DC5C' : '#D1D5DB'
-  const greenBg = status === 'green' ? '#60A63A' : '#D1D5DB'
-  const redBorder = status === 'red' ? '#B91C00' : '#E5E7EB'
-  const yellowBorder = status === 'yellow' ? '#D4A800' : '#E5E7EB'
-  const greenBorder = status === 'green' ? '#4A8A2A' : '#E5E7EB'
+  // Single clean colored circle based on status
+  const bgColor = status === 'green' ? '#059669' : status === 'yellow' ? '#F5C518' : '#E62800'
   return (
-    <span className="inline-flex items-center gap-0.5 semaforo-lights">
-      <span className="w-2.5 h-2.5 rounded-full inline-block transition-colors duration-200 light-red" style={{ backgroundColor: redBg, borderWidth: 1, borderStyle: 'solid', borderColor: redBorder }} />
-      <span className="w-2.5 h-2.5 rounded-full inline-block transition-colors duration-200 light-yellow" style={{ backgroundColor: yellowBg, borderWidth: 1, borderStyle: 'solid', borderColor: yellowBorder }} />
-      <span className="w-2.5 h-2.5 rounded-full inline-block transition-colors duration-200 light-green" style={{ backgroundColor: greenBg, borderWidth: 1, borderStyle: 'solid', borderColor: greenBorder }} />
-    </span>
+    <span
+      className="inline-block w-3 h-3 rounded-full"
+      style={{ backgroundColor: bgColor }}
+    />
   )
 }
 
@@ -169,16 +163,6 @@ export default function CompromisosPage() {
 
   return (
     <div className="bg-[#FAFAFA] px-3 py-4">
-      {/* CSS for hover semaforo */}
-      <style>{`
-        .vendedor-row .semaforo-lights span { background-color: #D1D5DB !important; border-color: #E5E7EB !important; }
-        .vendedor-row:hover .semaforo-lights .light-red { background-color: #E62800 !important; border-color: #B91C00 !important; }
-        .vendedor-row:hover .semaforo-lights .light-yellow { background-color: #F9DC5C !important; border-color: #D4A800 !important; }
-        .vendedor-row:hover .semaforo-lights .light-green { background-color: #60A63A !important; border-color: #4A8A2A !important; }
-        .total-row .semaforo-lights .light-red { background-color: #E62800 !important; border-color: #B91C00 !important; }
-        .total-row .semaforo-lights .light-yellow { background-color: #F9DC5C !important; border-color: #D4A800 !important; }
-        .total-row .semaforo-lights .light-green { background-color: #60A63A !important; border-color: #4A8A2A !important; }
-      `}</style>
       <div className="max-w-[1200px] mx-auto w-full flex flex-col">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-2 pt-3 md:pt-5 w-full gap-2 md:gap-0">
           <PageTabs />
@@ -210,7 +194,7 @@ export default function CompromisosPage() {
                       </div>
                       <div className="flex justify-between text-xs text-gray-500">
                         <span>PN: <span className="text-gray-900 font-medium tabular-nums">{fmt(r.primaActual)}</span></span>
-                        <span>Meta: <span className="text-green-600 font-semibold tabular-nums">{fmt(r.meta)}</span></span>
+                        <span>Meta: <span className="text-[#059669] font-semibold tabular-nums">{fmt(r.meta)}</span></span>
                       </div>
                     </div>
                   )
