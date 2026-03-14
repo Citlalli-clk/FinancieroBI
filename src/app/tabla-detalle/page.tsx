@@ -520,6 +520,16 @@ function TablaDetalleContent() {
   // Determine if table has many rows (for adaptive max-height)
   const manyRows = drillLevel === 'poliza' ? filteredPolizas.length > 15 : drillLevel !== 'linea' && displayRows.length > 15
 
+  // Detect which optional columns have data (for levels 2-5) — hide empty columns
+  const hasPresupuesto = drillLevel === 'linea' || filteredRows.some(r => r.presupuesto !== null)
+  const hasDiferencia = drillLevel === 'linea' || filteredRows.some(r => r.diferencia !== null)
+  const hasPctDifPpto = drillLevel === 'linea' || filteredRows.some(r => r.pctDifPpto !== null)
+  const hasPnAnioAnt = drillLevel === 'linea' || filteredRows.some(r => r.pnAnioAnt !== null)
+  const hasDifYoY = drillLevel === 'linea' || filteredRows.some(r => r.difYoY !== null)
+  const hasPctDifYoY = drillLevel === 'linea' || filteredRows.some(r => r.pctDifYoY !== null)
+  const hasPendiente = drillLevel === 'linea' || filteredRows.some(r => r.pendiente !== null)
+  const visibleColCount = 3 + [hasPresupuesto, hasDiferencia, hasPctDifPpto, hasPnAnioAnt, hasDifYoY, hasPctDifYoY, hasPendiente].filter(Boolean).length
+
   // Compute totals for levels 2-5 (same pattern as totalLineas)
   const totalRows = {
     primaNeta: filteredRows.reduce((s, r) => s + r.primaNeta, 0),
@@ -917,13 +927,13 @@ function TablaDetalleContent() {
                 <th className="w-6 px-1 py-2.5 sticky left-0 z-30 bg-[#041224]"></th>
                 <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider sticky left-6 z-30 bg-[#041224]">{levelLabels[drillLevel]}</th>
                 <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">Prima neta</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">Presupuesto</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">Diferencia</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">% Dif ppto</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">{cmpLabel.col}</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">{cmpLabel.difCol}</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">{cmpLabel.pctCol}</th>
-                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">Pendiente</th>
+                {hasPresupuesto && <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">Presupuesto</th>}
+                {hasDiferencia && <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">Diferencia</th>}
+                {hasPctDifPpto && <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">% Dif ppto</th>}
+                {hasPnAnioAnt && <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">{cmpLabel.col}</th>}
+                {hasDifYoY && <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">{cmpLabel.difCol}</th>}
+                {hasPctDifYoY && <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">{cmpLabel.pctCol}</th>}
+                {hasPendiente && <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider bg-[#041224]">Pendiente</th>}
               </tr>
             )}
           </thead>
@@ -1144,10 +1154,10 @@ function TablaDetalleContent() {
               </>
 
             ) : (
-              /* ─── LEVELS 2-5: FULL 9 COLUMNS ─── */
+              /* ─── LEVELS 2-5: DYNAMIC COLUMNS (hide empty) ─── */
               <>
                 {displayRows.length === 0 ? (
-                  <tr><td colSpan={10} className="px-3 py-8 text-center text-[#888]">
+                  <tr><td colSpan={visibleColCount} className="px-3 py-8 text-center text-[#888]">
                     {drillLevel === "cliente" || drillLevel === "grupo"
                       ? "Datos en integración"
                       : drillLevel === "vendedor"
@@ -1191,15 +1201,15 @@ function TablaDetalleContent() {
                       <td className={`px-3 py-3 text-center tabular-nums text-sm font-bold ${r.primaNeta < 0 ? "text-[#E62800]" : ""}`}>
                         {r.primaNeta < 0 ? `(${fmt(Math.abs(r.primaNeta))})` : fmt(r.primaNeta)}
                       </td>
-                      <td className="px-3 py-3 text-center tabular-nums text-sm text-gray-600 font-bold">{r.presupuesto !== null ? fmt(r.presupuesto) : <span className="text-gray-600 font-normal">—</span>}</td>
-                      <td className={`px-3 py-3 text-center tabular-nums text-sm font-bold ${semaforoColor}`}>{r.diferencia !== null ? (r.diferencia < 0 ? `(${fmt(Math.abs(r.diferencia))})` : fmt(r.diferencia)) : <span className="text-gray-600">—</span>}</td>
-                      <td className={`px-3 py-3 text-center tabular-nums text-sm font-bold ${semaforoColor}`}>{r.pctDifPpto !== null ? `${r.pctDifPpto > 0 ? "+" : ""}${r.pctDifPpto}%` : <span className="text-gray-600">—</span>}</td>
-                      <td className="px-3 py-3 text-center tabular-nums text-sm text-gray-800 font-bold">{r.pnAnioAnt !== null ? fmt(r.pnAnioAnt) : <span className="text-gray-600">—</span>}</td>
-                      <td className={`px-3 py-3 text-center tabular-nums text-sm font-bold ${r.difYoY === null ? "" : r.difYoY < 0 ? "text-[#E62800]" : ""}`}>{r.difYoY !== null ? (r.difYoY < 0 ? `(${fmt(Math.abs(r.difYoY))})` : fmt(r.difYoY)) : <span className="text-gray-600">—</span>}</td>
-                      <td className={`px-3 py-3 text-center tabular-nums text-sm font-bold ${r.pctDifYoY === null ? "" : r.pctDifYoY < 0 ? "text-[#E62800]" : r.pctDifYoY > 0 ? "text-[#059669]" : ""}`}>{r.pctDifYoY !== null ? `${r.pctDifYoY > 0 ? "+" : ""}${r.pctDifYoY}%` : <span className="text-gray-600">—</span>}</td>
-                      <td className="px-3 py-3 text-center tabular-nums text-sm text-gray-600 font-bold">
+                      {hasPresupuesto && <td className="px-3 py-3 text-center tabular-nums text-sm text-gray-600 font-bold">{r.presupuesto !== null ? fmt(r.presupuesto) : <span className="text-gray-600 font-normal">—</span>}</td>}
+                      {hasDiferencia && <td className={`px-3 py-3 text-center tabular-nums text-sm font-bold ${semaforoColor}`}>{r.diferencia !== null ? (r.diferencia < 0 ? `(${fmt(Math.abs(r.diferencia))})` : fmt(r.diferencia)) : <span className="text-gray-600">—</span>}</td>}
+                      {hasPctDifPpto && <td className={`px-3 py-3 text-center tabular-nums text-sm font-bold ${semaforoColor}`}>{r.pctDifPpto !== null ? `${r.pctDifPpto > 0 ? "+" : ""}${r.pctDifPpto}%` : <span className="text-gray-600">—</span>}</td>}
+                      {hasPnAnioAnt && <td className="px-3 py-3 text-center tabular-nums text-sm text-gray-800 font-bold">{r.pnAnioAnt !== null ? fmt(r.pnAnioAnt) : <span className="text-gray-600">—</span>}</td>}
+                      {hasDifYoY && <td className={`px-3 py-3 text-center tabular-nums text-sm font-bold ${r.difYoY === null ? "" : r.difYoY < 0 ? "text-[#E62800]" : ""}`}>{r.difYoY !== null ? (r.difYoY < 0 ? `(${fmt(Math.abs(r.difYoY))})` : fmt(r.difYoY)) : <span className="text-gray-600">—</span>}</td>}
+                      {hasPctDifYoY && <td className={`px-3 py-3 text-center tabular-nums text-sm font-bold ${r.pctDifYoY === null ? "" : r.pctDifYoY < 0 ? "text-[#E62800]" : r.pctDifYoY > 0 ? "text-[#059669]" : ""}`}>{r.pctDifYoY !== null ? `${r.pctDifYoY > 0 ? "+" : ""}${r.pctDifYoY}%` : <span className="text-gray-600">—</span>}</td>}
+                      {hasPendiente && <td className="px-3 py-3 text-center tabular-nums text-sm text-gray-600 font-bold">
                         {r.pendiente !== null ? fmt(r.pendiente) : <span className="text-gray-600 font-normal">—</span>}
-                      </td>
+                      </td>}
                     </tr>
                   )
                 })}
@@ -1207,13 +1217,13 @@ function TablaDetalleContent() {
                   <td className="px-1 py-3 w-6 sticky left-0 z-10 bg-[#041224]"></td>
                   <td className="px-3 py-3 text-sm font-bold text-left sticky left-6 z-10 bg-[#041224]">Total</td>
                   <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{fmt(totalRows.primaNeta)}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.presupuesto ? fmt(totalRows.presupuesto) : ""}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.presupuesto ? (totalRowsDif < 0 ? `(${fmt(Math.abs(totalRowsDif))})` : fmt(totalRowsDif)) : ""}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRowsDifPct ? `${totalRowsDifPct}%` : ""}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.pnAnioAnt ? fmt(totalRows.pnAnioAnt) : ""}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.pnAnioAnt ? (totalRowsDifYoy < 0 ? `(${fmt(Math.abs(totalRowsDifYoy))})` : fmt(totalRowsDifYoy)) : ""}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRowsDifYoyPct ? `${totalRowsDifYoyPct}%` : ""}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.pendiente ? fmt(totalRows.pendiente) : ""}</td>
+                  {hasPresupuesto && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.presupuesto ? fmt(totalRows.presupuesto) : ""}</td>}
+                  {hasDiferencia && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.presupuesto ? (totalRowsDif < 0 ? `(${fmt(Math.abs(totalRowsDif))})` : fmt(totalRowsDif)) : ""}</td>}
+                  {hasPctDifPpto && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRowsDifPct ? `${totalRowsDifPct}%` : ""}</td>}
+                  {hasPnAnioAnt && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.pnAnioAnt ? fmt(totalRows.pnAnioAnt) : ""}</td>}
+                  {hasDifYoY && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.pnAnioAnt ? (totalRowsDifYoy < 0 ? `(${fmt(Math.abs(totalRowsDifYoy))})` : fmt(totalRowsDifYoy)) : ""}</td>}
+                  {hasPctDifYoY && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRowsDifYoyPct ? `${totalRowsDifYoyPct}%` : ""}</td>}
+                  {hasPendiente && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.pendiente ? fmt(totalRows.pendiente) : ""}</td>}
                 </tr>
               </>
             )}
