@@ -883,8 +883,8 @@ function TablaDetalleContent() {
         )}
       </div>
 
-      {/* DESKTOP TABLE VIEW — Abraham: scroll interno max-height: 500px, sticky header + sticky first column */}
-      <div ref={tableRef} className="hidden md:block bi-card overflow-hidden overflow-x-auto max-h-[500px] overflow-y-auto w-full">
+      {/* DESKTOP TABLE VIEW — Abraham: scroll interno max-height: 70vh, sticky header + sticky first column */}
+      <div ref={tableRef} className="hidden md:block bi-card overflow-hidden overflow-x-auto max-h-[70vh] overflow-y-auto w-full">
         <table className="w-full text-xs">
           <thead className="sticky top-0 z-20">
             {drillLevel === "linea" ? (
