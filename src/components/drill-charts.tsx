@@ -25,7 +25,7 @@ function fmtFull(v: number) {
 }
 
 // Brand palette — high-contrast colors for maximum distinction between neighbors
-const COLORS = ['#041224', '#E62800', '#059669', '#1565C0', '#FF8F00', '#7E57C2', '#00897B', '#D81B60', '#FFB300', '#78909C', '#5C6BC0', '#8D6E63']
+const COLORS = ['#041224', '#E62800', '#3B82F6', '#1565C0', '#FF8F00', '#7E57C2', '#00897B', '#D81B60', '#FFB300', '#78909C', '#5C6BC0', '#8D6E63']
 
 // Donut chart using SVG
 function DonutChart({ data, total, label }: { data: { name: string; value: number; color: string }[]; total: number; label: string }) {
@@ -90,13 +90,13 @@ function HBarChart({ data, maxValue }: { data: { name: string; value: number; pc
               }}
             >
               {d.pct >= 8 && (
-                <span className="text-[12px] text-white font-bold px-2 whitespace-nowrap">
+                <span className="text-[13px] text-white font-bold px-2 whitespace-nowrap">
                   {fmt(d.value)}
                 </span>
               )}
             </div>
             {d.pct < 8 && (
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[12px] text-gray-500 font-medium">
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[13px] text-gray-500 font-bold">
                 {fmt(d.value)}
               </span>
             )}
@@ -252,7 +252,7 @@ export function DrillCharts({ rows, levelLabel, loading }: DrillChartsProps) {
             {/* Legend */}
             <div className="mt-2 flex flex-col gap-1">
               {donutData.slice(0, 6).map((d, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-[12px]">
+                <div key={i} className="flex items-center gap-1.5 text-[13px]">
                   <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: d.color }} />
                   <span className="text-gray-600 truncate max-w-[110px]" title={d.name}>{d.name}</span>
                 </div>

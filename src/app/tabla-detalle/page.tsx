@@ -961,7 +961,7 @@ function TablaDetalleContent() {
                     : l.primaNeta >= l.pnAnioAnt
                     ? "text-amber-500"
                     : "text-[#E62800]"
-                  const rowBg = idx % 2 === 1 ? "bg-[#F7F8F9]" : "bg-white"
+                  const rowBg = idx % 2 === 1 ? "bg-[#E5E7E9]/30" : "bg-white"
                   return (
                     <tr key={l.linea} id={toSlug(l.linea)} className={`group border-b border-[#F0F0F0] cursor-pointer transition-all duration-150 hover:bg-[#FFF5F5] ${rowBg}`}
                       onClick={() => drill("gerencia", l.linea, { linea: l.linea })}>
@@ -1002,7 +1002,7 @@ function TablaDetalleContent() {
                 {filteredPolizas.length === 0 ? (
                   <tr><td colSpan={7} className="px-3 py-8 text-center text-[#888]">Datos en integración</td></tr>
                 ) : filteredPolizas.map((p, idx) => {
-                  const rowBg = idx % 2 === 1 ? "bg-[#F7F8F9]" : "bg-white"
+                  const rowBg = idx % 2 === 1 ? "bg-[#E5E7E9]/30" : "bg-white"
                   return (
                     <tr key={`${p.documento}-${idx}`} className={`group border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${rowBg}`}>
                       <td className={`px-3 py-3 font-medium text-sm text-[#111] text-left sticky left-0 z-10 ${rowBg} group-hover:bg-[#FFF5F5]`}>{p.documento}</td>
@@ -1076,7 +1076,7 @@ function TablaDetalleContent() {
                         <td className={`px-3 py-3 text-center tabular-nums text-sm font-medium ${group.pctDifYoY !== null && group.pctDifYoY < 0 ? "text-[#E62800]" : group.pctDifYoY !== null && group.pctDifYoY > 0 ? "text-[#059669]" : ""}`}>
                           {group.pctDifYoY !== null && `${group.pctDifYoY > 0 ? "+" : ""}${group.pctDifYoY}%`}
                         </td>
-                        <td className="px-3 py-3 text-center tabular-nums text-sm text-gray-500 font-medium">
+                        <td className="px-3 py-3 text-center tabular-nums text-sm text-gray-600 font-medium">
                           {group.totalPendiente !== null && fmt(group.totalPendiente)}
                         </td>
                       </tr>
@@ -1093,7 +1093,7 @@ function TablaDetalleContent() {
                               ? "text-amber-500"
                               : "text-[#E62800]")
                           : (v.diferencia !== null && v.diferencia < 0 ? "text-[#E62800]" : "")
-                        const vRowBg = isOtros ? "bg-gray-100" : vIdx % 2 === 1 ? "bg-[#F7F8F9]" : "bg-white"
+                        const vRowBg = isOtros ? "bg-gray-100" : vIdx % 2 === 1 ? "bg-[#E5E7E9]/30" : "bg-white"
                         return (
                           <tr
                             key={v.vendedor}
@@ -1125,7 +1125,7 @@ function TablaDetalleContent() {
                             <td className={`px-3 py-3 text-center tabular-nums text-sm font-medium ${v.pctDifYoY !== null && v.pctDifYoY < 0 ? "text-[#E62800]" : v.pctDifYoY !== null && v.pctDifYoY > 0 ? "text-[#059669]" : ""}`}>
                               {v.pctDifYoY !== null && `${v.pctDifYoY > 0 ? "+" : ""}${v.pctDifYoY}%`}
                             </td>
-                            <td className="px-3 py-3 text-center tabular-nums text-sm text-gray-500 font-medium">
+                            <td className="px-3 py-3 text-center tabular-nums text-sm text-gray-600 font-medium">
                               {v.pendiente !== null && fmt(v.pendiente)}
                             </td>
                           </tr>
@@ -1197,7 +1197,7 @@ function TablaDetalleContent() {
                         : "text-[#E62800]")
                     : (r.diferencia !== null && r.diferencia < 0 ? "text-[#E62800]" : "")
 
-                  const rRowBg = isOtros ? "bg-gray-100" : idx % 2 === 1 ? "bg-[#F7F8F9]" : "bg-white"
+                  const rRowBg = isOtros ? "bg-gray-100" : idx % 2 === 1 ? "bg-[#E5E7E9]/30" : "bg-white"
                   return (
                     <tr key={r.name}
                       className={`group border-b border-[#F0F0F0] ${nextLevel ? "cursor-pointer" : ""} transition-all duration-150 ${rRowBg} hover:bg-[#FFF5F5]`}
