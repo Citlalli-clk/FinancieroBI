@@ -243,7 +243,7 @@ export default function AseguradorasPage() {
                   {displayRows.map((a, i) => {
                     const isOtros = a.aseguradora.startsWith("Otros (")
                     return (
-                      <tr key={a.aseguradora} className={`border-b border-[#E5E7EB] hover:bg-[#FFF5F5] transition-colors ${isOtros ? "bg-gray-100" : i % 2 === 1 ? "bg-[#F7F8F9]" : "bg-white"}`}>
+                      <tr key={a.aseguradora} className={`border-b border-[#E5E7EB] hover:bg-[#FFF5F5] transition-colors ${isOtros ? "bg-gray-100" : i % 2 === 1 ? "bg-[#E5E7E9]/30" : "bg-white"}`}>
                         <td className="px-2 py-2 text-center text-sm text-gray-800 tabular-nums">{i + 1}</td>
                         <td className="px-3 py-2 text-sm font-semibold text-[#111] text-left">{a.aseguradora}</td>
                         <td className="px-3 py-2 text-center">{a.clasificacion ? getClasificacionBadge(a.clasificacion) : <span className="text-gray-300">—</span>}</td>

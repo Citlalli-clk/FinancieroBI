@@ -289,7 +289,7 @@ export default function CompromisosPage() {
                     const semaforoColor = status === 'green' ? 'text-[#059669]' : status === 'yellow' ? 'text-amber-500' : 'text-[#E62800]'
                     const diferencia = r.primaActual - r.meta
                     return (
-                      <tr key={r.vendedor} className={`vendedor-row border-b border-[#E5E7EB] ${idx % 2 === 1 ? 'bg-[#F7F8F9]' : 'bg-white'}`}>
+                      <tr key={r.vendedor} className={`vendedor-row border-b border-[#E5E7EB] ${idx % 2 === 1 ? 'bg-[#E5E7E9]/30' : 'bg-white'}`}>
                         <td className="px-2 py-2 text-left text-sm font-semibold text-[#111]">{r.vendedor}</td>
                         <td className="px-2 py-2 text-center text-sm text-gray-600 font-bold tabular-nums">{fmt(r.meta)}</td>
                         <td className="px-2 py-2 text-center text-sm font-bold tabular-nums">{fmt(r.primaActual)}</td>
@@ -344,7 +344,7 @@ export default function CompromisosPage() {
                   {[...data].sort((a,b) => b.primaActual - a.primaActual).slice(0, 10).map((r, i) => {
                     const status = semaforoStatus(r.primaActual, r.meta * 0.8, r.meta)
                     return (
-                      <tr key={r.vendedor} className={`border-b border-[#E5E7EB] ${i % 2 === 1 ? 'bg-[#F7F8F9]' : 'bg-white'}`}>
+                      <tr key={r.vendedor} className={`border-b border-[#E5E7EB] ${i % 2 === 1 ? 'bg-[#E5E7E9]/30' : 'bg-white'}`}>
                         <td className="px-2 py-2 text-center text-sm tabular-nums text-gray-500">{i + 1}</td>
                         <td className="px-2 py-2 text-left text-sm font-semibold text-[#111]">{shortName(r.vendedor)}</td>
                         <td className="px-2 py-2 text-center text-sm font-bold tabular-nums">{fmt(r.primaActual)}</td>

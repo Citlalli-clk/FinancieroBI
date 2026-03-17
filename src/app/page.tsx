@@ -190,7 +190,7 @@ export default function Home() {
                       const link = LINEA_LINKS[l.nombre]
                       const diffColor = diff < 0 ? "text-[#E62800]" : "text-[#059669]"
                       return (
-                        <tr key={l.nombre} className={`cursor-pointer transition-colors hover:bg-blue-50 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/70"}`}>
+                        <tr key={l.nombre} className={`cursor-pointer transition-colors hover:bg-blue-50 ${i % 2 === 0 ? "bg-white" : "bg-[#E5E7E9]/30"}`}>
                           <td className="px-2 py-2 text-sm font-semibold whitespace-nowrap text-gray-900">
                             {link ? <Link href={link} className="hover:underline text-gray-900">{l.nombre}</Link> : l.nombre}
                           </td>

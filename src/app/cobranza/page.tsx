@@ -361,7 +361,7 @@ export default function CobranzaPage() {
               {ramos.map(r => <td key={r.nombre} className="px-3 py-2 text-center text-sm font-bold tabular-nums">{fmt(r.pnEfectuada)}</td>)}
               <td className="px-3 py-2 text-center text-sm font-bold tabular-nums">{fmt(totalPN)}</td>
             </tr>
-            <tr className="border-b border-[#E5E7EB] bg-[#F7F8F9] hover:bg-[#FFF5F5] transition-colors">
+            <tr className="border-b border-[#E5E7EB] bg-[#E5E7E9]/30 hover:bg-[#FFF5F5] transition-colors">
               <td className="px-3 py-2 text-sm font-semibold text-[#041224]">% PN efectuada</td>
               {ramos.map(r => <td key={r.nombre} className="px-3 py-2 text-center text-sm font-bold text-[#6B7280] tabular-nums">{totalPN > 0 ? ((r.pnEfectuada / totalPN) * 100).toFixed(2) : 0}%</td>)}
               <td className="px-3 py-2 text-center text-sm font-bold tabular-nums">100%</td>
@@ -477,7 +477,7 @@ export default function CobranzaPage() {
                 const pctConvValue = c.convenio > 0 ? ((c.primaNeta / c.convenio - 1) * 100).toFixed(2) : "0.00"
                 const pctAAValue = c.pnAA > 0 ? ((c.primaNeta / c.pnAA - 1) * 100).toFixed(2) : "0.00"
                 const isQualitas = c.nombre === "QUALITAS"
-                const rowBg = isQualitas ? "bg-[#F0FDF4]" : idx % 2 === 0 ? "bg-white" : "bg-[#F7F8F9]"
+                const rowBg = isQualitas ? "bg-[#F0FDF4]" : idx % 2 === 0 ? "bg-white" : "bg-[#E5E7E9]/30"
                 return (
                   <tr key={c.nombre} className={`group hover:bg-[#FFF5F5] transition-colors ${rowBg}`}>
                     <td className={`px-3 py-2 text-sm font-semibold text-[#041224] border-b border-[#E5E7EB] ${rowBg} group-hover:bg-[#FFF5F5] transition-colors`}>{c.nombre}</td>

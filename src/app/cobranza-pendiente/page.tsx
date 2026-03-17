@@ -109,7 +109,7 @@ export default function CobranzaPendientePage() {
                 <tr
                   key={i}
                   className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] transition-colors ${
-                    i % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white"
+                    i % 2 === 1 ? "bg-[#E5E7E9]/30" : "bg-white"
                   }`}
                 >
                   <td className="px-2 py-1.5 text-xs font-semibold text-[#111]">{r.poliza}</td>

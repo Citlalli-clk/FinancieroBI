@@ -118,7 +118,7 @@ export default function CobranzaDiaPage() {
                 const pct = r.meta_dia > 0 ? Math.round((r.prima_cobrada / r.meta_dia) * 100) : 0
                 const neg = r.diferencia < 0
                 return (
-                  <tr key={i} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${i % 2 === 1 ? "bg-[#FAFAFA]" : ""}`}>
+                  <tr key={i} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${i % 2 === 1 ? "bg-[#E5E7E9]/30" : ""}`}>
                     <td className="px-2 py-1.5 text-xs text-gray-600">{r.fecha}</td>
                     <td className="px-2 py-1.5 text-xs font-semibold text-[#111]">{r.gerencia}</td>
                     <td className="px-2 py-3 text-right text-sm font-medium tabular-nums">{fmt(r.prima_cobrada)}</td>

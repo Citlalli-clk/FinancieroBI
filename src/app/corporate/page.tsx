@@ -430,7 +430,7 @@ export default function CorporatePage() {
                 {filteredPolizas.length === 0 ? (
                   <tr><td colSpan={7} className="px-3 py-8 text-center text-[#888]">Datos en integración</td></tr>
                 ) : filteredPolizas.map((p, idx) => (
-                  <tr key={`${p.documento}-${idx}`} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${idx % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"}`}>
+                  <tr key={`${p.documento}-${idx}`} className={`border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${idx % 2 === 1 ? "bg-[#E5E7E9]/30" : "bg-white"}`}>
                     <td className="px-3 py-1.5 text-xs font-semibold text-[#111] text-left">{p.documento}</td>
                     <td className="px-3 py-1.5 text-xs text-[#333] text-left">{p.aseguradora}</td>
                     <td className="px-3 py-1.5 text-xs text-[#333] text-left">{p.ramo}</td>
@@ -481,7 +481,7 @@ export default function CorporatePage() {
 
                   return (
                     <tr key={r.name}
-                      className={`group border-b border-[#F0F0F0] ${nextLevel ? "cursor-pointer" : ""} transition-all duration-150 ${isOtros ? "bg-gray-100" : idx % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white"} hover:bg-[#FFF5F5]`}
+                      className={`group border-b border-[#F0F0F0] ${nextLevel ? "cursor-pointer" : ""} transition-all duration-150 ${isOtros ? "bg-gray-100" : idx % 2 === 1 ? "bg-[#E5E7E9]/30" : "bg-white"} hover:bg-[#FFF5F5]`}
                       onClick={() => nextLevel && selKey && drill(nextLevel, r.name, { ...sel, [selKey]: r.name })}>
                       <td className="px-1 py-3 text-center w-6">
                         {nextLevel && <ChevronRight className="w-3.5 h-3.5 text-[#E62800] inline transition-transform group-hover:scale-110 group-hover:translate-x-0.5" />}
