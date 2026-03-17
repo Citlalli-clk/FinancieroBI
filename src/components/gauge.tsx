@@ -15,7 +15,7 @@ interface GaugeProps {
 export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, cumplimiento = 0, crecimiento = 0 }: GaugeProps) {
   const uniqueId = useId()
   const W = 860
-  const H = 800 // Increased height for more space below gauge
+  const H = 520
   const cx = W / 2
   const cy = 390
 
@@ -98,15 +98,6 @@ export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, c
   const tickR1 = outerR + 2
   const tickR2 = outerR + 12
 
-  // Rectangle badge dimensions - wide, shorter, spanning the width
-  const rectWidth = 340
-  const rectHeight = 80
-  const rectY = cy + 180 // Position below gauge
-  const rectGap = 30 // Gap between the two rectangles
-  const rectLX = cx - rectWidth - rectGap / 2 // Left rectangle starts here
-  const rectRX = cx + rectGap / 2 // Right rectangle starts here
-  const rectRadius = 12 // Rounded corners
-
   const content = (
     <div style={{ width: "100%", position: "relative" }}>
       <svg
@@ -166,61 +157,6 @@ export function Gauge({ value, prevYear = 0, budget = 129.5, clickable = true, c
           ${value.toFixed(1)}M
         </text>
 
-        {/* Left rectangle: Cumplimiento de Presupuesto */}
-        <rect
-          x={rectLX}
-          y={rectY}
-          width={rectWidth}
-          height={rectHeight}
-          rx={rectRadius}
-          ry={rectRadius}
-          fill="#E62800"
-        />
-        <text
-          x={rectLX + rectWidth / 2}
-          y={rectY + 30}
-          fontSize="18" fontWeight="600" fill="rgba(255,255,255,0.9)"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
-        >
-          Cumplimiento de Presupuesto
-        </text>
-        <text
-          x={rectLX + rectWidth / 2}
-          y={rectY + 62}
-          fontSize="34" fontWeight="900" fill="white"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
-          style={{ fontFeatureSettings: "'tnum'" }}
-        >
-          {cumplimiento}%
-        </text>
-
-        {/* Right rectangle: Crecimiento */}
-        <rect
-          x={rectRX}
-          y={rectY}
-          width={rectWidth}
-          height={rectHeight}
-          rx={rectRadius}
-          ry={rectRadius}
-          fill={crecimiento < 0 ? '#E62800' : '#059669'}
-        />
-        <text
-          x={rectRX + rectWidth / 2}
-          y={rectY + 30}
-          fontSize="18" fontWeight="600" fill="rgba(255,255,255,0.9)"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
-        >
-          Crecimiento
-        </text>
-        <text
-          x={rectRX + rectWidth / 2}
-          y={rectY + 62}
-          fontSize="34" fontWeight="900" fill="white"
-          textAnchor="middle" fontFamily="Calibri, Arial, sans-serif"
-          style={{ fontFeatureSettings: "'tnum'" }}
-        >
-          {crecimiento < 0 ? '-' : ''}{Math.abs(crecimiento)}%
-        </text>
       </svg>
     </div>
   )
