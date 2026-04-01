@@ -1,5 +1,21 @@
 import { supabase } from "./supabase"
 
+// Helper: fetch ALL rows from a query using pagination (Supabase caps at ~1000 per request)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchAll(queryBuilder: any, pageSize = 1000): Promise<Record<string, unknown>[]> {
+  const allRows: Record<string, unknown>[] = []
+  let offset = 0
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data, error } = await queryBuilder.range(offset, offset + pageSize - 1)
+    if (error || !data || data.length === 0) break
+    allRows.push(...(data as Record<string, unknown>[]))
+    if (data.length < pageSize) break // last page
+    offset += pageSize
+  }
+  return allRows
+}
+
 // ============================================================
 // RBAC — Role-Based Access Control (preparation, always returns true)
 // user_role: 'director' | 'gerente' | 'vendedor' | 'admin'
@@ -84,12 +100,11 @@ export async function getLineasNegocio(periodo?: number, año?: string): Promise
     if (periodo) query = query.eq("mes", periodo)
     if (año) query = query.eq("anio", parseInt(año))
 
-    // Supabase default limit is 1000 — we need ALL rows for accurate aggregation
-    const { data, error } = await query.limit(50000)
-    if (error || !data?.length) return null
+    // Use pagination to fetch ALL rows for accurate aggregation
+    const allData = await fetchAll(query)
+    if (!allData.length) return null
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const grouped = groupBySum(data as any[], "LBussinesNombre")
+    const grouped = groupBySum(allData, "LBussinesNombre")
 
     return Object.entries(grouped)
       .map(([linea, prima]) => ({ linea, primaNeta: Math.round(prima) }))
@@ -121,20 +136,16 @@ export async function getLineasWithYoY(
       if (periodos && periodos.length > 0) {
         q = q.in("mes", periodos)
       }
-      return q.limit(50000)
+      return q
     }
 
-    const [currentRes, priorRes] = await Promise.all([
-      buildQuery(currentYear),
-      buildQuery(priorYear),
+    const [currentRows, priorRows] = await Promise.all([
+      fetchAll(buildQuery(currentYear)),
+      fetchAll(buildQuery(priorYear)),
     ])
 
-    if (currentRes.error && priorRes.error) return null
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const groupedCurrent = currentRes.data ? groupBySum(currentRes.data as any[], "LBussinesNombre") : {}
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const groupedPrior = priorRes.data ? groupBySum(priorRes.data as any[], "LBussinesNombre") : {}
+    const groupedCurrent = groupBySum(currentRows, "LBussinesNombre")
+    const groupedPrior = groupBySum(priorRows, "LBussinesNombre")
 
     // Merge all líneas from both years
     const allLineas = new Set([...Object.keys(groupedCurrent), ...Object.keys(groupedPrior)])
