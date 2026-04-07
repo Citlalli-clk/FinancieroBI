@@ -1,11 +1,9 @@
 import { createClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
 
-// Server-side Supabase client with service_role key (bypasses row limits)
-const supabase = createClient(
-  "https://ktqelgafkywncetxiosd.supabase.co",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0cWVsZ2Fma3l3bmNldHhpb3NkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTQ1NTkzNSwiZXhwIjoyMDg3MDMxOTM1fQ.LpqL_ufAcygIc8CWs8W_cmTG0bnLR327JxQZVmL3WlI"
-)
+// Server-side Supabase client with service_role key
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 function calcPrima(row: Record<string, unknown>): number {
   const prima = (row.PrimaNeta as number) || 0
@@ -14,31 +12,67 @@ function calcPrima(row: Record<string, unknown>): number {
   return (prima - desc) * tc
 }
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const year = parseInt(searchParams.get("year") || "2026")
-  const mesesParam = searchParams.get("meses") // comma-separated: "1,2,3"
-  const meses = mesesParam ? mesesParam.split(",").map(Number) : null
+async function fetchAllDashboardRows(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  yr: number,
+  meses: number[]
+): Promise<Record<string, unknown>[]> {
+  const allRows: Record<string, unknown>[] = []
+  const pageSize = 1000
+  let from = 0
+  const maxRows = 300000 // safety cap
 
-  try {
-    // Fetch current year + prior year in parallel using service_role (no 1000 row limit)
-    const buildQuery = (yr: number) => {
-      let q = supabase
-        .from("dashboard_data")
-        .select("LBussinesNombre, PrimaNeta, TCPago, Descuento")
-        .eq("anio", yr)
-      if (meses && meses.length > 0) {
-        q = q.in("mes", meses)
-      }
-      return q.limit(50000) // service_role allows this
+  while (from < maxRows) {
+    const to = from + pageSize - 1
+    let q = supabase
+      .from("dashboard_data")
+      .select("LBussinesNombre, PrimaNeta, TCPago, Descuento")
+      .eq("anio", yr)
+
+    if (meses.length > 0) {
+      q = q.in("mes", meses)
     }
 
-    const [currentRes, priorRes] = await Promise.all([
-      buildQuery(year),
-      buildQuery(year - 1),
+    const { data, error } = await q.range(from, to)
+    if (error) {
+      throw new Error(`Supabase page error (year=${yr}, from=${from}): ${error.message}`)
+    }
+
+    if (!data || data.length === 0) break
+
+    allRows.push(...(data as Record<string, unknown>[]))
+    if (data.length < pageSize) break
+    from += pageSize
+  }
+
+  return allRows
+}
+
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const year = parseInt(searchParams.get("year") || "2026", 10)
+  const mesesParam = searchParams.get("meses") // comma-separated: "1,2,3"
+  const meses = mesesParam
+    ? mesesParam
+        .split(",")
+        .map((m) => parseInt(m, 10))
+        .filter((m) => Number.isFinite(m) && m >= 1 && m <= 12)
+    : []
+
+  try {
+    if (!supabaseUrl || !serviceRoleKey) {
+      return NextResponse.json({ error: "Supabase server env not configured" }, { status: 500 })
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey)
+
+    // Fetch current year + prior year with pagination (avoids row truncation)
+    const [currentRows, priorRows] = await Promise.all([
+      fetchAllDashboardRows(supabase, year, meses),
+      fetchAllDashboardRows(supabase, year - 1, meses),
     ])
 
-    // Aggregate by LBussinesNombre
     const groupBy = (rows: Record<string, unknown>[]) => {
       const grouped: Record<string, number> = {}
       for (const row of rows) {
@@ -48,21 +82,24 @@ export async function GET(request: NextRequest) {
       return grouped
     }
 
-    const currentGrouped = currentRes.data ? groupBy(currentRes.data as Record<string, unknown>[]) : {}
-    const priorGrouped = priorRes.data ? groupBy(priorRes.data as Record<string, unknown>[]) : {}
+    const currentGrouped = groupBy(currentRows)
+    const priorGrouped = groupBy(priorRows)
 
     const allLineas = new Set([...Object.keys(currentGrouped), ...Object.keys(priorGrouped)])
 
-    const result = Array.from(allLineas).map(nombre => ({
-      nombre,
-      primaNeta: Math.round(currentGrouped[nombre] || 0),
-      anioAnterior: Math.round(priorGrouped[nombre] || 0),
-    })).sort((a, b) => b.primaNeta - a.primaNeta)
+    const result = Array.from(allLineas)
+      .map((nombre) => ({
+        nombre,
+        primaNeta: Math.round(currentGrouped[nombre] || 0),
+        anioAnterior: Math.round(priorGrouped[nombre] || 0),
+      }))
+      .sort((a, b) => b.primaNeta - a.primaNeta)
 
     return NextResponse.json(result, {
-      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" }
+      headers: { "Cache-Control": "no-store" },
     })
   } catch (err) {
-    return NextResponse.json({ error: "Failed to fetch" }, { status: 500 })
+    const message = err instanceof Error ? err.message : "Unknown error"
+    return NextResponse.json({ error: "Failed to fetch", detail: message }, { status: 500 })
   }
 }
