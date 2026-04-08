@@ -686,23 +686,67 @@ export async function getRamos(
   año?: string
 ): Promise<{ ramo: string; primaNeta: number; polizas: number }[] | null> {
   try {
-    const makeQuery = () => {
-      let q = supabase
-        .from("dashboard_data")
-        .select("RamosNombre, PrimaNeta, TCPago, Descuento, FLiquidacion")
-      if (periodo) q = q.eq("mes", periodo)
-      if (año) q = q.eq("anio", parseInt(año))
-      return q
+    const months = periodo ? monthNamesFromPeriodos([periodo]) : []
+
+    let probe = supabase
+      .schema("bi_dashboard")
+      .from("fact_primas")
+      .select("*")
+
+    if (año) probe = probe.eq("año", parseInt(año))
+    if (months.length > 0) probe = probe.in("mes", months)
+
+    const { data: probeData, error: probeError } = await probe.limit(1)
+    if (probeError || !probeData?.length) return null
+
+    // Prefer explicit ramo fields from bi_dashboard.fact_primas.
+    const ramoCandidates = ["ramo", "ramos_nombre", "ramo_nombre", "RamosNombre", "dim_ramo", "ramo_id"]
+    const probeRow = (probeData[0] || {}) as Record<string, unknown>
+    const ramoField = ramoCandidates.find((field) => Object.prototype.hasOwnProperty.call(probeRow, field))
+    if (!ramoField) return null
+
+    let query = supabase
+      .schema("bi_dashboard")
+      .from("fact_primas")
+      .select(`${ramoField}, prima_neta_cobrada`)
+
+    if (año) query = query.eq("año", parseInt(año))
+    if (months.length > 0) query = query.in("mes", months)
+
+    const { data, error } = await query
+    if (error || !data?.length) return null
+
+    // Resolve ramo_id -> nombre when the dimensional table is accessible.
+    const ramoNameById: Record<string, string> = {}
+    if (ramoField === "ramo_id") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const ids = Array.from(new Set((data as any[]).map((row) => Number(row.ramo_id)).filter((id) => Number.isFinite(id) && id > 0)))
+      if (ids.length > 0) {
+        const { data: dimRamos } = await supabase
+          .schema("bi_dashboard")
+          .from("dim_ramo")
+          .select("id, nombre")
+          .in("id", ids)
+
+        if (dimRamos?.length) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          for (const row of dimRamos as any[]) {
+            ramoNameById[String(row.id)] = String(row.nombre || `Ramo ${row.id}`)
+          }
+        }
+      }
     }
 
-    const allData = await fetchAll(makeQuery)
-    if (!allData.length) return null
-
     const grouped: Record<string, { prima: number; count: number }> = {}
-    for (const row of allData) {
-      const ramo = (row.RamosNombre as string) || "Otros"
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const row of data as any[]) {
+      const raw = row[ramoField]
+      let ramo = raw != null && String(raw).trim() ? String(raw) : "Sin ramo"
+      if (ramoField === "ramo_id") {
+        ramo = ramoNameById[String(raw)] || `Ramo ${String(raw)}`
+      }
       if (!grouped[ramo]) grouped[ramo] = { prima: 0, count: 0 }
-      grouped[ramo].prima += calcPrima(row)
+      grouped[ramo].prima += Number(row.prima_neta_cobrada) || 0
       grouped[ramo].count += 1
     }
 
