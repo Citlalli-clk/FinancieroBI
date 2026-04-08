@@ -52,9 +52,7 @@ export function hasPermission(_user: AppUser | null, _resource: string): boolean
 }
 
 // ============================================================
-// Primary source is being migrated to bi_dashboard.* tables.
-// Some legacy drilldown functions still read from dashboard_data
-// until full table-level replacement is completed.
+// Primary source: bi_dashboard.* tables (real data only).
 // ============================================================
 
 export interface LineaRow {
@@ -463,17 +461,27 @@ export async function getRankedVendedores(
   año?: string
 ): Promise<{ vendedor: string; primaNeta: number }[] | null> {
   try {
-    const makeQuery = () => {
-      let q = supabase
-        .from("dashboard_data")
-        .select("VendNombre, PrimaNeta, TCPago, Descuento, FLiquidacion")
-      if (periodo) q = q.eq("mes", periodo)
-      if (año) q = q.eq("anio", parseInt(año))
-      return q
+    const months = periodo ? monthNamesFromPeriodos([periodo]) : []
+
+    let query = supabase
+      .schema("bi_dashboard")
+      .from("fact_primas")
+      .select("vendedor, prima_neta_cobrada")
+      .not("vendedor", "is", null)
+
+    if (año) query = query.eq("año", parseInt(año))
+    if (months.length > 0) query = query.in("mes", months)
+
+    const { data, error } = await query.limit(10000)
+    if (error || !data?.length) return null
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const grouped: Record<string, number> = {}
+    for (const row of data as any[]) {
+      const vendedor = String(row.vendedor || "Sin vendedor")
+      grouped[vendedor] = (grouped[vendedor] || 0) + (Number(row.prima_neta_cobrada) || 0)
     }
-    const allData = await fetchAll(makeQuery)
-    if (!allData.length) return null
-    const grouped = groupBySum(allData, "VendNombre")
+
     return Object.entries(grouped)
       .map(([vendedor, prima]) => ({ vendedor, primaNeta: Math.round(prima) }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
@@ -486,42 +494,29 @@ export async function getRankedVendedores(
 export async function getRankedAseguradoras(
   periodo?: number,
   año?: string,
-  clasificacion?: string
+  _clasificacion?: string
 ): Promise<{ aseguradora: string; primaNeta: number }[] | null> {
   try {
-    const makeQuery = () => {
-      let q = supabase
-        .from("dashboard_data")
-        .select("CiaAbreviacion, PrimaNeta, TCPago, Descuento, FLiquidacion")
-      if (periodo) q = q.eq("mes", periodo)
-      if (año) q = q.eq("anio", parseInt(año))
-      return q
-    }
-    const allData = await fetchAll(makeQuery)
-    if (!allData.length) return null
-    const grouped = groupBySum(allData, "CiaAbreviacion")
+    const months = periodo ? monthNamesFromPeriodos([periodo]) : []
 
-    // If clasificación filter is set, filter aseguradoras by ClasCia_TXT from catalogos_cias
-    if (clasificacion && clasificacion !== "Todas") {
-      const aseguradoras = Object.keys(grouped)
-      const { data: ciaData } = await supabase
-        .from("catalogos_cias")
-        .select("CiaAbreviacion, ClasCia_TXT")
-        .in("CiaAbreviacion", aseguradoras)
-        .eq("ClasCia_TXT", clasificacion)
+    // bi_dashboard currently does not expose insurer-level dimension.
+    // We use linea_negocio buckets as the ranking source.
+    let query = supabase
+      .schema("bi_dashboard")
+      .from("fact_primas")
+      .select("linea_negocio, prima_neta_cobrada")
 
-      if (ciaData) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const filteredCias = new Set((ciaData as any[]).map(c => c.CiaAbreviacion))
-        const filtered: Record<string, number> = {}
-        for (const [cia, prima] of Object.entries(grouped)) {
-          if (filteredCias.has(cia)) filtered[cia] = prima
-        }
-        return Object.entries(filtered)
-          .map(([aseguradora, prima]) => ({ aseguradora, primaNeta: Math.round(prima) }))
-          .sort((a, b) => b.primaNeta - a.primaNeta)
-      }
-      return []
+    if (año) query = query.eq("año", parseInt(año))
+    if (months.length > 0) query = query.in("mes", months)
+
+    const { data, error } = await query.limit(10000)
+    if (error || !data?.length) return null
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const grouped: Record<string, number> = {}
+    for (const row of data as any[]) {
+      const key = String(row.linea_negocio || "Sin clasificar")
+      grouped[key] = (grouped[key] || 0) + (Number(row.prima_neta_cobrada) || 0)
     }
 
     return Object.entries(grouped)
@@ -807,35 +802,33 @@ export async function getVendedoresByTipo(
   periodo?: number,
   año?: string,
   gerencia?: string,
-  clasificacionAseguradoras?: string[] | null
+  _clasificacionAseguradoras?: string[] | null
 ): Promise<{ tipo: string; vendedores: VendedorByTipoRow[]; total: number }[] | null> {
   try {
-    // Fetch vendedores with tipo from catalogos_agentes
-    // Note: This requires catalogos_agentes table with columns: NombreCompleto, TipoVend_TXT
-    let query = supabase
-      .from("dashboard_data")
-      .select(`
-        VendNombre,
-        PrimaNeta,
-        TCPago,
-        Descuento,
-        FLiquidacion,
-        CiaAbreviacion
-      `)
-      .eq("LBussinesNombre", linea)
+    const months = periodo ? monthNamesFromPeriodos([periodo]) : []
 
-    if (gerencia) query = query.eq("GerenciaNombre", gerencia)
-    if (periodo) query = query.eq("mes", periodo)
-    if (año) query = query.eq("anio", parseInt(año))
-    if (clasificacionAseguradoras?.length) query = query.in("CiaAbreviacion", clasificacionAseguradoras)
+    // Fetch vendedores from bi_dashboard source
+    let query = supabase
+      .schema("bi_dashboard")
+      .from("fact_primas")
+      .select("vendedor, prima_neta_cobrada")
+      .eq("linea_negocio", linea)
+      .not("vendedor", "is", null)
+
+    if (gerencia) query = query.eq("gerencia", gerencia)
+    if (año) query = query.eq("año", parseInt(año))
+    if (months.length > 0) query = query.in("mes", months)
 
     const { data, error } = await query.limit(10000)
-
     if (error || !data?.length) return null
 
     // Group by vendedor first
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const vendedorMap = groupBySum(data as any[], "VendNombre")
+    const vendedorMap: Record<string, number> = {}
+    for (const row of data as any[]) {
+      const vendedor = String(row.vendedor || "Sin vendedor")
+      vendedorMap[vendedor] = (vendedorMap[vendedor] || 0) + (Number(row.prima_neta_cobrada) || 0)
+    }
 
     // Fetch tipo for each vendedor from catalogos_agentes
     const vendedores = Object.keys(vendedorMap)
@@ -894,68 +887,86 @@ export async function getVendedoresWithTipo(
   linea: string,
   periodo?: number,
   año?: string,
-  clasificacionAseguradoras?: string[] | null,
+  _clasificacionAseguradoras?: string[] | null,
   lineaPpto?: number,
   lineaPendiente?: number
 ): Promise<TierGroup[] | null> {
   try {
-    // 1. Fetch full vendedor data (current year)
-    let query = supabase
-      .from("dashboard_data")
-      .select("VendNombre, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
-      .eq("GerenciaNombre", gerencia)
-      .eq("LBussinesNombre", linea)
-      .limit(5000)
+    const months = periodo ? monthNamesFromPeriodos([periodo]) : []
 
-    if (periodo) query = query.eq("mes", periodo)
-    if (año) query = query.eq("anio", parseInt(año))
-    if (clasificacionAseguradoras?.length) query = query.in("CiaAbreviacion", clasificacionAseguradoras)
+    // 1) Current year vendedor data from bi_dashboard
+    let query = supabase
+      .schema("bi_dashboard")
+      .from("fact_primas")
+      .select("vendedor, prima_neta_cobrada")
+      .eq("gerencia", gerencia)
+      .eq("linea_negocio", linea)
+      .not("vendedor", "is", null)
+      .limit(10000)
+
+    if (año) query = query.eq("año", parseInt(año))
+    if (months.length > 0) query = query.in("mes", months)
 
     const { data, error } = await query
     if (error || !data?.length) return null
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const grouped = groupBySum(data as any[], "VendNombre")
+    const grouped: Record<string, number> = {}
+    for (const row of data as any[]) {
+      const vendedor = String(row.vendedor || "Sin vendedor")
+      grouped[vendedor] = (grouped[vendedor] || 0) + (Number(row.prima_neta_cobrada) || 0)
+    }
 
-    // 2. Fetch prior year data for YoY comparison — with fallback strategy
+    // 2) Prior year data for YoY
     const priorYear = año ? String(parseInt(año) - 1) : String(new Date().getFullYear() - 1)
 
-    // First try: fetch prior year with same period filter
     let queryPY = supabase
-      .from("dashboard_data")
-      .select("VendNombre, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
-      .eq("GerenciaNombre", gerencia)
-      .eq("LBussinesNombre", linea)
-      .eq("anio", parseInt(priorYear))
-      .limit(5000)
+      .schema("bi_dashboard")
+      .from("fact_primas")
+      .select("vendedor, prima_neta_cobrada")
+      .eq("gerencia", gerencia)
+      .eq("linea_negocio", linea)
+      .eq("año", parseInt(priorYear))
+      .not("vendedor", "is", null)
+      .limit(10000)
 
-    if (periodo) queryPY = queryPY.eq("mes", periodo)
-    if (clasificacionAseguradoras?.length) queryPY = queryPY.in("CiaAbreviacion", clasificacionAseguradoras)
+    if (months.length > 0) queryPY = queryPY.in("mes", months)
 
     let { data: dataPY } = await queryPY
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let groupedPY = dataPY ? groupBySum(dataPY as any[], "VendNombre") : {}
+    let groupedPY: Record<string, number> = {}
+    if (dataPY && dataPY.length > 0) {
+      for (const row of dataPY as any[]) {
+        const vendedor = String(row.vendedor || "Sin vendedor")
+        groupedPY[vendedor] = (groupedPY[vendedor] || 0) + (Number(row.prima_neta_cobrada) || 0)
+      }
+    }
+
     let pnAnioAntTotal = Object.values(groupedPY).reduce((s, v) => s + v, 0)
 
-    // FALLBACK 1: If period-specific prior year data is empty, try fetching ALL periods of prior year
+    // FALLBACK 1: if period-specific prior year is empty, use full prior year and scale
     if (pnAnioAntTotal === 0 && periodo) {
-      const queryPYFull = supabase
-        .from("dashboard_data")
-        .select("VendNombre, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
-        .eq("GerenciaNombre", gerencia)
-        .eq("LBussinesNombre", linea)
-        .eq("anio", parseInt(priorYear))
-        .limit(10000)
+      const { data: dataPYFull } = await supabase
+        .schema("bi_dashboard")
+        .from("fact_primas")
+        .select("vendedor, prima_neta_cobrada")
+        .eq("gerencia", gerencia)
+        .eq("linea_negocio", linea)
+        .eq("año", parseInt(priorYear))
+        .not("vendedor", "is", null)
+        .limit(20000)
 
-      const { data: dataPYFull } = await queryPYFull
       if (dataPYFull && dataPYFull.length > 0) {
+        groupedPY = {}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        groupedPY = groupBySum(dataPYFull as any[], "VendNombre")
+        for (const row of dataPYFull as any[]) {
+          const vendedor = String(row.vendedor || "Sin vendedor")
+          groupedPY[vendedor] = (groupedPY[vendedor] || 0) + (Number(row.prima_neta_cobrada) || 0)
+        }
+
         pnAnioAntTotal = Object.values(groupedPY).reduce((s, v) => s + v, 0)
-        // Scale the full-year data proportionally to match selected period count
-        // If user selected 1 month, divide by 12 to approximate single-month share
         if (pnAnioAntTotal > 0) {
-          const scaleFactor = 1 / 12 // Approximate: single month vs full year
+          const scaleFactor = 1 / 12
           for (const key of Object.keys(groupedPY)) {
             groupedPY[key] = groupedPY[key] * scaleFactor
           }
@@ -964,7 +975,7 @@ export async function getVendedoresWithTipo(
       }
     }
 
-    // 3. Fetch tier mapping from catalogos_agentes
+    // 3) Fetch tier mapping from catalogos_agentes
     const vendedorNames = Object.keys(grouped)
     const { data: catData } = await supabase
       .from("catalogos_agentes")
@@ -979,11 +990,11 @@ export async function getVendedoresWithTipo(
       }
     }
 
-    // 4. Calculate totals for budget allocation
+    // 4) Calculate totals for budget allocation
     const ppto = lineaPpto ?? 0
     const pendienteTotal = lineaPendiente ?? 0
 
-    // FALLBACK 2: If prior year total is still 0, use CURRENT year total for share calculation
+    // FALLBACK 2: If prior year total is still 0, use CURRENT year share
     const pnCurrentTotal = Object.values(grouped).reduce((s, v) => s + v, 0)
     const useCurrentYearShare = pnAnioAntTotal === 0 && pnCurrentTotal > 0
     const shareTotal = useCurrentYearShare ? pnCurrentTotal : pnAnioAntTotal
@@ -992,14 +1003,12 @@ export async function getVendedoresWithTipo(
     const vendedorCount = vendedorNames.length
     const useEqualDistribution = shareTotal === 0 && ppto > 0 && vendedorCount > 0
 
-    // 5. Build full vendedor rows with all columns and group by tier
     const byTipo: Record<string, VendedorFullRow[]> = {}
 
     for (const [vendedor, primaNeta] of Object.entries(grouped)) {
       const tipo = tipoMap[vendedor] || "Sin clasificar"
       const pnAnioAnt = groupedPY[vendedor] || 0
 
-      // Calculate share based on available data (prior year, current year, or equal)
       let share: number
       if (useEqualDistribution) {
         share = 1 / vendedorCount
@@ -1009,7 +1018,6 @@ export async function getVendedoresWithTipo(
         share = pnAnioAntTotal > 0 ? pnAnioAnt / pnAnioAntTotal : 0
       }
 
-      // Allocate presupuesto based on calculated share
       const presupuesto = ppto > 0 && share > 0 ? Math.round(ppto * share) : (ppto > 0 && useEqualDistribution ? Math.round(ppto / vendedorCount) : null)
       const diferencia = presupuesto !== null && presupuesto > 0 ? Math.round(primaNeta) - presupuesto : null
       const pctDifPpto = presupuesto !== null && presupuesto > 0 && diferencia !== null
@@ -1036,13 +1044,11 @@ export async function getVendedoresWithTipo(
       })
     }
 
-    // 6. Sort vendedores within each tier and calculate tier totals
     const result: TierGroup[] = []
 
     for (const [tipo, vendedores] of Object.entries(byTipo)) {
       vendedores.sort((a, b) => b.primaNeta - a.primaNeta)
 
-      // Calculate tier sums
       const totalPrimaNeta = vendedores.reduce((s, v) => s + v.primaNeta, 0)
       const totalPresupuestoSum = vendedores.reduce((s, v) => s + (v.presupuesto ?? 0), 0)
       const totalPnAnioAntSum = vendedores.reduce((s, v) => s + v.pnAnioAnt, 0)
@@ -1071,9 +1077,7 @@ export async function getVendedoresWithTipo(
       })
     }
 
-    // Sort tiers by total prima descending
     result.sort((a, b) => b.totalPrimaNeta - a.totalPrimaNeta)
-
     return result
   } catch {
     return null
