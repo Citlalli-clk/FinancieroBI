@@ -686,94 +686,26 @@ export async function getRamos(
   año?: string
 ): Promise<{ ramo: string; primaNeta: number; polizas: number }[] | null> {
   try {
-    // Preferred source: bi_dashboard.vw_ramos_prima (materialized by SQL patch in DB).
-    // Expected columns: ramo, prima_oficial, polizas, anio, periodo
-    let viewQuery = supabase
+    // Canonical source (must exist in DB): bi_dashboard.vw_ramos_prima
+    // Columns expected: ramo, prima_oficial, polizas, anio, periodo
+    let query = supabase
       .schema("bi_dashboard")
       .from("vw_ramos_prima")
       .select("ramo, prima_oficial, polizas, anio, periodo")
 
-    if (año) viewQuery = viewQuery.eq("anio", parseInt(año))
-    if (periodo) viewQuery = viewQuery.eq("periodo", periodo)
-
-    const { data: viewData, error: viewError } = await viewQuery
-
-    if (!viewError && viewData?.length) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (viewData as any[])
-        .map((row) => ({
-          ramo: String(row.ramo || "Sin ramo"),
-          primaNeta: Math.round(Number(row.prima_oficial) || 0),
-          polizas: Number(row.polizas) || 0,
-        }))
-        .sort((a, b) => b.primaNeta - a.primaNeta)
-    }
-
-    // Fallback: if view is not yet available, try direct ramo fields in fact_primas.
-    const months = periodo ? monthNamesFromPeriodos([periodo]) : []
-
-    let probe = supabase
-      .schema("bi_dashboard")
-      .from("fact_primas")
-      .select("*")
-
-    if (año) probe = probe.eq("año", parseInt(año))
-    if (months.length > 0) probe = probe.in("mes", months)
-
-    const { data: probeData, error: probeError } = await probe.limit(1)
-    if (probeError || !probeData?.length) return null
-
-    const ramoCandidates = ["ramo", "ramos_nombre", "ramo_nombre", "RamosNombre", "dim_ramo", "ramo_id"]
-    const probeRow = (probeData[0] || {}) as Record<string, unknown>
-    const ramoField = ramoCandidates.find((field) => Object.prototype.hasOwnProperty.call(probeRow, field))
-    if (!ramoField) return null
-
-    let query = supabase
-      .schema("bi_dashboard")
-      .from("fact_primas")
-      .select(`${ramoField}, prima_neta_cobrada`)
-
-    if (año) query = query.eq("año", parseInt(año))
-    if (months.length > 0) query = query.in("mes", months)
+    if (año) query = query.eq("anio", parseInt(año))
+    if (periodo) query = query.eq("periodo", periodo)
 
     const { data, error } = await query
     if (error || !data?.length) return null
 
-    const ramoNameById: Record<string, string> = {}
-    if (ramoField === "ramo_id") {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const ids = Array.from(new Set((data as any[]).map((row) => Number(row.ramo_id)).filter((id) => Number.isFinite(id) && id > 0)))
-      if (ids.length > 0) {
-        const { data: dimRamos } = await supabase
-          .schema("bi_dashboard")
-          .from("dim_ramo")
-          .select("id, nombre")
-          .in("id", ids)
-
-        if (dimRamos?.length) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          for (const row of dimRamos as any[]) {
-            ramoNameById[String(row.id)] = String(row.nombre || `Ramo ${row.id}`)
-          }
-        }
-      }
-    }
-
-    const grouped: Record<string, { prima: number; count: number }> = {}
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const row of data as any[]) {
-      const raw = row[ramoField]
-      let ramo = raw != null && String(raw).trim() ? String(raw) : "Sin ramo"
-      if (ramoField === "ramo_id") {
-        ramo = ramoNameById[String(raw)] || `Ramo ${String(raw)}`
-      }
-      if (!grouped[ramo]) grouped[ramo] = { prima: 0, count: 0 }
-      grouped[ramo].prima += Number(row.prima_neta_cobrada) || 0
-      grouped[ramo].count += 1
-    }
-
-    return Object.entries(grouped)
-      .map(([ramo, d]) => ({ ramo, primaNeta: Math.round(d.prima), polizas: d.count }))
+    return (data as any[])
+      .map((row) => ({
+        ramo: String(row.ramo || "Sin ramo"),
+        primaNeta: Math.round(Number(row.prima_oficial) || 0),
+        polizas: Number(row.polizas) || 0,
+      }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
   } catch {
     return null
