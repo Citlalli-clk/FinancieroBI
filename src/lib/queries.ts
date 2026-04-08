@@ -313,65 +313,38 @@ export async function getGrupos(
   linea: string,
   periodo?: number,
   año?: string,
-  clasificacionAseguradoras?: string[] | null
+  _clasificacionAseguradoras?: string[] | null
 ): Promise<GrupoRow[] | null> {
   try {
-    let query = supabase
-      .from("dashboard_data")
-      .select("Grupo, NombreCompleto, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
-      .eq("VendNombre", vendedor)
-      .eq("GerenciaNombre", gerencia)
-      .eq("LBussinesNombre", linea)
+    const months = periodo ? monthNamesFromPeriodos([periodo]) : []
 
-    if (periodo) query = query.eq("mes", periodo)
-    if (año) query = query.eq("anio", parseInt(año))
-    if (clasificacionAseguradoras?.length) query = query.in("CiaAbreviacion", clasificacionAseguradoras)
+    let query = supabase
+      .schema("bi_dashboard")
+      .from("fact_primas")
+      .select("vendedor, prima_neta_cobrada, año_anterior")
+      .eq("linea_negocio", linea)
+      .eq("gerencia", gerencia)
+      .eq("vendedor", vendedor)
+
+    if (año) query = query.eq("año", parseInt(año))
+    if (months.length > 0) query = query.in("mes", months)
 
     const { data, error } = await query
     if (error || !data?.length) return null
 
-    // Group by Grupo, keep first NombreCompleto
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows = data as any[]
-    const grouped: Record<string, { cliente: string; prima: number }> = {}
-    for (const row of rows) {
-      const g = (row.Grupo as string) || "Sin grupo"
-      const c = (row.NombreCompleto as string) || ""
-      if (!grouped[g]) grouped[g] = { cliente: c, prima: 0 }
-      grouped[g].prima += calcPrima(row)
-    }
+    const primaNeta = rows.reduce((sum, row) => sum + (Number(row.prima_neta_cobrada) || 0), 0)
+    const pnAnioAnt = rows.reduce((sum, row) => sum + (Number(row["año_anterior"]) || 0), 0)
 
-    // Prior year query for YoY
-    const priorYear = año ? String(parseInt(año) - 1) : String(new Date().getFullYear() - 1)
-    let queryPY = supabase
-      .from("dashboard_data")
-      .select("Grupo, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
-      .eq("VendNombre", vendedor)
-      .eq("GerenciaNombre", gerencia)
-      .eq("LBussinesNombre", linea)
-      .eq("anio", parseInt(priorYear))
-
-    if (periodo) queryPY = queryPY.eq("mes", periodo)
-    if (clasificacionAseguradoras?.length) queryPY = queryPY.in("CiaAbreviacion", clasificacionAseguradoras)
-
-    const { data: dataPY } = await queryPY
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const groupedPY: Record<string, number> = {}
-    if (dataPY) {
-      for (const row of dataPY as any[]) {
-        const g = (row.Grupo as string) || "Sin grupo"
-        groupedPY[g] = (groupedPY[g] || 0) + calcPrima(row)
-      }
-    }
-
-    return Object.entries(grouped)
-      .map(([grupo, d]) => ({
-        grupo,
-        cliente: d.cliente,
-        primaNeta: Math.round(d.prima),
-        pnAnioAnt: Math.round(groupedPY[grupo] || 0)
-      }))
-      .sort((a, b) => b.primaNeta - a.primaNeta)
+    return [
+      {
+        grupo: vendedor || "Sin grupo",
+        cliente: vendedor || "",
+        primaNeta: Math.round(primaNeta),
+        pnAnioAnt: Math.round(pnAnioAnt),
+      },
+    ]
   } catch {
     return null
   }
@@ -393,52 +366,38 @@ export async function getClientes(
   linea: string,
   periodo?: number,
   año?: string,
-  clasificacionAseguradoras?: string[] | null
+  _clasificacionAseguradoras?: string[] | null
 ): Promise<ClienteRow[] | null> {
   try {
-    let query = supabase
-      .from("dashboard_data")
-      .select("NombreCompleto, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
-      .eq("Grupo", grupo)
-      .eq("VendNombre", vendedor)
-      .eq("GerenciaNombre", gerencia)
-      .eq("LBussinesNombre", linea)
+    const months = periodo ? monthNamesFromPeriodos([periodo]) : []
+    const vendedorRef = vendedor || grupo
 
-    if (periodo) query = query.eq("mes", periodo)
-    if (año) query = query.eq("anio", parseInt(año))
-    if (clasificacionAseguradoras?.length) query = query.in("CiaAbreviacion", clasificacionAseguradoras)
+    let query = supabase
+      .schema("bi_dashboard")
+      .from("fact_primas")
+      .select("prima_neta_cobrada, año_anterior")
+      .eq("linea_negocio", linea)
+      .eq("gerencia", gerencia)
+      .eq("vendedor", vendedorRef)
+
+    if (año) query = query.eq("año", parseInt(año))
+    if (months.length > 0) query = query.in("mes", months)
 
     const { data, error } = await query
     if (error || !data?.length) return null
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const grouped = groupBySum(data as any[], "NombreCompleto")
+    const rows = data as any[]
+    const primaNeta = rows.reduce((sum, row) => sum + (Number(row.prima_neta_cobrada) || 0), 0)
+    const pnAnioAnt = rows.reduce((sum, row) => sum + (Number(row["año_anterior"]) || 0), 0)
 
-    // Prior year query for YoY
-    const priorYear = año ? String(parseInt(año) - 1) : String(new Date().getFullYear() - 1)
-    let queryPY = supabase
-      .from("dashboard_data")
-      .select("NombreCompleto, PrimaNeta, TCPago, Descuento, FLiquidacion, CiaAbreviacion")
-      .eq("Grupo", grupo)
-      .eq("VendNombre", vendedor)
-      .eq("GerenciaNombre", gerencia)
-      .eq("LBussinesNombre", linea)
-      .eq("anio", parseInt(priorYear))
-
-    if (periodo) queryPY = queryPY.eq("mes", periodo)
-    if (clasificacionAseguradoras?.length) queryPY = queryPY.in("CiaAbreviacion", clasificacionAseguradoras)
-
-    const { data: dataPY } = await queryPY
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const groupedPY = dataPY ? groupBySum(dataPY as any[], "NombreCompleto") : {}
-
-    return Object.entries(grouped)
-      .map(([cliente, prima]) => ({
-        cliente,
-        primaNeta: Math.round(prima),
-        pnAnioAnt: Math.round(groupedPY[cliente] || 0)
-      }))
-      .sort((a, b) => b.primaNeta - a.primaNeta)
+    return [
+      {
+        cliente: grupo || vendedorRef || "Sin cliente",
+        primaNeta: Math.round(primaNeta),
+        pnAnioAnt: Math.round(pnAnioAnt),
+      },
+    ]
   } catch {
     return null
   }
@@ -459,41 +418,38 @@ export interface PolizaRow {
 
 export async function getPolizas(
   cliente: string,
-  grupo: string,
-  vendedor: string,
+  _grupo: string,
+  _vendedor: string,
   gerencia: string,
-  linea: string,
-  periodo?: number,
-  año?: string,
-  clasificacionAseguradoras?: string[] | null
+  _linea: string,
+  _periodo?: number,
+  _año?: string,
+  _clasificacionAseguradoras?: string[] | null
 ): Promise<PolizaRow[] | null> {
   try {
     let query = supabase
-      .from("dashboard_data")
-      .select("Documento, CiaAbreviacion, RamosNombre, Sub_Ramo, FLiquidacion, FLimPago, PrimaNeta, TCPago, Descuento")
-      .eq("NombreCompleto", cliente)
-      .eq("Grupo", grupo)
-      .eq("VendNombre", vendedor)
-      .eq("GerenciaNombre", gerencia)
-      .eq("LBussinesNombre", linea)
+      .schema("bi_dashboard")
+      .from("fact_cobranza_pendiente")
+      .select("poliza, cliente, gerencia, prima_pendiente, fecha_vencimiento, status")
+      .eq("gerencia", gerencia)
 
-    if (periodo) query = query.eq("mes", periodo)
-    if (año) query = query.eq("anio", parseInt(año))
-    if (clasificacionAseguradoras?.length) query = query.in("CiaAbreviacion", clasificacionAseguradoras)
+    if (cliente) query = query.eq("cliente", cliente)
 
-    const { data, error } = await query
+    const { data, error } = await query.limit(500)
     if (error || !data?.length) return null
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (data as any[]).map(row => ({
-      documento: (row.Documento as string) || "",
-      aseguradora: (row.CiaAbreviacion as string) || "",
-      ramo: (row.RamosNombre as string) || "",
-      subramo: (row.Sub_Ramo as string) || "",
-      fechaLiquidacion: (row.FLiquidacion as string) || "",
-      fechaLimPago: (row.FLimPago as string) || "",
-      primaNeta: Math.round(calcPrima(row)),
-    })).sort((a, b) => b.primaNeta - a.primaNeta)
+    return (data as any[])
+      .map((row) => ({
+        documento: (row.poliza as string) || "",
+        aseguradora: (row.status as string) || "",
+        ramo: "",
+        subramo: "",
+        fechaLiquidacion: (row.fecha_vencimiento as string) || "",
+        fechaLimPago: (row.fecha_vencimiento as string) || "",
+        primaNeta: Math.round((row.prima_pendiente as number) || 0),
+      }))
+      .sort((a, b) => b.primaNeta - a.primaNeta)
   } catch {
     return null
   }
@@ -655,49 +611,46 @@ export async function globalSearch(
 ): Promise<SearchResult[]> {
   if (!query || query.length < 2) return []
   try {
-    let q = supabase
-      .from("dashboard_data")
-      .select("LBussinesNombre, GerenciaNombre, VendNombre, NombreCompleto, Grupo, Documento, PrimaNeta, TCPago, Descuento, FLiquidacion")
-      .or(`GerenciaNombre.ilike.%${query}%,VendNombre.ilike.%${query}%,NombreCompleto.ilike.%${query}%,Documento.ilike.%${query}%`)
-    if (periodo) q = q.eq("Periodo", periodo)
-    if (año) q = q.eq("anio", parseInt(año))
-    q = q.limit(100)
+    const search = query.trim().toLowerCase()
+    const months = periodo ? monthNamesFromPeriodos([periodo]) : []
 
-    const { data, error } = await q
+    let q = supabase
+      .schema("bi_dashboard")
+      .from("fact_primas")
+      .select("linea_negocio, gerencia, vendedor, prima_neta_cobrada")
+      .or(`gerencia.ilike.%${query}%,vendedor.ilike.%${query}%,linea_negocio.ilike.%${query}%`)
+
+    if (año) q = q.eq("año", parseInt(año))
+    if (months.length > 0) q = q.in("mes", months)
+
+    const { data, error } = await q.limit(200)
     if (error || !data?.length) return []
 
-    // Deduplicate by type + value
     const seen = new Set<string>()
     const results: SearchResult[] = []
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const row of data as any[]) {
-      const linea = row.LBussinesNombre as string
-      const gerencia = row.GerenciaNombre as string
-      const vendedor = row.VendNombre as string
-      const cliente = row.NombreCompleto as string
-      const doc = row.Documento as string
-      const grupo = row.Grupo as string
-      const prima = calcPrima(row)
+      const linea = (row.linea_negocio as string) || "Sin línea"
+      const gerencia = (row.gerencia as string) || ""
+      const vendedor = (row.vendedor as string) || ""
+      const prima = Math.round((row.prima_neta_cobrada as number) || 0)
 
-      if (gerencia?.toLowerCase().includes(query.toLowerCase()) && !seen.has(`g:${gerencia}`)) {
-        seen.add(`g:${gerencia}`)
-        results.push({ type: "gerencia", value: gerencia, context: { linea }, primaNeta: Math.round(prima) })
+      if (gerencia && gerencia.toLowerCase().includes(search) && !seen.has(`g:${gerencia}:${linea}`)) {
+        seen.add(`g:${gerencia}:${linea}`)
+        results.push({ type: "gerencia", value: gerencia, context: { linea }, primaNeta: prima })
       }
-      if (vendedor?.toLowerCase().includes(query.toLowerCase()) && !seen.has(`v:${vendedor}`)) {
-        seen.add(`v:${vendedor}`)
-        results.push({ type: "vendedor", value: vendedor, context: { linea, gerencia }, primaNeta: Math.round(prima) })
-      }
-      if (cliente?.toLowerCase().includes(query.toLowerCase()) && !seen.has(`c:${cliente}`)) {
-        seen.add(`c:${cliente}`)
-        results.push({ type: "cliente", value: cliente, context: { linea, gerencia, vendedor, grupo }, primaNeta: Math.round(prima) })
-      }
-      if (doc?.toLowerCase().includes(query.toLowerCase()) && !seen.has(`d:${doc}`)) {
-        seen.add(`d:${doc}`)
-        results.push({ type: "poliza", value: doc, context: { linea, gerencia, vendedor, grupo }, primaNeta: Math.round(prima) })
+
+      if (vendedor && vendedor.toLowerCase().includes(search) && !seen.has(`v:${vendedor}:${linea}:${gerencia}`)) {
+        seen.add(`v:${vendedor}:${linea}:${gerencia}`)
+        results.push({ type: "vendedor", value: vendedor, context: { linea, gerencia }, primaNeta: prima })
       }
     }
+
     return results.slice(0, 20)
-  } catch { return [] }
+  } catch {
+    return []
+  }
 }
 
 /**
@@ -733,27 +686,35 @@ export async function getRamos(
   año?: string
 ): Promise<{ ramo: string; primaNeta: number; polizas: number }[] | null> {
   try {
-    const makeQuery = () => {
-      let q = supabase
-        .from("dashboard_data")
-        .select("RamosNombre, PrimaNeta, TCPago, Descuento, FLiquidacion")
-      if (periodo) q = q.eq("mes", periodo)
-      if (año) q = q.eq("anio", parseInt(año))
-      return q
-    }
-    const allData = await fetchAll(makeQuery)
-    if (!allData.length) return null
+    const months = periodo ? monthNamesFromPeriodos([periodo]) : []
+
+    let query = supabase
+      .schema("bi_dashboard")
+      .from("fact_primas")
+      .select("linea_negocio, prima_neta_cobrada")
+      .not("linea_negocio", "is", null)
+
+    if (año) query = query.eq("año", parseInt(año))
+    if (months.length > 0) query = query.in("mes", months)
+
+    const { data, error } = await query
+    if (error || !data?.length) return null
+
     const grouped: Record<string, { prima: number; count: number }> = {}
-    for (const row of allData) {
-      const ramo = (row.RamosNombre as string) || "Otros"
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const row of data as any[]) {
+      const ramo = (row.linea_negocio as string) || "Otros"
       if (!grouped[ramo]) grouped[ramo] = { prima: 0, count: 0 }
-      grouped[ramo].prima += calcPrima(row)
+      grouped[ramo].prima += (row.prima_neta_cobrada as number) || 0
       grouped[ramo].count += 1
     }
+
     return Object.entries(grouped)
       .map(([ramo, d]) => ({ ramo, primaNeta: Math.round(d.prima), polizas: d.count }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 /**
