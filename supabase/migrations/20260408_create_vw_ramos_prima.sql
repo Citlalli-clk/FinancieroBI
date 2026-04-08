@@ -2,10 +2,10 @@
 -- Creates bi_dashboard.vw_ramos_prima with columns:
 --   anio INT, periodo INT (1-12), ramo TEXT, prima_oficial NUMERIC, polizas BIGINT
 --
--- Selection strategy:
--- 1) Prefer bi_dashboard.fact_primas when a ramo column exists directly.
+-- Selection strategy (bi_dashboard ONLY):
+-- 1) Prefer bi_dashboard.fact_primas when a ramo text column exists directly.
 -- 2) Else, use bi_dashboard.fact_primas.ramo_id + bi_dashboard.dim_ramo.nombre.
--- 3) Else (bridge fallback), use public.dashboard_data if available.
+-- 3) Else, fail explicitly so data contract can be fixed upstream.
 
 DO $$
 DECLARE
@@ -14,9 +14,7 @@ DECLARE
   month_col TEXT;
   prima_col TEXT;
   has_dim_ramo BOOLEAN;
-  has_dashboard_data BOOLEAN;
 BEGIN
-  -- Detect year/month columns on bi_dashboard.fact_primas
   SELECT column_name
   INTO year_col
   FROM information_schema.columns
@@ -35,7 +33,6 @@ BEGIN
   ORDER BY CASE column_name WHEN 'mes' THEN 1 WHEN 'periodo' THEN 2 WHEN 'month' THEN 3 ELSE 99 END
   LIMIT 1;
 
-  -- Prefer official calculated metric when present.
   SELECT column_name
   INTO prima_col
   FROM information_schema.columns
@@ -50,7 +47,6 @@ BEGIN
   END
   LIMIT 1;
 
-  -- Detect explicit ramo-like text column directly in fact_primas.
   SELECT column_name
   INTO ramo_col
   FROM information_schema.columns
@@ -74,14 +70,6 @@ BEGIN
       AND table_name = 'dim_ramo'
   ) INTO has_dim_ramo;
 
-  SELECT EXISTS (
-    SELECT 1
-    FROM information_schema.tables
-    WHERE table_schema = 'public'
-      AND table_name = 'dashboard_data'
-  ) INTO has_dashboard_data;
-
-  -- Path A: fact_primas already has ramo text-like column.
   IF ramo_col IS NOT NULL AND year_col IS NOT NULL AND month_col IS NOT NULL AND prima_col IS NOT NULL THEN
     EXECUTE format($sql$
       CREATE OR REPLACE VIEW bi_dashboard.vw_ramos_prima AS
@@ -109,9 +97,9 @@ BEGIN
       GROUP BY 1,2,3;
     $sql$, year_col, month_col, ramo_col, prima_col);
 
-  -- Path B: fact_primas has ramo_id + dim_ramo.
   ELSIF EXISTS (
-      SELECT 1 FROM information_schema.columns
+      SELECT 1
+      FROM information_schema.columns
       WHERE table_schema = 'bi_dashboard'
         AND table_name = 'fact_primas'
         AND column_name = 'ramo_id'
@@ -148,36 +136,8 @@ BEGIN
       GROUP BY 1,2,3;
     $sql$, year_col, month_col, prima_col);
 
-  -- Path C (bridge): source from public.dashboard_data when bi_dashboard lacks ramo shape.
-  ELSIF has_dashboard_data THEN
-    EXECUTE $sql$
-      CREATE OR REPLACE VIEW bi_dashboard.vw_ramos_prima AS
-      SELECT
-        COALESCE("anio"::int, EXTRACT(YEAR FROM "FLiquidacion"::date)::int) AS anio,
-        CASE
-          WHEN lower("mes"::text) IN ('enero','1') THEN 1
-          WHEN lower("mes"::text) IN ('febrero','2') THEN 2
-          WHEN lower("mes"::text) IN ('marzo','3') THEN 3
-          WHEN lower("mes"::text) IN ('abril','4') THEN 4
-          WHEN lower("mes"::text) IN ('mayo','5') THEN 5
-          WHEN lower("mes"::text) IN ('junio','6') THEN 6
-          WHEN lower("mes"::text) IN ('julio','7') THEN 7
-          WHEN lower("mes"::text) IN ('agosto','8') THEN 8
-          WHEN lower("mes"::text) IN ('septiembre','9') THEN 9
-          WHEN lower("mes"::text) IN ('octubre','10') THEN 10
-          WHEN lower("mes"::text) IN ('noviembre','11') THEN 11
-          WHEN lower("mes"::text) IN ('diciembre','12') THEN 12
-          ELSE NULL
-        END AS periodo,
-        COALESCE(NULLIF(trim("RamosNombre"), ''), 'Sin ramo') AS ramo,
-        SUM((COALESCE("PrimaNeta", 0) - COALESCE(NULLIF("Descuento", '')::numeric, 0)) * COALESCE("TCPago", 1))::numeric AS prima_oficial,
-        COUNT(*)::bigint AS polizas
-      FROM public.dashboard_data
-      GROUP BY 1,2,3;
-    $sql$;
-
   ELSE
-    RAISE EXCEPTION 'No ramo source found in bi_dashboard or public.dashboard_data';
+    RAISE EXCEPTION 'No ramo source found inside bi_dashboard (expected ramo column or ramo_id + dim_ramo).';
   END IF;
 
   GRANT SELECT ON bi_dashboard.vw_ramos_prima TO anon, authenticated, service_role;
