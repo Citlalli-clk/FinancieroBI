@@ -20,7 +20,7 @@ Periodo: 1-12 (month number)
 `
 
 interface NLQueryProps {
-  periodo: number
+  periodo?: number
   year: string
 }
 

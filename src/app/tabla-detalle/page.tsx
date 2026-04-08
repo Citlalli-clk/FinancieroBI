@@ -149,7 +149,7 @@ function TablaDetalleContent() {
     }
   }, [clasificacion])
   // Use first selected period for queries (multi-period queries use first as primary)
-  const periodo = periodos[periodos.length - 1] ?? 2
+  const periodo = periodos.length > 0 ? Math.max(...periodos) : undefined
 
   // Load líneas directly from bi_dashboard.fact_primas via /api/lineas
   useEffect(() => {

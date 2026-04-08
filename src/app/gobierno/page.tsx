@@ -34,7 +34,7 @@ export default function GobiernoPage() {
     setPeriodos(newPeriodos)
   }, [])
 
-  const periodo = periodos[periodos.length - 1] ?? 2
+  const periodo = periodos.length > 0 ? Math.max(...periodos) : undefined
 
   useEffect(() => {
     document.title = "Gobierno | CLK BI Dashboard"
