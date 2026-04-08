@@ -185,9 +185,15 @@ export default function CompromisosPage() {
 
   const handleFilterChange = useCallback((newYear: string, newPeriodos: number[]) => { setYear(newYear); setPeriodos(newPeriodos) }, [])
   useEffect(() => { document.title = "Vendedores | CLK BI Dashboard" }, [])
-  const month = periodos[periodos.length - 1] ?? 2
+  const month = periodos.length > 0 ? Math.max(...periodos) : undefined
 
   useEffect(() => {
+    if (month === undefined) {
+      setData([])
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     getCompromisos(Number(year), month).then(r => { setData(r ?? []); setLoading(false) }).catch(() => setLoading(false))
   }, [year, month])
