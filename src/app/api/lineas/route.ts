@@ -139,6 +139,9 @@ async function accumulatePresupuesto(
       .from(tableName)
       .select("LBussinesNombre, Presupuesto, Fecha")
       .order("Fecha", { ascending: true })
+      .order("LBussinesNombre", { ascending: true })
+      .order("Vendedor", { ascending: true })
+      .order("Cliente", { ascending: true })
       .range(from, from + PAGE_SIZE - 1)
 
     if (error) {
@@ -176,6 +179,7 @@ async function accumulatePendiente(
       .from("Pendiente")
       .select("LBussinesNombre, PrimaNeta, Periodo, Documento")
       .order("Documento", { ascending: true })
+      .order("LBussinesNombre", { ascending: true })
       .range(from, from + PAGE_SIZE - 1)
 
     if (meses.length > 0) {
