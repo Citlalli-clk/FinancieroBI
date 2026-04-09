@@ -9,7 +9,14 @@ function getSupabaseClient(): SupabaseClient {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Missing Supabase client env vars: NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY")
+    // Defensive fallback: avoid hard-crashing the entire UI (white screen)
+    // when env vars are missing in a deployment.
+    if (typeof window !== "undefined") {
+      console.error("Missing Supabase client env vars: NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY")
+    }
+
+    cachedClient = createClient("https://placeholder.supabase.co", "placeholder-anon-key")
+    return cachedClient
   }
 
   cachedClient = createClient(supabaseUrl, supabaseAnonKey)
