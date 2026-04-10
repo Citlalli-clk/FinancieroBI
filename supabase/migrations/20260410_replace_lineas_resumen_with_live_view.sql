@@ -32,6 +32,7 @@ $$;
 
 -- Legacy artifacts (table + refresh function) are intentionally removed.
 DROP FUNCTION IF EXISTS public.refresh_lineas_resumen(integer);
+DROP VIEW IF EXISTS public.lineas_resumen;
 DROP TABLE IF EXISTS public.lineas_resumen;
 
 CREATE OR REPLACE VIEW public.vw_lineas_resumen_mensual AS
@@ -62,10 +63,15 @@ WITH primas_base AS (
     2026::integer AS anio,
     COALESCE(
       CASE
-        WHEN trim(COALESCE("FLiquidacion"::text, '')) ~ '^\d{1,2}/\d{1,2}(/\d{2,4})?$'
-          THEN split_part(trim("FLiquidacion"::text), '/', 1)::integer
-        WHEN trim(COALESCE("FLiquidacion"::text, '')) ~ '^\d{4}-\d{1,2}-\d{1,2}$'
-          THEN EXTRACT(month FROM trim("FLiquidacion"::text)::date)::integer
+        -- Expected source values like "3/25/26 0:00" (MM/DD/YY with optional time)
+        WHEN split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1) ~ '^\d{1,2}/\d{1,2}/\d{2,4}$'
+          THEN CASE
+            WHEN split_part(split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1), '/', 1)::integer BETWEEN 1 AND 12
+              THEN split_part(split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1), '/', 1)::integer
+            ELSE NULL
+          END
+        WHEN split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1) ~ '^\d{4}-\d{1,2}-\d{1,2}$'
+          THEN EXTRACT(month FROM split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1)::date)::integer
         ELSE NULL
       END,
       CASE WHEN "Periodo" BETWEEN 1 AND 12 THEN "Periodo"::integer ELSE NULL END
@@ -87,24 +93,8 @@ primas_agg AS (
   GROUP BY 1, 2, 3
 ),
 presupuesto_base AS (
-  SELECT
-    2024::integer AS anio,
-    EXTRACT(month FROM "Fecha"::date)::integer AS periodo,
-    COALESCE(NULLIF(trim("LBussinesNombre"), ''), 'Sin línea') AS linea,
-    public.parse_budget_text("Presupuesto") AS presupuesto
-  FROM public."Presupuestos 2024"
-
-  UNION ALL
-
-  SELECT
-    2025::integer AS anio,
-    EXTRACT(month FROM "Fecha"::date)::integer AS periodo,
-    COALESCE(NULLIF(trim("LBussinesNombre"), ''), 'Sin línea') AS linea,
-    public.parse_budget_text("Presupuesto") AS presupuesto
-  FROM public."Presupuestos 2025"
-
-  UNION ALL
-
+  -- Current production dataset only has Presupuestos 2026 in Supabase.
+  -- Keep this source explicit to avoid migration failure on missing historical tables.
   SELECT
     2026::integer AS anio,
     EXTRACT(month FROM "Fecha"::date)::integer AS periodo,
@@ -149,6 +139,14 @@ SELECT
   now() AS updated_at
 FROM unioned
 WHERE periodo BETWEEN 1 AND 12
+  AND linea IN (
+    'Click Franquicias',
+    'Cartera Tradicional',
+    'Click Promotorías',
+    'Click Promotoras',
+    'Corporate',
+    'Call Center'
+  )
 GROUP BY anio, periodo, linea;
 
 GRANT SELECT ON public.vw_lineas_resumen_mensual TO anon, authenticated, service_role;

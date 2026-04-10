@@ -1,53 +1,58 @@
 # Vista viva de líneas (`vw_lineas_resumen_mensual`)
 
 ## Objetivo
-Reemplazar `lineas_resumen` (tabla precalculada) por una **vista en tiempo real** que siempre lea la fuente base y evite desfases por refresh manual.
+Reemplazar la tabla precalculada `lineas_resumen` por una capa **viva** (vista SQL) para que el cálculo mensual se actualice en tiempo real y respete la semántica correcta de 2026.
+
+---
 
 ## Qué se cambió
 
-1. **Se elimina lo viejo**
-   - `DROP TABLE public.lineas_resumen`
-   - `DROP FUNCTION public.refresh_lineas_resumen(integer)`
+### 1) Reemplazo estructural
+- Se elimina la lógica legacy de refresco manual:
+  - `DROP FUNCTION IF EXISTS public.refresh_lineas_resumen(integer)`
+  - `DROP TABLE IF EXISTS public.lineas_resumen`
+- Se crea la vista viva:
+  - `public.vw_lineas_resumen_mensual`
 
-2. **Se crea una vista viva**
-   - `public.vw_lineas_resumen_mensual`
-   - La vista agrega por:
-     - `anio`
-     - `periodo` (mes 1..12)
-     - `linea`
+### 2) Compatibilidad con despliegues viejos
+Como producción seguía leyendo `lineas_resumen`, se dejó un alias compatible:
+- `CREATE OR REPLACE VIEW public.lineas_resumen AS SELECT ... FROM public.vw_lineas_resumen_mensual`
 
-3. **Fuentes consideradas**
-   - Prima neta:
-     - `Efectuada 2024`
-     - `Efectuada 2025`
-     - `efectuada_2026_drive`
-   - Presupuesto:
-     - `Presupuestos 2024`
-     - `Presupuestos 2025`
-     - `Presupuestos 2026`
-   - Pendiente:
-     - `Pendiente` (solo año actual)
+Con esto:
+- ya **no existe tabla materializada**,
+- y el endpoint viejo no se rompe mientras se despliega el código nuevo.
 
-4. **Regla crítica de 2026 (la discrepancia grande)**
-   - Para 2026, el mes se toma de `FLiquidacion` (formato `MM/DD` o ISO), no de `Periodo`.
-   - Si `FLiquidacion` no se puede interpretar, cae a `Periodo`.
+### 3) Regla crítica 2026 (causa de la discrepancia)
+Para `efectuada_2026_drive`, el mes se calcula por `FLiquidacion` (no por `Periodo`), soportando formatos como:
+- `MM/DD/YY HH:MI` (ej. `3/25/26 0:00`)
+- `YYYY-MM-DD`
 
-5. **Fórmula oficial**
-   - `prima_neta = (PrimaNeta - Descuento) * TCPago`
+Si no se puede interpretar `FLiquidacion`, cae a `Periodo` como fallback defensivo.
 
-6. **Conexión al dashboard**
-   - `src/app/api/lineas/route.ts` ahora prioriza `vw_lineas_resumen_mensual`.
-   - Si la vista no existe, mantiene fallback raw para no romper producción.
+### 4) Fórmula oficial
+`prima_neta = (PrimaNeta - Descuento) * TCPago`
+
+### 5) Scope de líneas del tacómetro
+La vista filtra explícitamente a las líneas del KPI:
+- `Click Franquicias`
+- `Cartera Tradicional`
+- `Click Promotorías` / `Click Promotoras`
+- `Corporate`
+- `Call Center`
+
+Esto evita mezclar líneas fuera del tacómetro (p. ej. Gobierno) en el total principal.
+
+### 6) Presupuestos disponibles en esta BD
+En el entorno actual solo existe `Presupuestos 2026`; por eso la parte de presupuesto de la vista se construye con esa tabla.
 
 ---
 
 ## Archivo de migración
-
 - `supabase/migrations/20260410_replace_lineas_resumen_with_live_view.sql`
 
 ---
 
-## Validación mínima recomendada
+## Validación recomendada
 
 ### 1) Total marzo 2026 desde la vista
 ```sql
@@ -57,8 +62,9 @@ FROM public.vw_lineas_resumen_mensual
 WHERE anio = 2026
   AND periodo = 3;
 ```
+Esperado actual: ~`123,265,505` (≈ `123.3M`).
 
-### 2) Desglose por línea (marzo 2026)
+### 2) Desglose marzo 2026
 ```sql
 SELECT
   linea,
@@ -70,16 +76,12 @@ GROUP BY linea
 ORDER BY prima_neta DESC;
 ```
 
-### 3) Verificar que API use la vista
+### 3) Verificación API productiva
 ```bash
 curl -s "https://financiero-bi-dashboard.vercel.app/api/lineas?year=2026&meses=3" -D - | head
 ```
-Revisar header:
+Header esperado (build viejo):
+- `x-lineas-source: summary`
+
+Header esperado (build nuevo con `route.ts` actualizado):
 - `x-lineas-source: summary:vw_lineas_resumen_mensual`
-
----
-
-## Notas operativas
-
-- Esta vista es **no materializada**: siempre consulta datos vivos.
-- Si agregan nuevos años (`Efectuada 2027`, `Presupuestos 2027`), hay que extender la `UNION ALL` de la vista.
