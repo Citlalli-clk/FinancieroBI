@@ -1,87 +1,93 @@
 # Vista viva de líneas (`vw_lineas_resumen_mensual`)
 
-## Objetivo
-Reemplazar la tabla precalculada `lineas_resumen` por una capa **viva** (vista SQL) para que el cálculo mensual se actualice en tiempo real y respete la semántica correcta de 2026.
+## Estado actual (schema DRIVE)
+El cliente reinició tablas y dejó esta nomenclatura en `public`:
+- `efectuada_2024_drive`
+- `efectuada_2025_drive`
+- `efectuada_2026_drive`
+- `presupuestos_2026_drive`
+- `pendiente_drive`
+- `catalogo_lineas_negocio_drive`
+
+Por eso se reconstruyó la capa resumen para depender **solo** de ese esquema actual.
 
 ---
 
-## Qué se cambió
+## Qué se reconstruyó
 
-### 1) Reemplazo estructural
-- Se elimina la lógica legacy de refresco manual:
-  - `DROP FUNCTION IF EXISTS public.refresh_lineas_resumen(integer)`
-  - `DROP TABLE IF EXISTS public.lineas_resumen`
-- Se crea la vista viva:
-  - `public.vw_lineas_resumen_mensual`
+1) Vista principal viva:
+- `public.vw_lineas_resumen_mensual`
 
-### 2) Compatibilidad con despliegues viejos
-Como producción seguía leyendo `lineas_resumen`, se dejó un alias compatible:
-- `CREATE OR REPLACE VIEW public.lineas_resumen AS SELECT ... FROM public.vw_lineas_resumen_mensual`
+2) Tabla de compatibilidad rápida (para builds viejos que aún leen `lineas_resumen`):
+- `public.lineas_resumen` (tabla física + índice por `anio, periodo`)
+- refresco vía `public.refresh_lineas_resumen(p_anio integer default null)`
 
-Con esto:
-- ya **no existe tabla materializada**,
-- y el endpoint viejo no se rompe mientras se despliega el código nuevo.
-
-### 3) Regla crítica 2026 (causa de la discrepancia)
-Para `efectuada_2026_drive`, el mes se calcula por `FLiquidacion` (no por `Periodo`), soportando formatos como:
-- `MM/DD/YY HH:MI` (ej. `3/25/26 0:00`)
-- `YYYY-MM-DD`
-
-Si no se puede interpretar `FLiquidacion`, cae a `Periodo` como fallback defensivo.
-
-### 4) Fórmula oficial
-`prima_neta = (PrimaNeta - Descuento) * TCPago`
-
-### 5) Scope de líneas del tacómetro
-La vista filtra explícitamente a las líneas del KPI:
-- `Click Franquicias`
-- `Cartera Tradicional`
-- `Click Promotorías` / `Click Promotoras`
-- `Corporate`
-- `Call Center`
-
-Esto evita mezclar líneas fuera del tacómetro (p. ej. Gobierno) en el total principal.
-
-### 6) Presupuestos disponibles en esta BD
-En el entorno actual solo existe `Presupuestos 2026`; por eso la parte de presupuesto de la vista se construye con esa tabla.
+3) Funciones auxiliares:
+- `public.parse_budget_text(text)`
+- `public.parse_month_text(text)`
+- `public.normalize_linea_name(text)`
 
 ---
 
-## Archivo de migración
-- `supabase/migrations/20260410_replace_lineas_resumen_with_live_view.sql`
+## Reglas de cálculo
+
+### Prima Neta
+`(PrimaNeta - Descuento) * TCPago`
+
+### Mes (`periodo`)
+Se toma de `FLiquidacion` cuando existe parseable (`M/D/YY`, `M/D/YYYY`, `YYYY-MM-DD`, con/sin hora).
+Si no se puede parsear, fallback a `Periodo`.
+
+### Presupuesto
+Se agrega desde `presupuestos_2026_drive` por mes parseado de `Fecha`.
+
+### Pendiente
+Se agrega desde `pendiente_drive` para el año actual.
+
+### Scope de líneas del tacómetro
+La vista se limita a:
+- Click Franquicias
+- Cartera Tradicional
+- Click Promotorías
+- Corporate
+- Call Center
 
 ---
 
-## Validación recomendada
+## Archivo SQL
+`supabase/migrations/20260410_replace_lineas_resumen_with_live_view.sql`
 
-### 1) Total marzo 2026 desde la vista
+---
+
+## Validación rápida
+
 ```sql
-SELECT
-  SUM(prima_neta) AS total_marzo_2026
+SELECT anio, periodo, count(*) lineas, sum(prima_neta) total
 FROM public.vw_lineas_resumen_mensual
-WHERE anio = 2026
-  AND periodo = 3;
+WHERE anio = 2026 AND periodo = 2
+GROUP BY 1,2;
 ```
-Esperado actual: ~`123,265,505` (≈ `123.3M`).
 
-### 2) Desglose marzo 2026
 ```sql
-SELECT
-  linea,
-  SUM(prima_neta) AS prima_neta
-FROM public.vw_lineas_resumen_mensual
-WHERE anio = 2026
-  AND periodo = 3
-GROUP BY linea
+SELECT linea, prima_neta, anio_anterior, presupuesto
+FROM (
+  SELECT
+    cur.linea,
+    cur.prima_neta,
+    prev.prima_neta AS anio_anterior,
+    cur.presupuesto
+  FROM public.vw_lineas_resumen_mensual cur
+  LEFT JOIN public.vw_lineas_resumen_mensual prev
+    ON prev.anio = 2025
+   AND prev.periodo = 2
+   AND prev.linea = cur.linea
+  WHERE cur.anio = 2026
+    AND cur.periodo = 2
+) x
 ORDER BY prima_neta DESC;
 ```
 
-### 3) Verificación API productiva
+Y en API:
 ```bash
-curl -s "https://financiero-bi-dashboard.vercel.app/api/lineas?year=2026&meses=3" -D - | head
+curl -s "https://financiero-bi-dashboard.vercel.app/api/lineas?year=2026&meses=2" -D - | head
 ```
-Header esperado (build viejo):
-- `x-lineas-source: summary`
-
-Header esperado (build nuevo con `route.ts` actualizado):
-- `x-lineas-source: summary:vw_lineas_resumen_mensual`

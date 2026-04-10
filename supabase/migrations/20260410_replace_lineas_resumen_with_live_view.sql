@@ -1,6 +1,6 @@
 BEGIN;
 
--- Keep parser available for text-based numeric inputs (budgets and defensive casts).
+-- Defensive parser for numeric values coming from mixed text/number columns.
 CREATE OR REPLACE FUNCTION public.parse_budget_text(input text)
 RETURNS numeric
 LANGUAGE plpgsql
@@ -30,81 +30,111 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
--- Legacy artifacts (table + refresh function) are intentionally removed.
+-- Parse month from strings like:
+-- - 3/25/26 0:00
+-- - 3/25/2026
+-- - 2026-03-25
+CREATE OR REPLACE FUNCTION public.parse_month_text(input text)
+RETURNS integer
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  token text;
+  m integer;
+BEGIN
+  token := split_part(trim(COALESCE(input, '')), ' ', 1);
+
+  IF token = '' THEN
+    RETURN NULL;
+  END IF;
+
+  IF token ~ '^\d{1,2}/\d{1,2}/\d{2,4}$' THEN
+    m := split_part(token, '/', 1)::integer;
+  ELSIF token ~ '^\d{1,2}/\d{1,2}$' THEN
+    m := split_part(token, '/', 1)::integer;
+  ELSIF token ~ '^\d{4}-\d{1,2}-\d{1,2}$' THEN
+    m := EXTRACT(month FROM token::date)::integer;
+  ELSE
+    RETURN NULL;
+  END IF;
+
+  IF m BETWEEN 1 AND 12 THEN
+    RETURN m;
+  END IF;
+
+  RETURN NULL;
+EXCEPTION WHEN OTHERS THEN
+  RETURN NULL;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.normalize_linea_name(input text)
+RETURNS text
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  v text;
+  normalized text;
+BEGIN
+  v := trim(COALESCE(input, ''));
+  IF v = '' THEN
+    RETURN 'Sin línea';
+  END IF;
+
+  normalized := translate(lower(v), 'áéíóúäëïöü', 'aeiouaeiou');
+
+  IF normalized IN ('click promotorias', 'click promotoras') THEN
+    RETURN 'Click Promotorías';
+  END IF;
+
+  RETURN v;
+END;
+$$;
+
 DROP FUNCTION IF EXISTS public.refresh_lineas_resumen(integer);
 DROP VIEW IF EXISTS public.lineas_resumen;
 DROP TABLE IF EXISTS public.lineas_resumen;
+DROP VIEW IF EXISTS public.vw_lineas_resumen_mensual;
 
 CREATE OR REPLACE VIEW public.vw_lineas_resumen_mensual AS
 WITH primas_base AS (
   SELECT
     2024::integer AS anio,
     COALESCE(
-      CASE
-        -- Expected source values like "3/25/26 0:00" (MM/DD/YY with optional time)
-        WHEN split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1) ~ '^\d{1,2}/\d{1,2}/\d{2,4}$'
-          THEN CASE
-            WHEN split_part(split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1), '/', 1)::integer BETWEEN 1 AND 12
-              THEN split_part(split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1), '/', 1)::integer
-            ELSE NULL
-          END
-        WHEN split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1) ~ '^\d{4}-\d{1,2}-\d{1,2}$'
-          THEN EXTRACT(month FROM split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1)::date)::integer
-        ELSE NULL
-      END,
+      public.parse_month_text("FLiquidacion"::text),
       CASE WHEN "Periodo" BETWEEN 1 AND 12 THEN "Periodo"::integer ELSE NULL END
     ) AS periodo,
-    COALESCE(NULLIF(trim("LBussinesNombre"), ''), 'Sin línea') AS linea,
+    public.normalize_linea_name("LBussinesNombre") AS linea,
     public.parse_budget_text("PrimaNeta"::text) AS prima_neta,
     public.parse_budget_text("Descuento"::text) AS descuento,
     COALESCE(NULLIF(public.parse_budget_text("TCPago"::text), 0), 1) AS tc_pago
-  FROM public."Efectuada 2024"
+  FROM public.efectuada_2024_drive
 
   UNION ALL
 
   SELECT
     2025::integer AS anio,
     COALESCE(
-      CASE
-        -- Expected source values like "3/25/26 0:00" (MM/DD/YY with optional time)
-        WHEN split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1) ~ '^\d{1,2}/\d{1,2}/\d{2,4}$'
-          THEN CASE
-            WHEN split_part(split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1), '/', 1)::integer BETWEEN 1 AND 12
-              THEN split_part(split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1), '/', 1)::integer
-            ELSE NULL
-          END
-        WHEN split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1) ~ '^\d{4}-\d{1,2}-\d{1,2}$'
-          THEN EXTRACT(month FROM split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1)::date)::integer
-        ELSE NULL
-      END,
+      public.parse_month_text("FLiquidacion"::text),
       CASE WHEN "Periodo" BETWEEN 1 AND 12 THEN "Periodo"::integer ELSE NULL END
     ) AS periodo,
-    COALESCE(NULLIF(trim("LBussinesNombre"), ''), 'Sin línea') AS linea,
+    public.normalize_linea_name("LBussinesNombre") AS linea,
     public.parse_budget_text("PrimaNeta"::text) AS prima_neta,
     public.parse_budget_text("Descuento"::text) AS descuento,
     COALESCE(NULLIF(public.parse_budget_text("TCPago"::text), 0), 1) AS tc_pago
-  FROM public."Efectuada 2025"
+  FROM public.efectuada_2025_drive
 
   UNION ALL
 
   SELECT
     2026::integer AS anio,
     COALESCE(
-      CASE
-        -- Expected source values like "3/25/26 0:00" (MM/DD/YY with optional time)
-        WHEN split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1) ~ '^\d{1,2}/\d{1,2}/\d{2,4}$'
-          THEN CASE
-            WHEN split_part(split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1), '/', 1)::integer BETWEEN 1 AND 12
-              THEN split_part(split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1), '/', 1)::integer
-            ELSE NULL
-          END
-        WHEN split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1) ~ '^\d{4}-\d{1,2}-\d{1,2}$'
-          THEN EXTRACT(month FROM split_part(trim(COALESCE("FLiquidacion"::text, '')), ' ', 1)::date)::integer
-        ELSE NULL
-      END,
+      public.parse_month_text("FLiquidacion"::text),
       CASE WHEN "Periodo" BETWEEN 1 AND 12 THEN "Periodo"::integer ELSE NULL END
     ) AS periodo,
-    COALESCE(NULLIF(trim("LBussinesNombre"), ''), 'Sin línea') AS linea,
+    public.normalize_linea_name("LBussinesNombre") AS linea,
     public.parse_budget_text("PrimaNeta"::text) AS prima_neta,
     public.parse_budget_text("Descuento"::text) AS descuento,
     COALESCE(NULLIF(public.parse_budget_text("TCPago"::text), 0), 1) AS tc_pago
@@ -121,14 +151,12 @@ primas_agg AS (
   GROUP BY 1, 2, 3
 ),
 presupuesto_base AS (
-  -- Current production dataset only has Presupuestos 2026 in Supabase.
-  -- Keep this source explicit to avoid migration failure on missing historical tables.
   SELECT
     2026::integer AS anio,
-    EXTRACT(month FROM "Fecha"::date)::integer AS periodo,
-    COALESCE(NULLIF(trim("LBussinesNombre"), ''), 'Sin línea') AS linea,
-    public.parse_budget_text("Presupuesto") AS presupuesto
-  FROM public."Presupuestos 2026"
+    public.parse_month_text("Fecha"::text) AS periodo,
+    public.normalize_linea_name("LBussinesNombre") AS linea,
+    public.parse_budget_text("Presupuesto"::text) AS presupuesto
+  FROM public.presupuestos_2026_drive
 ),
 presupuesto_agg AS (
   SELECT
@@ -144,9 +172,9 @@ pendiente_agg AS (
   SELECT
     EXTRACT(year FROM now())::integer AS anio,
     CASE WHEN "Periodo" BETWEEN 1 AND 12 THEN "Periodo"::integer ELSE NULL END AS periodo,
-    COALESCE(NULLIF(trim("LBussinesNombre"), ''), 'Sin línea') AS linea,
+    public.normalize_linea_name("LBussinesNombre") AS linea,
     SUM(public.parse_budget_text("PrimaNeta"::text)) AS pendiente
-  FROM public."Pendiente"
+  FROM public.pendiente_drive
   WHERE "Periodo" BETWEEN 1 AND 12
   GROUP BY 1, 2, 3
 ),
@@ -171,12 +199,53 @@ WHERE periodo BETWEEN 1 AND 12
     'Click Franquicias',
     'Cartera Tradicional',
     'Click Promotorías',
-    'Click Promotoras',
     'Corporate',
     'Call Center'
   )
 GROUP BY anio, periodo, linea;
 
+-- Compatibility table for deployed API versions.
+-- Rationale: old frontend/API path queries `lineas_resumen` directly and must be fast.
+CREATE TABLE public.lineas_resumen (
+  anio integer NOT NULL,
+  periodo integer NOT NULL,
+  linea text NOT NULL,
+  prima_neta numeric NOT NULL DEFAULT 0,
+  presupuesto numeric NOT NULL DEFAULT 0,
+  pendiente numeric NOT NULL DEFAULT 0,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (anio, periodo, linea)
+);
+
+CREATE INDEX lineas_resumen_anio_periodo_idx ON public.lineas_resumen (anio, periodo);
+
+CREATE OR REPLACE FUNCTION public.refresh_lineas_resumen(p_anio integer DEFAULT NULL)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF p_anio IS NULL THEN
+    TRUNCATE TABLE public.lineas_resumen;
+
+    INSERT INTO public.lineas_resumen (anio, periodo, linea, prima_neta, presupuesto, pendiente, updated_at)
+    SELECT anio, periodo, linea, prima_neta, presupuesto, pendiente, now()
+    FROM public.vw_lineas_resumen_mensual;
+  ELSE
+    DELETE FROM public.lineas_resumen WHERE anio = p_anio;
+
+    INSERT INTO public.lineas_resumen (anio, periodo, linea, prima_neta, presupuesto, pendiente, updated_at)
+    SELECT anio, periodo, linea, prima_neta, presupuesto, pendiente, now()
+    FROM public.vw_lineas_resumen_mensual
+    WHERE anio = p_anio;
+  END IF;
+END;
+$$;
+
+-- Seed summary table immediately.
+SELECT public.refresh_lineas_resumen(NULL);
+
 GRANT SELECT ON public.vw_lineas_resumen_mensual TO anon, authenticated, service_role;
+GRANT SELECT ON public.lineas_resumen TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.refresh_lineas_resumen(integer) TO authenticated, service_role;
 
 COMMIT;

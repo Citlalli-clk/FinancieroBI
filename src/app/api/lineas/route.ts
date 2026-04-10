@@ -44,15 +44,24 @@ function toNumber(value: unknown): number {
 function monthFromFecha(fecha: unknown): number | null {
   if (typeof fecha !== "string" || !fecha.trim()) return null
 
+  const raw = fecha.trim()
+
+  // Expected source format in drive tables: MM/DD/YYYY (optionally with time)
+  const mmdd = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+.*)?$/)
+  if (mmdd) {
+    const m = Number.parseInt(mmdd[1], 10)
+    return m >= 1 && m <= 12 ? m : null
+  }
+
   // ISO: YYYY-MM-DD...
-  const iso = fecha.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/)
   if (iso) {
     const m = Number.parseInt(iso[2], 10)
     return m >= 1 && m <= 12 ? m : null
   }
 
   // Fallback using Date parsing
-  const dt = new Date(fecha)
+  const dt = new Date(raw)
   if (Number.isFinite(dt.getTime())) {
     const m = dt.getMonth() + 1
     return m >= 1 && m <= 12 ? m : null
@@ -66,8 +75,8 @@ function monthFromLiquidacion(fecha: unknown): number | null {
 
   const raw = fecha.trim()
 
-  // Expected source format for this dashboard: MM/DD (optionally /YYYY)
-  const mmdd = raw.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/)
+  // Expected source format for this dashboard: MM/DD(/YY|/YYYY) optionally with time
+  const mmdd = raw.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?(?:\s+.*)?$/)
   if (mmdd) {
     const month = Number.parseInt(mmdd[1], 10)
     return month >= 1 && month <= 12 ? month : null
@@ -90,11 +99,35 @@ function monthFromLiquidacion(fecha: unknown): number | null {
   return null
 }
 
+function normalizeLinea(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) return "Sin línea"
+
+  const normalized = trimmed
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+
+  if (normalized === "click promotorias" || normalized === "click promotoras") {
+    return "Click Promotorías"
+  }
+
+  return trimmed
+}
+
 function lineaName(row: Record<string, unknown>): string {
   const raw = row.LBussinesNombre
-  const value = typeof raw === "string" ? raw.trim() : ""
-  return value || "Sin línea"
+  const value = typeof raw === "string" ? raw : ""
+  return normalizeLinea(value)
 }
+
+const TACOMETRO_LINEAS = new Set<string>([
+  "Click Franquicias",
+  "Click Promotorías",
+  "Cartera Tradicional",
+  "Corporate",
+  "Call Center",
+])
 
 function isTableMissing(message: string): boolean {
   return (
@@ -163,7 +196,7 @@ async function loadFromSummarySource(
   const priorByLine = new Map<string, number>()
 
   for (const row of (currentRows as Record<string, unknown>[])) {
-    const linea = String(row.linea || "Sin línea")
+    const linea = normalizeLinea(String(row.linea || "Sin línea"))
     const acc = currentByLine.get(linea) || { primaNeta: 0, presupuesto: 0, pendiente: 0 }
     acc.primaNeta += toNumber(row.prima_neta)
     acc.presupuesto += toNumber(row.presupuesto)
@@ -172,7 +205,7 @@ async function loadFromSummarySource(
   }
 
   for (const row of ((priorRows || []) as Record<string, unknown>[])) {
-    const linea = String(row.linea || "Sin línea")
+    const linea = normalizeLinea(String(row.linea || "Sin línea"))
     priorByLine.set(linea, (priorByLine.get(linea) || 0) + toNumber(row.prima_neta))
   }
 
@@ -192,6 +225,7 @@ async function loadFromSummarySource(
         pendiente: Math.round(c.pendiente),
       }
     })
+    .filter((row) => TACOMETRO_LINEAS.has(row.nombre))
     .sort((a, b) => b.primaNeta - a.primaNeta)
 }
 
@@ -200,11 +234,13 @@ async function loadFromSummaryTable(
   year: number,
   meses: number[]
 ): Promise<SummaryLoadResult | null> {
-  const source = "vw_lineas_resumen_mensual"
-  const rows = await loadFromSummarySource(supabase, source, year, meses)
+  const sources = ["vw_lineas_resumen_mensual", "lineas_resumen"]
 
-  if (rows && rows.length > 0) {
-    return { rows, source }
+  for (const source of sources) {
+    const rows = await loadFromSummarySource(supabase, source, year, meses)
+    if (rows && rows.length > 0) {
+      return { rows, source }
+    }
   }
 
   return null
@@ -377,8 +413,22 @@ async function accumulatePresupuesto(
   return true
 }
 
+async function accumulatePresupuestoFromCandidates(
+  supabase: SupabaseClient,
+  tableNames: string[],
+  meses: number[],
+  target: Map<string, number>
+): Promise<string | null> {
+  for (const tableName of tableNames) {
+    const ok = await accumulatePresupuesto(supabase, tableName, meses, target)
+    if (ok) return tableName
+  }
+  return null
+}
+
 async function accumulatePendiente(
   supabase: SupabaseClient,
+  tableName: string,
   meses: number[],
   target: Map<string, number>
 ): Promise<boolean> {
@@ -386,7 +436,7 @@ async function accumulatePendiente(
 
   for (let from = 0; from < 1_000_000; from += PAGE_SIZE) {
     let query = supabase
-      .from("Pendiente")
+      .from(tableName)
       .select("LBussinesNombre, PrimaNeta, Periodo, Documento")
       .order("Documento", { ascending: true })
       .order("LBussinesNombre", { ascending: true })
@@ -400,7 +450,7 @@ async function accumulatePendiente(
 
     if (error) {
       if (isTableMissing(error.message)) return false
-      throw new Error(`Pendiente error: ${error.message}`)
+      throw new Error(`${tableName} error: ${error.message}`)
     }
 
     const rows = (data || []) as Record<string, unknown>[]
@@ -416,6 +466,19 @@ async function accumulatePendiente(
   }
 
   return true
+}
+
+async function accumulatePendienteFromCandidates(
+  supabase: SupabaseClient,
+  tableNames: string[],
+  meses: number[],
+  target: Map<string, number>
+): Promise<string | null> {
+  for (const tableName of tableNames) {
+    const ok = await accumulatePendiente(supabase, tableName, meses, target)
+    if (ok) return tableName
+  }
+  return null
 }
 
 export async function GET(request: NextRequest) {
@@ -463,10 +526,10 @@ export async function GET(request: NextRequest) {
     const budgetByLine = new Map<string, number>()
     const pendingByLine = new Map<string, number>()
 
-    const currentTableCandidates =
-      year === 2026 ? ["efectuada_2026_drive", `Efectuada ${year}`] : [`Efectuada ${year}`]
-    const priorTableCandidates = [`Efectuada ${year - 1}`]
-    const budgetTable = `Presupuestos ${year}`
+    const currentTableCandidates = [`efectuada_${year}_drive`, `Efectuada ${year}`]
+    const priorTableCandidates = [`efectuada_${year - 1}_drive`, `Efectuada ${year - 1}`]
+    const budgetTableCandidates = [`presupuestos_${year}_drive`, `Presupuestos ${year}`]
+    const pendingTableCandidates = ["pendiente_drive", "Pendiente"]
 
     const currentSource = await accumulateEfectuadaFromCandidates(
       supabase,
@@ -492,13 +555,23 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    // Budget table is currently expected mostly for 2026, but keep dynamic naming.
-    await accumulatePresupuesto(supabase, budgetTable, meses, budgetByLine)
+    const budgetSource = await accumulatePresupuestoFromCandidates(
+      supabase,
+      budgetTableCandidates,
+      meses,
+      budgetByLine
+    )
 
     // Pendiente table reflects current operational backlog; avoid projecting it to historical years.
-    if (year === new Date().getFullYear()) {
-      await accumulatePendiente(supabase, meses, pendingByLine)
-    }
+    const pendingSource =
+      year === new Date().getFullYear()
+        ? await accumulatePendienteFromCandidates(
+            supabase,
+            pendingTableCandidates,
+            meses,
+            pendingByLine
+          )
+        : null
 
     const lineas = new Set<string>([
       ...Array.from(currentByLine.keys()),
@@ -515,12 +588,13 @@ export async function GET(request: NextRequest) {
         presupuesto: Math.round(budgetByLine.get(nombre) || 0),
         pendiente: Math.round(pendingByLine.get(nombre) || 0),
       }))
+      .filter((row) => TACOMETRO_LINEAS.has(row.nombre))
       .sort((a, b) => b.primaNeta - a.primaNeta)
 
     return NextResponse.json(result, {
       headers: {
         "Cache-Control": "no-store",
-        "x-lineas-source": `raw-fallback:${currentSource}`,
+        "x-lineas-source": `raw-fallback:${currentSource};budget:${budgetSource || "none"};pending:${pendingSource || "none"}`,
       },
     })
   } catch (err) {
