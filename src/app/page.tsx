@@ -98,7 +98,7 @@ export default function Home() {
 
   return (
     <div className="bg-[#FAFAFA] px-3 py-4 flex flex-col">
-      <div className="max-w-[1200px] mx-auto w-full flex flex-col flex-1">
+      <div className="max-w-[1400px] mx-auto w-full flex flex-col flex-1">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-2 pt-3 md:pt-5 w-full gap-2 md:gap-0">
           <PageTabs />
@@ -201,7 +201,7 @@ export default function Home() {
         {/* ═══ DESKTOP LAYOUT ═══ */}
         <div className="hidden md:block mt-0">
           {/* Top section: Gauge + Table */}
-          <div className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-3 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] gap-3 items-start">
             {/* Left column: Gauge */}
             <div className="min-w-0 flex items-center justify-center">
               <div className="w-full">
@@ -210,7 +210,7 @@ export default function Home() {
             </div>
 
             {/* Right column: Table */}
-            <div className="min-w-0 flex flex-col gap-1 justify-center mt-3">
+            <div className="min-w-0 flex flex-col gap-1 justify-center lg:mt-3">
               <div className="bg-white shadow-sm rounded-lg border border-gray-200">
                 <table className="w-full table-auto text-[11px] lg:text-xs">
                   <thead>
