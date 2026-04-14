@@ -188,14 +188,14 @@ export default function Home() {
           {/* Top section: Gauge + Table */}
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] gap-3 items-start">
             {/* Left column: Gauge */}
-            <div className="min-w-0 flex items-center justify-center">
+            <div className="w-[55%] min-w-0 flex items-center justify-center">
               <div className="w-full">
                 <Gauge value={total / 1e6} prevYear={totalAA / 1e6} budget={totalPpto / 1e6} cumplimiento={cumpl} crecimiento={crec} />
               </div>
             </div>
 
             {/* Right column: Table */}
-            <div className="min-w-0 flex flex-col gap-1 justify-center lg:mt-3">
+            <div className="w-[45%] min-w-0 flex flex-col gap-1 justify-center lg:mt-3">
               <div className="bg-white shadow-sm rounded-lg border border-gray-200">
                 <table className="w-full table-auto text-[11px] lg:text-xs">
                   <thead>
