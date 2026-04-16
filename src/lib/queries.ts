@@ -259,20 +259,6 @@ export async function getGerencias(
           .trim()
           .toLowerCase()
 
-      const catalogRows = await fetchAll(() =>
-        supabase
-          .from('catalogo_lineas_negocio_drive')
-          .select('LBussinesNombre, Gerencia')
-          
-      )
-      const allowedGerencias = new Set(
-        catalogRows
-          .filter((r) => normalizeLinea(r.LBussinesNombre) === linea)
-          .map((r) => String(r.Gerencia ?? '').trim())
-          .filter((g) => g.length > 0)
-      )
-      const allowedGerenciasNorm = new Set(Array.from(allowedGerencias).map((g) => normalizeText(g)))
-
       const effRows = await fetchAll(() =>
         supabase
           .from(effTable)
@@ -297,7 +283,6 @@ export async function getGerencias(
         : []
 
       const map = new Map<string, { primaNeta: number; pnAnioAnt: number; presupuesto: number }>()
-      if (allowedGerencias.size > 0) allowedGerencias.forEach((g) => map.set(g, { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0 }))
 
       for (const r of effRows) {
         if (normalizeLinea(r.LBussinesNombre) !== linea) continue
@@ -338,17 +323,11 @@ export async function getGerencias(
           pnAnioAnt: Math.round(v.pnAnioAnt),
           presupuesto: Math.round(v.presupuesto),
         }))
+        .filter((r) => r.primaNeta > 0)
         .sort((a, b) => a.gerencia.localeCompare(b.gerencia, 'es', { sensitivity: 'base' }))
 
-      const merged = [...out]
-      const existing = new Set(out.map((x) => normalizeText(x.gerencia)))
-      allowedGerencias.forEach((g) => {
-        if (!existing.has(normalizeText(g))) {
-          merged.push({ gerencia: g, primaNeta: 0, pnAnioAnt: 0, presupuesto: 0 })
-        }
-      })
-      if (merged.length > 0) {
-        return merged.sort((a, b) => a.gerencia.localeCompare(b.gerencia, 'es', { sensitivity: 'base' }))
+      if (out.length > 0) {
+        return out
       }
     }
 
