@@ -234,7 +234,7 @@ export async function getGerencias(
         }
       }
       const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/)
-      if (m) return parseInt(m[2], 10)
+      if (m) return parseInt(m[1], 10)
       return null
     }
 
@@ -406,7 +406,7 @@ export async function getVendedores(
         }
       }
       const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/)
-      if (m) return parseInt(m[2], 10)
+      if (m) return parseInt(m[1], 10)
       return null
     }
 
