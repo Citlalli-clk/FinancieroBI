@@ -351,9 +351,8 @@ export async function getGerencias(
         .filter((r) => r.primaNeta > 0)
         .sort((a, b) => a.gerencia.localeCompare(b.gerencia, 'es', { sensitivity: 'base' }))
 
-      if (out.length > 0) {
-        return out
-      }
+      // For 2024-2026, Drive is the source of truth. Do not fallback to fact_primas.
+      return out
     }
 
     let query = supabase
