@@ -546,6 +546,19 @@ function TablaDetalleContent() {
         pnAnioAnt: vendedorParentTotals.pnAnioAnt,
         pendiente: filteredRows.reduce((s, r) => s + (r.pendiente ?? 0), 0),
       }
+    : drillLevel === "grupo" && vendedorParentTotals
+    ? (() => {
+        const primaNeta = filteredRows.reduce((s, r) => s + r.primaNeta, 0)
+        const presupuestoRows = filteredRows.reduce((s, r) => s + (r.presupuesto ?? 0), 0)
+        const pnAnioAnt = filteredRows.reduce((s, r) => s + (r.pnAnioAnt ?? 0), 0)
+        return {
+          primaNeta,
+          // If no presupuesto is assigned at group row level, keep parent (vendedor/gerencia) total value
+          presupuesto: presupuestoRows > 0 ? presupuestoRows : (vendedorParentTotals.presupuesto ?? 0),
+          pnAnioAnt,
+          pendiente: filteredRows.reduce((s, r) => s + (r.pendiente ?? 0), 0),
+        }
+      })()
     : {
         primaNeta: filteredRows.reduce((s, r) => s + r.primaNeta, 0),
         presupuesto: filteredRows.reduce((s, r) => s + (r.presupuesto ?? 0), 0),

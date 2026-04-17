@@ -170,13 +170,6 @@ async function loadGruposDrive(
   }
 
 
-  // Call Center fallback: if presupuesto doesn't come by group, preserve total from vendedor/gerencia level
-  const presupuestoAgrupado = Array.from(map.values()).reduce((s, v) => s + v.presupuesto, 0)
-  if (linea === "Call Center" && presupuestoAgrupado === 0 && presupuestoTotalNivel > 0) {
-    const cur = getOrInit("Sin grupo")
-    cur.presupuesto += presupuestoTotalNivel
-  }
-
   for (const r of prevRows) {
     if (normalizeLinea(r.LBussinesNombre) !== linea) continue
     if (!matchesGerencia(r.GerenciaNombre)) continue
