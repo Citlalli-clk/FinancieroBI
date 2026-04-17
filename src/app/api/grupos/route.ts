@@ -155,15 +155,26 @@ async function loadGruposDrive(
     cur.primaNeta += pn
   }
 
+  let presupuestoTotalNivel = 0
   for (const r of pptoRows) {
     if (normalizeLinea(r.LBussinesNombre) !== linea) continue
     if (!matchesGerencia(r.GerenciaNombre)) continue
     if (!matchesVendedor(r.Vendedor)) continue
-    const grupo = sanitizeGrupo(r.Grupo)
     const m = monthFromDateLike(r.Fecha)
     if (!includeMonth(m)) continue
+    const ppto = toNumber(r.Presupuesto)
+    presupuestoTotalNivel += ppto
+    const grupo = sanitizeGrupo(r.Grupo)
     const cur = getOrInit(grupo)
-    cur.presupuesto += toNumber(r.Presupuesto)
+    cur.presupuesto += ppto
+  }
+
+
+  // Call Center fallback: if presupuesto doesn't come by group, preserve total from vendedor/gerencia level
+  const presupuestoAgrupado = Array.from(map.values()).reduce((s, v) => s + v.presupuesto, 0)
+  if (linea === "Call Center" && presupuestoAgrupado === 0 && presupuestoTotalNivel > 0) {
+    const cur = getOrInit("Sin grupo")
+    cur.presupuesto += presupuestoTotalNivel
   }
 
   for (const r of prevRows) {

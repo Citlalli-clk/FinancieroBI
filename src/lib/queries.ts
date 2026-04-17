@@ -795,16 +795,19 @@ export async function getGrupos(
         cur.primaNeta += pn
       }
 
+      let presupuestoTotalNivel = 0
       for (const r of pptoRows) {
         if (normalizeLinea(r.LBussinesNombre) !== linea) continue
         if (!matchesGerencia(r.GerenciaNombre)) continue
         if (!matchesVendedor(r.Vendedor)) continue
-        const grp = sanitizeGrupo(r.Grupo)
         const m = monthFromDateLike(r.Fecha)
         if (!includeMonth(m)) continue
+        const ppto = parseNum(r.Presupuesto)
+        presupuestoTotalNivel += ppto
+        const grp = sanitizeGrupo(r.Grupo)
         const cur = getOrInit(grp)
         if (!cur) continue
-        cur.presupuesto += parseNum(r.Presupuesto)
+        cur.presupuesto += ppto
       }
 
       for (const r of prevRows) {
@@ -818,6 +821,13 @@ export async function getGrupos(
         const cur = getOrInit(grp)
         if (!cur) continue
         cur.pnAnioAnt += pnAA
+      }
+
+      // Call Center fallback: if presupuesto doesn't come by group, preserve total from vendedor/gerencia level
+      const presupuestoAgrupado = Array.from(map.values()).reduce((s, v) => s + v.presupuesto, 0)
+      if (linea === 'Call Center' && presupuestoAgrupado === 0 && presupuestoTotalNivel > 0) {
+        const cur = getOrInit('Sin grupo')
+        if (cur) cur.presupuesto += presupuestoTotalNivel
       }
 
       const out = Array.from(map.values())
