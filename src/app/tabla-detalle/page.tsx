@@ -592,15 +592,6 @@ function TablaDetalleContent() {
   const totalRowsDifPct = totalRows.presupuesto > 0 ? ((totalRowsDif / totalRows.presupuesto) * 100).toFixed(1) : ""
   const totalRowsDifYoy = totalRows.primaNeta - (totalRows.pnAnioAnt ?? 0)
   const totalRowsDifYoyPct = totalRows.pnAnioAnt > 0 ? ((totalRowsDifYoy / totalRows.pnAnioAnt) * 100).toFixed(2) : ""
-  const isCorporateFixWindow = drillLevel === "gerencia"
-    && sel.linea === "Corporate"
-    && year === "2026"
-    && periodos.length === 4
-    && periodos.every((p) => [1, 2, 3, 4].includes(p))
-  const corporateBudgetDelta = isCorporateFixWindow ? 12289 : 0
-  if (corporateBudgetDelta !== 0) {
-    totalRows.presupuesto = (totalRows.presupuesto ?? 0) + corporateBudgetDelta
-  }
 
   // Detect which optional columns have data (for levels 2-5) — hide empty columns
   // Column visibility depends ONLY on whether individual rows have data
