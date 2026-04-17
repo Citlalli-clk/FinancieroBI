@@ -85,21 +85,14 @@ function HBarChart({ data, maxValue }: { data: { name: string; value: number; pc
             <div
               className="h-full rounded transition-all duration-700 ease-out flex items-center"
               style={{
-                width: maxValue > 0 ? `${Math.max((d.value / maxValue) * 100, 2)}%` : "2%",
+                width: maxValue > 0 ? `max(${Math.max((d.value / maxValue) * 100, 2)}%, 64px)` : "64px",
                 backgroundColor: d.color,
               }}
             >
-              {d.pct >= 8 && (
-                <span className="text-[13px] text-white font-bold px-2 whitespace-nowrap">
-                  {fmt(d.value)}
-                </span>
-              )}
-            </div>
-            {d.pct < 8 && (
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[13px] text-gray-500 font-bold">
+              <span className="text-[13px] text-white font-bold px-2 whitespace-nowrap">
                 {fmt(d.value)}
               </span>
-            )}
+            </div>
           </div>
           <div className="w-[42px] text-right text-[13px] font-bold flex-shrink-0" style={{ color: d.color }}>
             {d.pct.toFixed(1)}%
