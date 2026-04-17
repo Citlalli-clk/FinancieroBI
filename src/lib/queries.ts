@@ -324,7 +324,7 @@ export async function getGerencias(
         if (!includeMonth(m)) continue
         const pn = (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
         const cur = map.get(ger) || { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0 }
-        cur.primaNeta += pn
+        cur!.primaNeta += pn
         map.set(ger, cur)
       }
 
@@ -334,7 +334,7 @@ export async function getGerencias(
                 const m = monthFromDateLike(r.Fecha)
         if (!includeMonth(m)) continue
         const cur = map.get(ger) || { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0 }
-        cur.presupuesto += parseNum(r.Presupuesto)
+        cur!.presupuesto += parseNum(r.Presupuesto)
         map.set(ger, cur)
       }
 
@@ -345,7 +345,7 @@ export async function getGerencias(
         if (!includeMonth(m)) continue
         const pnAA = (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
         const cur = map.get(ger) || { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0 }
-        cur.pnAnioAnt += pnAA
+        cur!.pnAnioAnt += pnAA
         map.set(ger, cur)
       }
 
@@ -459,6 +459,19 @@ export async function getVendedores(
     }
 
     if ([2024, 2025, 2026].includes(yearNum)) {
+      const meses = monthNums.join(",")
+      try {
+        const apiUrl = `/api/vendedores?linea=${encodeURIComponent(linea)}&gerencia=${encodeURIComponent(gerencia)}&year=${yearNum}&meses=${meses}&_=${Date.now()}`
+        const res = await fetch(apiUrl, { cache: "no-store" })
+        if (res.ok) {
+          const apiData: VendedorRow[] = await res.json()
+          if (Array.isArray(apiData)) return apiData
+        }
+      } catch {
+        // noop
+      }
+      return null
+
       const effTable = `efectuada_${yearNum}_drive`
       const pptoTable = `presupuestos_${yearNum}_drive`
       const prevEffTable = yearNum > 2024 ? `efectuada_${yearNum - 1}_drive` : null
@@ -482,7 +495,7 @@ export async function getVendedores(
       const prevRows = prevEffTable
         ? await fetchAll(() =>
             supabase
-              .from(prevEffTable)
+              .from(prevEffTable as string)
               .select('VendNombre, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo')
               .eq('LBussinesNombre', linea)
               .eq('GerenciaNombre', gerencia)
@@ -491,6 +504,11 @@ export async function getVendedores(
 
       const map = new Map<string, { vendedor: string; primaNeta: number; pnAnioAnt: number; presupuesto: number }>()
       const selectedGerNorm = normalizeText(gerencia)
+      const matchesGerencia = (raw: unknown): boolean => {
+        const g = normalizeText(raw)
+        if (!g || !selectedGerNorm) return false
+        return g === selectedGerNorm || g.includes(selectedGerNorm) || selectedGerNorm.includes(g)
+      }
 
       const getOrInit = (rawName: string) => {
         const display = rawName.trim()
@@ -504,7 +522,7 @@ export async function getVendedores(
 
       for (const r of effRows) {
         if (normalizeLinea(r.LBussinesNombre) !== linea) continue
-        if (normalizeText(r.GerenciaNombre) !== selectedGerNorm) continue
+        if (!matchesGerencia(r.GerenciaNombre)) continue
         const vendedor = String(r.VendNombre ?? '').trim()
         if (!vendedor) continue
         const m = monthFromDateLike(r.FLiquidacion) ?? parseNum(r.Periodo)
@@ -512,24 +530,24 @@ export async function getVendedores(
         const pn = (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
         const cur = getOrInit(vendedor)
         if (!cur) continue
-        cur.primaNeta += pn
+        cur!.primaNeta += pn
       }
 
       for (const r of pptoRows) {
         if (normalizeLinea(r.LBussinesNombre) !== linea) continue
-        if (normalizeText(r.GerenciaNombre) !== selectedGerNorm) continue
+        if (!matchesGerencia(r.GerenciaNombre)) continue
         const vendedor = String(r.Vendedor ?? '').trim()
         if (!vendedor) continue
         const m = monthFromDateLike(r.Fecha)
         if (!includeMonth(m)) continue
         const cur = getOrInit(vendedor)
         if (!cur) continue
-        cur.presupuesto += parseNum(r.Presupuesto)
+        cur!.presupuesto += parseNum(r.Presupuesto)
       }
 
       for (const r of prevRows) {
         if (normalizeLinea(r.LBussinesNombre) !== linea) continue
-        if (normalizeText(r.GerenciaNombre) !== selectedGerNorm) continue
+        if (!matchesGerencia(r.GerenciaNombre)) continue
         const vendedor = String(r.VendNombre ?? '').trim()
         if (!vendedor) continue
         const m = monthFromDateLike(r.FLiquidacion) ?? parseNum(r.Periodo)
@@ -537,7 +555,7 @@ export async function getVendedores(
         const pnAA = (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
         const cur = getOrInit(vendedor)
         if (!cur) continue
-        cur.pnAnioAnt += pnAA
+        cur!.pnAnioAnt += pnAA
       }
 
       const out = Array.from(map.values())
