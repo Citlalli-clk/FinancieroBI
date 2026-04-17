@@ -243,16 +243,16 @@ export async function getGerencias(
     if ([2024, 2025, 2026].includes(yearNum)) {
       const meses = monthNums.join(",")
       try {
-        const apiUrl = `/api/gerencias?linea=${encodeURIComponent(linea)}&year=${yearNum}&meses=${meses}`
+        const apiUrl = `/api/gerencias?linea=${encodeURIComponent(linea)}&year=${yearNum}&meses=${meses}&_=${Date.now()}`
         const res = await fetch(apiUrl, { cache: "no-store" })
         if (res.ok) {
           const apiData: GerenciaRow[] = await res.json()
           if (Array.isArray(apiData)) return apiData
         }
       } catch {
-        // fallback below only if API route is unavailable
+        // noop
       }
-
+      return null
 
       const effTable = `efectuada_${yearNum}_drive`
       const pptoTable = `presupuestos_${yearNum}_drive`
@@ -302,7 +302,7 @@ export async function getGerencias(
       const prevRows = prevEffTable
         ? await fetchAll(() => {
             let q = supabase
-              .from(prevEffTable)
+              .from(prevEffTable as string)
               .select('LBussinesNombre, GerenciaNombre, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo')
 
             if (linea === 'Click Promotorías') {
@@ -356,7 +356,7 @@ export async function getGerencias(
           pnAnioAnt: Math.round(v.pnAnioAnt),
           presupuesto: Math.round(v.presupuesto),
         }))
-        .filter((r) => r.primaNeta > 0)
+        .filter((r) => r.primaNeta > 0 || (r.presupuesto ?? 0) > 0)
         .sort((a, b) => a.gerencia.localeCompare(b.gerencia, 'es', { sensitivity: 'base' }))
 
       // For 2024-2026, Drive is the source of truth. Do not fallback to fact_primas.
@@ -444,6 +444,20 @@ export async function getVendedores(
 
     const includeMonth = (m: number | null) => monthNums.length === 0 || (m !== null && monthNums.includes(m))
 
+    const normalizeText = (v: unknown): string =>
+      String(v ?? '')
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase()
+
+    const normalizeLinea = (v: unknown): string => {
+      const x = String(v ?? '').trim()
+      if (/^Click Promotor/i.test(x)) return 'Click Promotorías'
+      return x
+    }
+
     if ([2024, 2025, 2026].includes(yearNum)) {
       const effTable = `efectuada_${yearNum}_drive`
       const pptoTable = `presupuestos_${yearNum}_drive`
@@ -475,50 +489,68 @@ export async function getVendedores(
           )
         : []
 
-      const map = new Map<string, { primaNeta: number; pnAnioAnt: number; presupuesto: number }>()
+      const map = new Map<string, { vendedor: string; primaNeta: number; pnAnioAnt: number; presupuesto: number }>()
+      const selectedGerNorm = normalizeText(gerencia)
+
+      const getOrInit = (rawName: string) => {
+        const display = rawName.trim()
+        const key = normalizeText(display)
+        if (!key) return null
+        const cur = map.get(key) || { vendedor: display, primaNeta: 0, pnAnioAnt: 0, presupuesto: 0 }
+        if (!cur.vendedor) cur.vendedor = display
+        map.set(key, cur)
+        return cur
+      }
 
       for (const r of effRows) {
+        if (normalizeLinea(r.LBussinesNombre) !== linea) continue
+        if (normalizeText(r.GerenciaNombre) !== selectedGerNorm) continue
         const vendedor = String(r.VendNombre ?? '').trim()
         if (!vendedor) continue
         const m = monthFromDateLike(r.FLiquidacion) ?? parseNum(r.Periodo)
         if (!includeMonth(m)) continue
         const pn = (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
-        const cur = map.get(vendedor) || { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0 }
+        const cur = getOrInit(vendedor)
+        if (!cur) continue
         cur.primaNeta += pn
-        map.set(vendedor, cur)
       }
 
       for (const r of pptoRows) {
+        if (normalizeLinea(r.LBussinesNombre) !== linea) continue
+        if (normalizeText(r.GerenciaNombre) !== selectedGerNorm) continue
         const vendedor = String(r.Vendedor ?? '').trim()
         if (!vendedor) continue
         const m = monthFromDateLike(r.Fecha)
         if (!includeMonth(m)) continue
-        const cur = map.get(vendedor) || { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0 }
+        const cur = getOrInit(vendedor)
+        if (!cur) continue
         cur.presupuesto += parseNum(r.Presupuesto)
-        map.set(vendedor, cur)
       }
 
       for (const r of prevRows) {
+        if (normalizeLinea(r.LBussinesNombre) !== linea) continue
+        if (normalizeText(r.GerenciaNombre) !== selectedGerNorm) continue
         const vendedor = String(r.VendNombre ?? '').trim()
         if (!vendedor) continue
         const m = monthFromDateLike(r.FLiquidacion) ?? parseNum(r.Periodo)
         if (!includeMonth(m)) continue
         const pnAA = (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
-        const cur = map.get(vendedor) || { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0 }
+        const cur = getOrInit(vendedor)
+        if (!cur) continue
         cur.pnAnioAnt += pnAA
-        map.set(vendedor, cur)
       }
 
-      const out = Array.from(map.entries())
-        .map(([vendedor, v]) => ({
-          vendedor,
+      const out = Array.from(map.values())
+        .map((v) => ({
+          vendedor: v.vendedor,
           primaNeta: Math.round(v.primaNeta),
           pnAnioAnt: Math.round(v.pnAnioAnt),
           presupuesto: Math.round(v.presupuesto),
         }))
+        .filter((r) => r.primaNeta > 0 || (r.presupuesto ?? 0) > 0)
         .sort((a, b) => b.primaNeta - a.primaNeta)
 
-      if (out.length > 0) return out
+      return out
     }
 
     let query = supabase
