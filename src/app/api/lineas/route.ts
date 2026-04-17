@@ -157,12 +157,6 @@ async function loadFromSummaryTable(
       }
     })
 
-  const corr = corporateBudgetCorrection(year, meses)
-  if (corr !== 0) {
-    const i = rows.findIndex((r) => r.nombre === "Corporate")
-    if (i >= 0) rows[i].presupuesto += corr
-  }
-
   return rows.sort((a, b) => b.primaNeta - a.primaNeta)
 }
 
@@ -391,12 +385,6 @@ export async function GET(request: NextRequest) {
         presupuesto: Math.round(budgetByLine.get(nombre) || 0),
         pendiente: Math.round(pendingByLine.get(nombre) || 0),
       }))
-
-    const corr = corporateBudgetCorrection(year, meses)
-    if (corr !== 0) {
-      const i = result.findIndex((r) => r.nombre === "Corporate")
-      if (i >= 0) result[i].presupuesto += corr
-    }
 
     result.sort((a, b) => b.primaNeta - a.primaNeta)
 
