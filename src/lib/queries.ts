@@ -718,6 +718,16 @@ export async function getGrupos(
       const prevEffTable = yearNum > 2024 ? `efectuada_${yearNum - 1}_drive` : null
       const selVendNorm = normalizeText(vendedor)
       const selGerNorm = normalizeText(gerencia)
+      const matchesGerencia = (raw: unknown): boolean => {
+        const g = normalizeText(raw)
+        if (!g || !selGerNorm) return false
+        return g === selGerNorm
+      }
+      const matchesVendedor = (raw: unknown): boolean => {
+        const v = normalizeText(raw)
+        if (!v || !selVendNorm) return false
+        return v === selVendNorm || v.includes(selVendNorm) || selVendNorm.includes(v)
+      }
 
       const effRows = await fetchAll(() => {
         let q = supabase
@@ -760,8 +770,8 @@ export async function getGrupos(
 
       for (const r of effRows) {
         if (normalizeLinea(r.LBussinesNombre) !== linea) continue
-        if (normalizeText(r.GerenciaNombre) !== selGerNorm) continue
-        if (normalizeText(r.VendNombre) !== selVendNorm) continue
+        if (!matchesGerencia(r.GerenciaNombre)) continue
+        if (!matchesVendedor(r.VendNombre)) continue
         const grp = String(r.Grupo ?? '').trim() || 'Sin grupo'
         const m = monthFromDateLike(r.FLiquidacion) ?? parseNum(r.Periodo)
         if (!includeMonth(m)) continue
@@ -773,8 +783,8 @@ export async function getGrupos(
 
       for (const r of pptoRows) {
         if (normalizeLinea(r.LBussinesNombre) !== linea) continue
-        if (normalizeText(r.GerenciaNombre) !== selGerNorm) continue
-        if (normalizeText(r.Vendedor) !== selVendNorm) continue
+        if (!matchesGerencia(r.GerenciaNombre)) continue
+        if (!matchesVendedor(r.Vendedor)) continue
         const grp = String(r.Grupo ?? '').trim() || 'Sin grupo'
         const m = monthFromDateLike(r.Fecha)
         if (!includeMonth(m)) continue
@@ -785,8 +795,8 @@ export async function getGrupos(
 
       for (const r of prevRows) {
         if (normalizeLinea(r.LBussinesNombre) !== linea) continue
-        if (normalizeText(r.GerenciaNombre) !== selGerNorm) continue
-        if (normalizeText(r.VendNombre) !== selVendNorm) continue
+        if (!matchesGerencia(r.GerenciaNombre)) continue
+        if (!matchesVendedor(r.VendNombre)) continue
         const grp = String(r.Grupo ?? '').trim() || 'Sin grupo'
         const m = monthFromDateLike(r.FLiquidacion) ?? parseNum(r.Periodo)
         if (!includeMonth(m)) continue
