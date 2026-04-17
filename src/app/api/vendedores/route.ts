@@ -84,7 +84,7 @@ async function loadVendedoresDrive(
   const matchesGerencia = (raw: unknown): boolean => {
     const g = normalizeText(raw)
     if (!g || !selectedGerNorm) return false
-    return g === selectedGerNorm || g.includes(selectedGerNorm) || selectedGerNorm.includes(g)
+    return g === selectedGerNorm
   }
 
   const effTable = `efectuada_${yearNum}_drive`

@@ -154,12 +154,7 @@ function TablaDetalleContent() {
   useEffect(() => {
     let cancelled = false
 
-    // Reset drill state
-    setDrillLevel("linea")
-    setCrumbs([])
-    setSel({})
-    setTipoGroups(null)
-    setExpandedTipos(new Set())
+    // Keep current drill level when filters change
     setLoading(true)
 
     const load = async () => {
@@ -205,10 +200,11 @@ function TablaDetalleContent() {
   const usesTipoGrouper = (linea: string) => linea === "Click Franquicias" || isPromotoriasLine(linea)
 
   // Generic drill function
-  const drill = async (level: DrillLevel, label: string, newSel: typeof sel) => {
+  const drill = async (level: DrillLevel, label: string, newSel: typeof sel, opts?: { pushCrumb?: boolean }) => {
+    const pushCrumb = opts?.pushCrumb ?? true
     setLoading(true)
     setSel(newSel)
-    setCrumbs(prev => [...prev, { level: drillLevel, label }])
+    if (pushCrumb) setCrumbs(prev => [...prev, { level: drillLevel, label }])
 
     // Reset tipo groups when changing levels (except when drilling into vendedor with tipo grouper)
     if (level !== "vendedor" || !usesTipoGrouper(newSel.linea || "")) {
@@ -236,7 +232,7 @@ function TablaDetalleContent() {
       const currentShare = currentTotal > 0 ? primaNeta / currentTotal : 0
       const effectiveShare = priorShare > 0 ? priorShare : currentShare
       const pptoProporcional = Math.round(lineaPpto * effectiveShare)
-      const ppto = explicitPpto != null && explicitPpto > 0 ? Math.round(explicitPpto) : pptoProporcional
+      const ppto = explicitPpto != null ? Math.round(explicitPpto) : pptoProporcional
       const dif = primaNeta - ppto
       const pctDif = ppto > 0 ? Math.round((dif / ppto) * 1000) / 10 : 0
       const difY = primaNeta - pnAnioAnt
@@ -309,6 +305,14 @@ function TablaDetalleContent() {
     setDrillLevel(level)
     setLoading(false)
   }
+
+  // When year/month filters change, keep user in current drill and refresh that level data.
+  useEffect(() => {
+    if (drillLevel === "linea") return
+    if (!sel.linea) return
+    drill(drillLevel, "", sel, { pushCrumb: false })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periodos, year])
 
   // Auto-drill into the category matching the ?linea= param
   useEffect(() => {
@@ -506,15 +510,24 @@ function TablaDetalleContent() {
   const manyRows = drillLevel === 'poliza' ? filteredPolizas.length > 15 : (drillLevel !== 'linea' && drillLevel !== 'gerencia' && displayRows.length > 15)
 
   // Compute totals for levels 2-5 (same pattern as totalLineas)
-  const totalRows = {
-    primaNeta: filteredRows.reduce((s, r) => s + r.primaNeta, 0),
-    presupuesto: filteredRows.reduce((s, r) => s + (r.presupuesto ?? 0), 0),
-    pnAnioAnt: filteredRows.reduce((s, r) => s + (r.pnAnioAnt ?? 0), 0),
-    pendiente: filteredRows.reduce((s, r) => s + (r.pendiente ?? 0), 0),
-  }
-  const totalRowsDif = filteredRows.reduce((s, r) => s + (r.diferencia ?? 0), 0)
+  // For gerencia level, pin totals to selected línea card totals so it always matches level-1 exactly.
+  const lineaTotals = sel.linea ? lineas.find((l) => l.linea === sel.linea) : null
+  const totalRows = drillLevel === "gerencia" && lineaTotals
+    ? {
+        primaNeta: lineaTotals.primaNeta,
+        presupuesto: lineaTotals.presupuesto,
+        pnAnioAnt: lineaTotals.pnAnioAnt,
+        pendiente: lineaTotals.pendiente,
+      }
+    : {
+        primaNeta: filteredRows.reduce((s, r) => s + r.primaNeta, 0),
+        presupuesto: filteredRows.reduce((s, r) => s + (r.presupuesto ?? 0), 0),
+        pnAnioAnt: filteredRows.reduce((s, r) => s + (r.pnAnioAnt ?? 0), 0),
+        pendiente: filteredRows.reduce((s, r) => s + (r.pendiente ?? 0), 0),
+      }
+  const totalRowsDif = totalRows.primaNeta - (totalRows.presupuesto ?? 0)
   const totalRowsDifPct = totalRows.presupuesto > 0 ? ((totalRowsDif / totalRows.presupuesto) * 100).toFixed(1) : ""
-  const totalRowsDifYoy = filteredRows.reduce((s, r) => s + (r.difYoY ?? 0), 0)
+  const totalRowsDifYoy = totalRows.primaNeta - (totalRows.pnAnioAnt ?? 0)
   const totalRowsDifYoyPct = totalRows.pnAnioAnt > 0 ? ((totalRowsDifYoy / totalRows.pnAnioAnt) * 100).toFixed(2) : ""
 
   // Detect which optional columns have data (for levels 2-5) — hide empty columns
