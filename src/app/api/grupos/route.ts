@@ -95,7 +95,7 @@ async function loadGruposDrive(
     if (!g || !selGerNorm) return false
     return g === selGerNorm
   }
-  const matchesVendedor = (raw: unknown): boolean => {
+  const looseMatchVendedor = (raw: unknown): boolean => {
     const v = normalizeText(raw)
     if (!v || !selVendNorm) return false
     return v === selVendNorm || v.includes(selVendNorm) || selVendNorm.includes(v)
@@ -134,6 +134,25 @@ async function loadGruposDrive(
       })
     : []
 
+  const hasExactEff = effRows.some((r) => normalizeText(r.VendNombre) === selVendNorm)
+  const hasExactPpto = pptoRows.some((r) => normalizeText(r.Vendedor) === selVendNorm)
+  const hasExactPrev = prevRows.some((r) => normalizeText(r.VendNombre) === selVendNorm)
+  const matchesVendedorEff = (raw: unknown) => {
+    const v = normalizeText(raw)
+    if (!v || !selVendNorm) return false
+    return hasExactEff ? v === selVendNorm : looseMatchVendedor(raw)
+  }
+  const matchesVendedorPpto = (raw: unknown) => {
+    const v = normalizeText(raw)
+    if (!v || !selVendNorm) return false
+    return hasExactPpto ? v === selVendNorm : looseMatchVendedor(raw)
+  }
+  const matchesVendedorPrev = (raw: unknown) => {
+    const v = normalizeText(raw)
+    if (!v || !selVendNorm) return false
+    return hasExactPrev ? v === selVendNorm : looseMatchVendedor(raw)
+  }
+
   const map = new Map<string, { grupo: string; primaNeta: number; pnAnioAnt: number; presupuesto: number }>()
   const getOrInit = (raw: string) => {
     const display = raw.trim() || "Sin grupo"
@@ -146,7 +165,7 @@ async function loadGruposDrive(
   for (const r of effRows) {
     if (normalizeLinea(r.LBussinesNombre) !== linea) continue
     if (!matchesGerencia(r.GerenciaNombre)) continue
-    if (!matchesVendedor(r.VendNombre)) continue
+    if (!matchesVendedorEff(r.VendNombre)) continue
     const grupo = sanitizeGrupo(r.Grupo)
     const m = monthFromDateLike(r.FLiquidacion) ?? toNumber(r.Periodo)
     if (!includeMonth(m)) continue
@@ -159,7 +178,7 @@ async function loadGruposDrive(
   for (const r of pptoRows) {
     if (normalizeLinea(r.LBussinesNombre) !== linea) continue
     if (!matchesGerencia(r.GerenciaNombre)) continue
-    if (!matchesVendedor(r.Vendedor)) continue
+    if (!matchesVendedorPpto(r.Vendedor)) continue
     const m = monthFromDateLike(r.Fecha)
     if (!includeMonth(m)) continue
     const ppto = toNumber(r.Presupuesto)
@@ -173,7 +192,7 @@ async function loadGruposDrive(
   for (const r of prevRows) {
     if (normalizeLinea(r.LBussinesNombre) !== linea) continue
     if (!matchesGerencia(r.GerenciaNombre)) continue
-    if (!matchesVendedor(r.VendNombre)) continue
+    if (!matchesVendedorEff(r.VendNombre)) continue
     const grupo = sanitizeGrupo(r.Grupo)
     const m = monthFromDateLike(r.FLiquidacion) ?? toNumber(r.Periodo)
     if (!includeMonth(m)) continue
