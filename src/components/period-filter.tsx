@@ -14,6 +14,7 @@ interface PeriodFilterProps {
   onFilterChange: (year: string, periodos: number[]) => void
   defaultYear?: string
   defaultMonth?: number
+  onClearAll?: () => void
 }
 
 const CURRENT_YEAR = new Date().getFullYear()
@@ -48,7 +49,7 @@ function availableMonthsForYear(year: string): number[] {
   return []
 }
 
-export function PeriodFilter({ onFilterChange, defaultYear, defaultMonth }: PeriodFilterProps) {
+export function PeriodFilter({ onFilterChange, defaultYear, defaultMonth, onClearAll }: PeriodFilterProps) {
   const yearOptions = useMemo(() => buildYearOptions(defaultYear), [defaultYear])
   const resolvedDefaultYear = defaultYear || yearOptions[0] || String(CURRENT_YEAR)
 
@@ -109,9 +110,12 @@ export function PeriodFilter({ onFilterChange, defaultYear, defaultMonth }: Peri
   }
 
   const clearFilters = () => {
-    // Clear only month selection and keep the currently selected year
-    setSelectedMonths([])
+    const resetYear = resolvedDefaultYear
+    const resetMonths = availableMonthsForYear(resetYear)
+    setYear(resetYear)
+    setSelectedMonths(resetMonths)
     setIsMonthMenuOpen(false)
+    onClearAll?.()
   }
 
   const selectedSummary = useMemo(() => {

@@ -20,9 +20,7 @@ function parseNum(v: unknown): number {
   if (lc !== -1 && ld !== -1) {
     if (ld > lc) s = s.replace(/,/g, "")
     else s = s.replace(/\./g, "").replace(",", ".")
-  } else if (lc !== -1) {
-    s = s.replace(",", ".")
-  }
+  } else if (lc !== -1) s = s.replace(",", ".")
   const n = Number(s)
   return Number.isFinite(n) ? n : 0
 }
@@ -57,7 +55,7 @@ function normalizeText(v: unknown): string {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchAll(queryFactory: () => any, pageSize = 5000): Promise<Record<string, unknown>[]> {
+async function fetchByRange(queryFactory: () => any, pageSize = 1000): Promise<Record<string, unknown>[]> {
   const allRows: Record<string, unknown>[] = []
   for (let from = 0; from < 300000; from += pageSize) {
     const to = from + pageSize - 1
@@ -68,6 +66,24 @@ async function fetchAll(queryFactory: () => any, pageSize = 5000): Promise<Recor
     if (data.length < pageSize) break
   }
   return allRows
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchEfectuadaAll(supabase: any, table: string, columns: string): Promise<Record<string, unknown>[]> {
+  const all: Record<string, unknown>[] = []
+  let lastId: number | null = null
+  for (let i = 0; i < 1000; i++) {
+    let q = supabase.from(table).select(columns).order("IDDocto", { ascending: true }).limit(1000)
+    if (lastId !== null) q = q.gt("IDDocto", lastId)
+    const { data, error } = await q
+    if (error || !data || data.length === 0) break
+    all.push(...(data as Record<string, unknown>[]))
+    const id = Number((data[data.length - 1] as Record<string, unknown>).IDDocto)
+    if (!Number.isFinite(id)) break
+    lastId = id
+    if (data.length < 1000) break
+  }
+  return all
 }
 
 export async function GET(request: NextRequest) {
@@ -91,10 +107,10 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, apiKey)
 
-    const yearsForVendedores = [year]
     const pptoTable = `presupuestos_${year}_drive`
     const lineaFilter = normalizeText(searchParams.get("linea"))
     const gerenciaFilter = normalizeText(searchParams.get("gerencia"))
+
     const acc = new Map<string, { vendedor: string; meta: number; primaActual: number }>()
     const vendorsPassingFilters = new Set<string>()
 
@@ -108,33 +124,28 @@ export async function GET(request: NextRequest) {
       return { key, row }
     }
 
-    for (const y of yearsForVendedores) {
-      const effTable = `efectuada_${y}_drive`
-      const effRows = await fetchAll(() =>
-        supabase
-          .from(effTable)
-          .select("VendNombre, LBussinesNombre, GerenciaNombre, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo")
-          .order("IDDocto", { ascending: true })
-      )
+    const effRows = await fetchEfectuadaAll(
+      supabase,
+      `efectuada_${year}_drive`,
+      "IDDocto, VendNombre, LBussinesNombre, GerenciaNombre, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo"
+    )
 
-      for (const r of effRows) {
-        const m = monthFromDateLike(r.FLiquidacion) ?? parseNum(r.Periodo)
-        if (!Number.isFinite(m) || !mesesSet.has(Number(m))) continue
+    for (const r of effRows) {
+      const m = monthFromDateLike(r.FLiquidacion) ?? parseNum(r.Periodo)
+      if (!Number.isFinite(m) || !mesesSet.has(Number(m))) continue
 
-        const lineaNorm = normalizeText(r.LBussinesNombre)
-        const gerNorm = normalizeText(r.GerenciaNombre)
+      const lineaNorm = normalizeText(r.LBussinesNombre)
+      const gerNorm = normalizeText(r.GerenciaNombre)
+      if (lineaFilter && lineaNorm !== lineaFilter) continue
+      if (gerenciaFilter && gerNorm !== gerenciaFilter) continue
 
-        if (lineaFilter && lineaNorm !== lineaFilter) continue
-        if (gerenciaFilter && gerNorm !== gerenciaFilter) continue
-
-        const upsert = upsertVendor(r.VendNombre)
-        if (!upsert) continue
-        vendorsPassingFilters.add(upsert.key)
-        upsert.row.primaActual += (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
-      }
+      const upsert = upsertVendor(r.VendNombre)
+      if (!upsert) continue
+      vendorsPassingFilters.add(upsert.key)
+      upsert.row.primaActual += (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
     }
 
-    const pptoRows = await fetchAll(() =>
+    const pptoRows = await fetchByRange(() =>
       supabase
         .from(pptoTable)
         .select("Vendedor, Presupuesto, Fecha")

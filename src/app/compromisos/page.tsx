@@ -264,7 +264,14 @@ export default function CompromisosPage() {
       <div className="max-w-[1200px] mx-auto w-full flex flex-col">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-2 pt-3 md:pt-5 w-full gap-2 md:gap-0">
           <PageTabs />
-          <PeriodFilter onFilterChange={handleFilterChange} />
+          <PeriodFilter
+            onFilterChange={handleFilterChange}
+            onClearAll={() => {
+              setLineaFilter("")
+              setGerenciaFilter("")
+              setVendorSearch("")
+            }}
+          />
         </div>
         <div className="mt-3 mb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
           <h1 className="text-sm font-bold text-[#111] font-lato">Vendedores — Compromisos</h1>
