@@ -8,9 +8,10 @@ import { PeriodFilter } from "@/components/period-filter"
 import { getRankedAseguradoras, getLastDataDate } from "@/lib/queries"
 import { supabase } from "@/lib/supabase"
 import { exportExcel, exportPDF } from "@/lib/export"
+import { roundByFirstDecimal } from "@/lib/rounding"
 
 function fmt(v: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(roundByFirstDecimal(v))
 }
 
 function fmtShort(v: number) {

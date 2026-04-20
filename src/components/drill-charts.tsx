@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
+import { roundByFirstDecimal } from "@/lib/rounding"
 
 interface DrillRow {
   name: string
@@ -17,11 +18,11 @@ interface DrillChartsProps {
 function fmt(v: number) {
   if (Math.abs(v) >= 1e6) return "$" + (v / 1e6).toFixed(1) + "M"
   if (Math.abs(v) >= 1e3) return "$" + (v / 1e3).toFixed(0) + "K"
-  return "$" + v.toLocaleString("es-MX")
+  return "$" + roundByFirstDecimal(v).toLocaleString("es-MX")
 }
 
 function fmtFull(v: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(roundByFirstDecimal(v))
 }
 
 // Brand palette — high-contrast colors for maximum distinction between neighbors

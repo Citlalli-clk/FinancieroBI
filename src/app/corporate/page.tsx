@@ -9,9 +9,10 @@ import { getGerencias, getVendedores, getGrupos, getClientes, getPolizas, getLas
 import type { PolizaRow } from "@/lib/queries"
 import { exportExcel, exportPDF } from "@/lib/export"
 import { DrillCharts } from "@/components/drill-charts"
+import { roundByFirstDecimal } from "@/lib/rounding"
 
 function fmt(v: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(roundByFirstDecimal(v))
 }
 
 function fmtShort(v: number) {

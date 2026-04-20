@@ -4,9 +4,10 @@ import { useState, useEffect } from "react"
 import { PageTabs } from "@/components/page-tabs"
 import { PageFooter } from "@/components/page-footer"
 import { supabase } from "@/lib/supabase"
+import { roundByFirstDecimal } from "@/lib/rounding"
 
 function fmt(v: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(roundByFirstDecimal(v))
 }
 
 interface Pendiente {

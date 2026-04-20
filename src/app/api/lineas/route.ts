@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
+import { roundByFirstDecimal } from "@/lib/rounding"
 
 interface LineaResult {
   nombre: string
@@ -150,10 +151,10 @@ async function loadFromSummaryTable(
       const c = currentByLine.get(nombre) || { primaNeta: 0, presupuesto: 0, pendiente: 0 }
       return {
         nombre,
-        primaNeta: Math.round(c.primaNeta),
-        anioAnterior: Math.round(priorByLine.get(nombre) || 0),
-        presupuesto: Math.round(c.presupuesto),
-        pendiente: Math.round(c.pendiente),
+        primaNeta: roundByFirstDecimal(c.primaNeta),
+        anioAnterior: roundByFirstDecimal(priorByLine.get(nombre) || 0),
+        presupuesto: roundByFirstDecimal(c.presupuesto),
+        pendiente: roundByFirstDecimal(c.pendiente),
       }
     })
 
@@ -380,10 +381,10 @@ export async function GET(request: NextRequest) {
     const result: LineaResult[] = Array.from(lineas)
       .map((nombre) => ({
         nombre,
-        primaNeta: Math.round(currentByLine.get(nombre) || 0),
-        anioAnterior: Math.round(priorByLine.get(nombre) || 0),
-        presupuesto: Math.round(budgetByLine.get(nombre) || 0),
-        pendiente: Math.round(pendingByLine.get(nombre) || 0),
+        primaNeta: roundByFirstDecimal(currentByLine.get(nombre) || 0),
+        anioAnterior: roundByFirstDecimal(priorByLine.get(nombre) || 0),
+        presupuesto: roundByFirstDecimal(budgetByLine.get(nombre) || 0),
+        pendiente: roundByFirstDecimal(pendingByLine.get(nombre) || 0),
       }))
 
     result.sort((a, b) => b.primaNeta - a.primaNeta)

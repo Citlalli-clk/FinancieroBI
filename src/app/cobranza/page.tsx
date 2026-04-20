@@ -5,9 +5,10 @@ import { PageTabs } from "@/components/page-tabs"
 import { PageFooter } from "@/components/page-footer"
 import { PeriodFilter } from "@/components/period-filter"
 import { getRamos, getRankedAseguradoras, getAseguradorasByClasificacion, getLastDataDate } from "@/lib/queries"
+import { roundByFirstDecimal } from "@/lib/rounding"
 
 function fmt(v: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(v)
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(roundByFirstDecimal(v))
 }
 
 function fmtM(v: number) {

@@ -1,4 +1,5 @@
 import { supabase } from "./supabase"
+import { roundByFirstDecimal } from "./rounding"
 
 /**
  * Fetch ALL rows using pagination with a query factory.
@@ -152,7 +153,7 @@ export async function getLineasNegocio(periodo?: number, año?: string): Promise
     return (data as any[])
       .map((row) => ({
         linea: (row.linea_negocio as string) || "Sin clasificar",
-        primaNeta: Math.round((row.prima_neta_cobrada as number) || 0),
+        primaNeta: roundByFirstDecimal((row.prima_neta_cobrada as number) || 0),
       }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
   } catch {
@@ -182,8 +183,8 @@ export async function getLineasWithYoY(
         nombre: item.nombre,
         primaNeta: item.primaNeta,
         anioAnterior: item.anioAnterior,
-        presupuesto: Math.round(item.presupuesto || 0),
-        pendiente: Math.round(item.pendiente || 0),
+        presupuesto: roundByFirstDecimal(item.presupuesto || 0),
+        pendiente: roundByFirstDecimal(item.pendiente || 0),
       }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
   } catch {
@@ -352,9 +353,9 @@ export async function getGerencias(
       const out = Array.from(map.entries())
         .map(([gerencia, v]) => ({
           gerencia,
-          primaNeta: Math.round(v.primaNeta),
-          pnAnioAnt: Math.round(v.pnAnioAnt),
-          presupuesto: Math.round(v.presupuesto),
+          primaNeta: roundByFirstDecimal(v.primaNeta),
+          pnAnioAnt: roundByFirstDecimal(v.pnAnioAnt),
+          presupuesto: roundByFirstDecimal(v.presupuesto),
         }))
         .filter((r) => r.primaNeta > 0 || (r.presupuesto ?? 0) > 0)
         .sort((a, b) => a.gerencia.localeCompare(b.gerencia, 'es', { sensitivity: 'base' }))
@@ -387,7 +388,7 @@ export async function getGerencias(
     }
 
     return Array.from(map.entries())
-      .map(([gerencia, v]) => ({ gerencia, primaNeta: Math.round(v.primaNeta), pnAnioAnt: Math.round(v.pnAnioAnt), presupuesto: Math.round(v.presupuesto) }))
+      .map(([gerencia, v]) => ({ gerencia, primaNeta: roundByFirstDecimal(v.primaNeta), pnAnioAnt: roundByFirstDecimal(v.pnAnioAnt), presupuesto: roundByFirstDecimal(v.presupuesto) }))
       .sort((a, b) => a.gerencia.localeCompare(b.gerencia, 'es', { sensitivity: 'base' }))
   } catch {
     return null
@@ -565,9 +566,9 @@ export async function getVendedores(
       const out = Array.from(map.values())
         .map((v) => ({
           vendedor: v.vendedor,
-          primaNeta: Math.round(v.primaNeta),
-          pnAnioAnt: Math.round(v.pnAnioAnt),
-          presupuesto: Math.round(v.presupuesto),
+          primaNeta: roundByFirstDecimal(v.primaNeta),
+          pnAnioAnt: roundByFirstDecimal(v.pnAnioAnt),
+          presupuesto: roundByFirstDecimal(v.presupuesto),
         }))
         .filter((r) => r.primaNeta > 0 || (r.presupuesto ?? 0) > 0)
         .sort((a, b) => a.vendedor.localeCompare(b.vendedor, 'es', { sensitivity: 'base' }))
@@ -600,7 +601,7 @@ export async function getVendedores(
     }
 
     return Array.from(map.entries())
-      .map(([vendedor, v]) => ({ vendedor, primaNeta: Math.round(v.primaNeta), pnAnioAnt: Math.round(v.pnAnioAnt), presupuesto: Math.round(v.presupuesto) }))
+      .map(([vendedor, v]) => ({ vendedor, primaNeta: roundByFirstDecimal(v.primaNeta), pnAnioAnt: roundByFirstDecimal(v.pnAnioAnt), presupuesto: roundByFirstDecimal(v.presupuesto) }))
       .sort((a, b) => a.vendedor.localeCompare(b.vendedor, 'es', { sensitivity: 'base' }))
   } catch {
     return null
@@ -841,7 +842,7 @@ export async function getGrupos(
       }
 
       const out = Array.from(map.values())
-        .map((v) => ({ grupo: v.grupo, cliente: v.grupo, primaNeta: Math.round(v.primaNeta), pnAnioAnt: Math.round(v.pnAnioAnt), presupuesto: Math.round(v.presupuesto) }))
+        .map((v) => ({ grupo: v.grupo, cliente: v.grupo, primaNeta: roundByFirstDecimal(v.primaNeta), pnAnioAnt: roundByFirstDecimal(v.pnAnioAnt), presupuesto: roundByFirstDecimal(v.presupuesto) }))
         .filter((r) => r.primaNeta > 0 || (r.presupuesto ?? 0) > 0)
         .sort((a, b) => a.grupo.localeCompare(b.grupo, "es", { sensitivity: "base" }))
 
@@ -873,7 +874,7 @@ export async function getGrupos(
     }
 
     return Array.from(map.entries())
-      .map(([grupo, v]) => ({ grupo, cliente: grupo, primaNeta: Math.round(v.primaNeta), pnAnioAnt: Math.round(v.pnAnioAnt), presupuesto: Math.round(v.presupuesto) }))
+      .map(([grupo, v]) => ({ grupo, cliente: grupo, primaNeta: roundByFirstDecimal(v.primaNeta), pnAnioAnt: roundByFirstDecimal(v.pnAnioAnt), presupuesto: roundByFirstDecimal(v.presupuesto) }))
       .sort((a, b) => a.grupo.localeCompare(b.grupo, "es", { sensitivity: "base" }))
   } catch {
     return null
@@ -928,7 +929,7 @@ export async function getClientes(
     }
 
     return Array.from(map.entries())
-      .map(([cliente, v]) => ({ cliente, primaNeta: Math.round(v.primaNeta), pnAnioAnt: Math.round(v.pnAnioAnt), presupuesto: Math.round(v.presupuesto) }))
+      .map(([cliente, v]) => ({ cliente, primaNeta: roundByFirstDecimal(v.primaNeta), pnAnioAnt: roundByFirstDecimal(v.pnAnioAnt), presupuesto: roundByFirstDecimal(v.presupuesto) }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
   } catch {
     return null
@@ -979,7 +980,7 @@ export async function getPolizas(
         subramo: "",
         fechaLiquidacion: (row.fecha_vencimiento as string) || "",
         fechaLimPago: (row.fecha_vencimiento as string) || "",
-        primaNeta: Math.round((row.prima_pendiente as number) || 0),
+        primaNeta: roundByFirstDecimal((row.prima_pendiente as number) || 0),
       }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
   } catch {
@@ -1017,7 +1018,7 @@ export async function getRankedVendedores(
     }
 
     return Object.entries(grouped)
-      .map(([vendedor, prima]) => ({ vendedor, primaNeta: Math.round(prima) }))
+      .map(([vendedor, prima]) => ({ vendedor, primaNeta: roundByFirstDecimal(prima) }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
   } catch { return null }
 }
@@ -1054,7 +1055,7 @@ export async function getRankedAseguradoras(
     }
 
     return Object.entries(grouped)
-      .map(([aseguradora, prima]) => ({ aseguradora, primaNeta: Math.round(prima) }))
+      .map(([aseguradora, prima]) => ({ aseguradora, primaNeta: roundByFirstDecimal(prima) }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
   } catch { return null }
 }
@@ -1163,7 +1164,7 @@ export async function globalSearch(
       const linea = (row.linea_negocio as string) || "Sin línea"
       const gerencia = (row.gerencia as string) || ""
       const vendedor = (row.vendedor as string) || ""
-      const prima = Math.round((row.prima_neta_cobrada as number) || 0)
+      const prima = roundByFirstDecimal((row.prima_neta_cobrada as number) || 0)
 
       if (gerencia && gerencia.toLowerCase().includes(search) && !seen.has(`g:${gerencia}:${linea}`)) {
         seen.add(`g:${gerencia}:${linea}`)
@@ -1232,7 +1233,7 @@ export async function getRamos(
     return (data as any[])
       .map((row) => ({
         ramo: String(row.ramo || "Sin ramo"),
-        primaNeta: Math.round(Number(row.prima_oficial) || 0),
+        primaNeta: roundByFirstDecimal(Number(row.prima_oficial) || 0),
         polizas: Number(row.polizas) || 0,
       }))
       .sort((a, b) => b.primaNeta - a.primaNeta)
@@ -1385,7 +1386,7 @@ export async function getVendedoresByTipo(
     for (const [vendedor, prima] of Object.entries(vendedorMap)) {
       const tipo = tipoMap[vendedor] || "Sin clasificar"
       if (!byTipo[tipo]) byTipo[tipo] = []
-      byTipo[tipo].push({ vendedor, tipo, primaNeta: Math.round(prima) })
+      byTipo[tipo].push({ vendedor, tipo, primaNeta: roundByFirstDecimal(prima) })
     }
 
     // Sort vendedores within each tipo by primaNeta desc
@@ -1552,12 +1553,12 @@ export async function getVendedoresWithTipo(
         share = pnAnioAntTotal > 0 ? pnAnioAnt / pnAnioAntTotal : 0
       }
 
-      const presupuesto = ppto > 0 && share > 0 ? Math.round(ppto * share) : (ppto > 0 && useEqualDistribution ? Math.round(ppto / vendedorCount) : null)
-      const diferencia = presupuesto !== null && presupuesto > 0 ? Math.round(primaNeta) - presupuesto : null
+      const presupuesto = ppto > 0 && share > 0 ? roundByFirstDecimal(ppto * share) : (ppto > 0 && useEqualDistribution ? roundByFirstDecimal(ppto / vendedorCount) : null)
+      const diferencia = presupuesto !== null && presupuesto > 0 ? roundByFirstDecimal(primaNeta) - presupuesto : null
       const pctDifPpto = presupuesto !== null && presupuesto > 0 && diferencia !== null
         ? Math.round((diferencia / presupuesto) * 1000) / 10
         : null
-      const difYoY = pnAnioAnt > 0 ? Math.round(primaNeta) - Math.round(pnAnioAnt) : (pnAnioAnt === 0 && primaNeta > 0 ? Math.round(primaNeta) : null)
+      const difYoY = pnAnioAnt > 0 ? roundByFirstDecimal(primaNeta) - roundByFirstDecimal(pnAnioAnt) : (pnAnioAnt === 0 && primaNeta > 0 ? roundByFirstDecimal(primaNeta) : null)
       const pctDifYoY = pnAnioAnt > 0 && difYoY !== null
         ? Math.round((difYoY / pnAnioAnt) * 10000) / 100
         : null
@@ -1567,8 +1568,8 @@ export async function getVendedoresWithTipo(
       byTipo[tipo].push({
         vendedor,
         tipo,
-        primaNeta: Math.round(primaNeta),
-        pnAnioAnt: Math.round(pnAnioAnt),
+        primaNeta: roundByFirstDecimal(primaNeta),
+        pnAnioAnt: roundByFirstDecimal(pnAnioAnt),
         presupuesto,
         diferencia,
         pctDifPpto,

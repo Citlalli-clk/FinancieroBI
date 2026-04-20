@@ -5,6 +5,7 @@ import { PageTabs } from "@/components/page-tabs"
 import { PageFooter } from "@/components/page-footer"
 import { PeriodFilter } from "@/components/period-filter"
 import { getLineasWithYoY, getRamos, getRankedAseguradoras } from "@/lib/queries"
+import { roundByFirstDecimal } from "@/lib/rounding"
 
 function fmt(v: number) {
   return new Intl.NumberFormat("es-MX", {
@@ -12,7 +13,7 @@ function fmt(v: number) {
     currency: "MXN",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(v)
+  }).format(roundByFirstDecimal(v))
 }
 
 type RamoItem = { ramo: string; primaNeta: number; polizas: number }

@@ -5,9 +5,10 @@ import { PageTabs } from "@/components/page-tabs"
 import { PeriodFilter } from "@/components/period-filter"
 import { getCompromisos } from "@/lib/queries"
 import type { CompromisoRow } from "@/lib/queries"
+import { roundByFirstDecimal } from "@/lib/rounding"
 
 function fmt(v: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(roundByFirstDecimal(v))
 }
 function fmtShort(v: number) {
   if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`
