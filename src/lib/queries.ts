@@ -1241,9 +1241,11 @@ export interface CompromisosFiltros {
   lineas: string[]
   gerenciasByLinea: Record<string, string[]>
 }
-export async function getCompromisosFiltros(): Promise<CompromisosFiltros> {
+export async function getCompromisosFiltros(anio: number, meses: number[]): Promise<CompromisosFiltros> {
   try {
-    const res = await fetch(`/api/compromisos-filtros`, { cache: "no-store" })
+    const validMeses = (meses || []).filter((m) => Number.isFinite(m) && m >= 1 && m <= 12)
+    const params = new URLSearchParams({ year: String(anio), meses: validMeses.join(",") })
+    const res = await fetch(`/api/compromisos-filtros?${params.toString()}`, { cache: "no-store" })
     if (!res.ok) throw new Error(`API error: ${res.status}`)
     const data: CompromisosFiltros = await res.json()
     return data || { lineas: [], gerenciasByLinea: {} }

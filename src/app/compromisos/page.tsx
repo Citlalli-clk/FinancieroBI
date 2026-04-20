@@ -195,8 +195,16 @@ export default function CompromisosPage() {
   useEffect(() => { document.title = "Vendedores | CLK BI Dashboard" }, [])
 
   useEffect(() => {
-    getCompromisosFiltros().then(setFiltros).catch(() => setFiltros({ lineas: [], gerenciasByLinea: {} }))
-  }, [])
+    if (periodos.length === 0) return
+    getCompromisosFiltros(Number(year), periodos)
+      .then((f) => {
+        setFiltros(f)
+        if (lineaFilter && !f.lineas.includes(lineaFilter)) setLineaFilter("")
+        const gerencias = lineaFilter ? (f.gerenciasByLinea[lineaFilter] || []) : []
+        if (gerenciaFilter && !gerencias.includes(gerenciaFilter)) setGerenciaFilter("")
+      })
+      .catch(() => setFiltros({ lineas: [], gerenciasByLinea: {} }))
+  }, [year, periodos, lineaFilter, gerenciaFilter])
   const gerenciasDisponibles = lineaFilter
     ? (filtros.gerenciasByLinea[lineaFilter] || [])
     : Array.from(new Set(Object.values(filtros.gerenciasByLinea).flat())).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }))

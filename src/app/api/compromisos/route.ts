@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, apiKey)
 
-    const yearsForVendedores = [2024, 2025, 2026]
+    const yearsForVendedores = [year]
     const pptoTable = `presupuestos_${year}_drive`
     const lineaFilter = normalizeText(searchParams.get("linea"))
     const gerenciaFilter = normalizeText(searchParams.get("gerencia"))
