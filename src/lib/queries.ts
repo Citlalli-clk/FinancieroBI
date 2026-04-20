@@ -244,8 +244,8 @@ export async function getGerencias(
     if ([2024, 2025, 2026].includes(yearNum)) {
       const meses = monthNums.join(",")
       try {
-        const apiUrl = `/api/gerencias?linea=${encodeURIComponent(linea)}&year=${yearNum}&meses=${meses}&_=${Date.now()}`
-        const res = await fetch(apiUrl, { cache: "no-store" })
+        const apiUrl = `/api/gerencias?linea=${encodeURIComponent(linea)}&year=${yearNum}&meses=${meses}`
+        const res = await fetch(apiUrl)
         if (res.ok) {
           const apiData: GerenciaRow[] = await res.json()
           if (Array.isArray(apiData)) return apiData
@@ -469,8 +469,8 @@ export async function getVendedores(
     if ([2024, 2025, 2026].includes(yearNum)) {
       const meses = monthNums.join(",")
       try {
-        const apiUrl = `/api/vendedores?linea=${encodeURIComponent(linea)}&gerencia=${encodeURIComponent(gerencia)}&year=${yearNum}&meses=${meses}&_=${Date.now()}`
-        const res = await fetch(apiUrl, { cache: "no-store" })
+        const apiUrl = `/api/vendedores?linea=${encodeURIComponent(linea)}&gerencia=${encodeURIComponent(gerencia)}&year=${yearNum}&meses=${meses}`
+        const res = await fetch(apiUrl)
         if (res.ok) {
           const apiData: VendedorRow[] = await res.json()
           if (Array.isArray(apiData)) return apiData
@@ -718,8 +718,8 @@ export async function getGrupos(
     if ([2024, 2025, 2026].includes(yearNum)) {
       const meses = monthNums.join(",")
       try {
-        const apiUrl = `/api/grupos?linea=${encodeURIComponent(linea)}&gerencia=${encodeURIComponent(gerencia)}&vendedor=${encodeURIComponent(vendedor)}&year=${yearNum}&meses=${meses}&_=${Date.now()}`
-        const res = await fetch(apiUrl, { cache: "no-store" })
+        const apiUrl = `/api/grupos?linea=${encodeURIComponent(linea)}&gerencia=${encodeURIComponent(gerencia)}&vendedor=${encodeURIComponent(vendedor)}&year=${yearNum}&meses=${meses}`
+        const res = await fetch(apiUrl)
         if (res.ok) {
           const apiData: GrupoRow[] = await res.json()
           if (Array.isArray(apiData)) return apiData

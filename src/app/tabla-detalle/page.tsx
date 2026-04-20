@@ -279,12 +279,12 @@ function TablaDetalleContent() {
         const currentTotal = (data ?? []).reduce((s, d) => s + d.primaNeta, 0)
         setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, lineaPpto, lineaPendiente, currentTotal, d.presupuesto ?? null)))
       } else if (level === "vendedor") {
-        const parentGerencias = await getGerencias(newSel.linea!, periodos, year, clasificacionAseguradoras)
-        const parent = (parentGerencias ?? []).find((g) => g.gerencia.trim().toLowerCase() === String(newSel.gerencia ?? '').trim().toLowerCase())
-        setVendedorParentTotals(parent ? {
-          primaNeta: roundToIntegerByFirstDecimal(parent.primaNeta),
-          presupuesto: roundToIntegerByFirstDecimal(parent.presupuesto ?? 0),
-          pnAnioAnt: roundToIntegerByFirstDecimal(parent.pnAnioAnt),
+        const selectedGer = String(newSel.gerencia ?? '').trim().toLowerCase()
+        const parentFromRows = rows.find((r) => String(r.name ?? '').trim().toLowerCase() === selectedGer)
+        setVendedorParentTotals(parentFromRows ? {
+          primaNeta: roundToIntegerByFirstDecimal(parentFromRows.primaNeta),
+          presupuesto: roundToIntegerByFirstDecimal(parentFromRows.presupuesto ?? 0),
+          pnAnioAnt: roundToIntegerByFirstDecimal(parentFromRows.pnAnioAnt ?? 0),
         } : null)
 
         // Feature 1: For Franquicias/Promotorías, use tipo grouper ONLY if groupByTipo is ON

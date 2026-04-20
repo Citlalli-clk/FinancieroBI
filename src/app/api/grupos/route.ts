@@ -269,6 +269,9 @@ async function loadGruposDrive(
     .sort((a, b) => a.grupo.localeCompare(b.grupo, "es", { sensitivity: "base" }))
 }
 
+const CACHE_HEADERS = { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" }
+const NO_STORE_HEADERS = { "Cache-Control": "no-store" }
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -281,18 +284,18 @@ export async function GET(request: NextRequest) {
       .map((m) => parseInt(m, 10))
       .filter((m) => Number.isFinite(m) && m >= 1 && m <= 12)
 
-    if (!linea || !gerencia || !vendedor) return NextResponse.json([], { headers: { "Cache-Control": "no-store" } })
-    if (![2024, 2025, 2026].includes(year)) return NextResponse.json([], { headers: { "Cache-Control": "no-store" } })
+    if (!linea || !gerencia || !vendedor) return NextResponse.json([], { headers: CACHE_HEADERS })
+    if (![2024, 2025, 2026].includes(year)) return NextResponse.json([], { headers: CACHE_HEADERS })
 
     const supabaseUrl = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL)
     const serviceRoleKey = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY)
     const anonKey = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
     const apiKey = serviceRoleKey || anonKey
-    if (!supabaseUrl || !apiKey) return NextResponse.json([], { headers: { "Cache-Control": "no-store" } })
+    if (!supabaseUrl || !apiKey) return NextResponse.json([], { headers: NO_STORE_HEADERS })
 
     const supabase = createClient(supabaseUrl, apiKey)
     const rows = await loadGruposDrive(supabase, linea, gerencia, vendedor, year, meses)
-    return NextResponse.json(rows, { headers: { "Cache-Control": "no-store" } })
+    return NextResponse.json(rows, { headers: CACHE_HEADERS })
   } catch (err) {
     const detail = err instanceof Error ? err.message : "unknown"
     return NextResponse.json({ error: "grupos_failed", detail }, { status: 500 })
