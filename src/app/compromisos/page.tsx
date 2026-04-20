@@ -283,8 +283,8 @@ export default function CompromisosPage() {
                 <thead>
                   <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
                     <th className="px-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wider">Vendedor</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Meta</th>
                     <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Prima Neta</th>
+                    <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Meta</th>
                     <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Diferencia</th>
                     <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">% Avance</th>
                     <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Sem.</th>
@@ -301,8 +301,8 @@ export default function CompromisosPage() {
                     return (
                       <tr key={r.vendedor} className={`vendedor-row border-b border-[#E5E7EB] ${idx % 2 === 1 ? 'bg-[#E5E7E9]/30' : 'bg-white'}`}>
                         <td className="px-2 py-2 text-left text-sm font-semibold text-[#111]">{r.vendedor}</td>
-                        <td className="px-2 py-2 text-center text-sm text-gray-600 font-bold tabular-nums">{fmt(r.meta)}</td>
                         <td className="px-2 py-2 text-center text-sm font-bold tabular-nums">{fmt(r.primaActual)}</td>
+                        <td className="px-2 py-2 text-center text-sm text-gray-600 font-bold tabular-nums">{fmt(r.meta)}</td>
                         <td className={`px-2 py-2 text-center text-sm font-bold tabular-nums ${semaforoColor}`}>
                           {diferencia < 0 ? `(${fmt(Math.abs(diferencia))})` : fmt(diferencia)}
                         </td>
@@ -317,8 +317,8 @@ export default function CompromisosPage() {
                     return (
                       <tr className="total-row bg-[#041224] text-white border-b-2 border-b-[#E62800]">
                         <td className="px-2 py-2 text-sm font-bold text-left">Total</td>
-                        <td className="px-2 py-2 text-center text-sm font-bold tabular-nums">{fmt(totalMeta)}</td>
                         <td className="px-2 py-2 text-center text-sm font-bold tabular-nums">{fmt(totalActual)}</td>
+                        <td className="px-2 py-2 text-center text-sm font-bold tabular-nums">{fmt(totalMeta)}</td>
                         <td className="px-2 py-2 text-center text-sm font-bold tabular-nums">
                           {totalDif < 0 ? `(${fmt(Math.abs(totalDif))})` : fmt(totalDif)}
                         </td>
@@ -343,9 +343,10 @@ export default function CompromisosPage() {
               <table className="w-full border-collapse text-xs">
                 <thead>
                   <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                    <th className="px-2 py-1.5 text-center w-6 text-xs font-semibold uppercase tracking-wider">#</th>
                     <th className="px-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wider">Vendedor</th>
                     <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Prima Neta</th>
+                    <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Meta</th>
+                    <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Diferencia</th>
                     <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">% Avance</th>
                     <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Sem.</th>
                   </tr>
@@ -353,11 +354,15 @@ export default function CompromisosPage() {
                 <tbody>
                   {[...data].sort((a,b) => b.primaActual - a.primaActual).slice(0, 10).map((r, i) => {
                     const status = semaforoStatus(r.primaActual, r.meta * 0.8, r.meta)
+                    const diferencia = r.primaActual - r.meta
                     return (
                       <tr key={r.vendedor} className={`border-b border-[#E5E7EB] ${i % 2 === 1 ? 'bg-[#E5E7E9]/30' : 'bg-white'}`}>
-                        <td className="px-2 py-2 text-center text-sm tabular-nums text-gray-500">{i + 1}</td>
                         <td className="px-2 py-2 text-left text-sm font-semibold text-[#111]">{shortName(r.vendedor)}</td>
                         <td className="px-2 py-2 text-center text-sm font-bold tabular-nums">{fmt(r.primaActual)}</td>
+                        <td className="px-2 py-2 text-center text-sm text-gray-600 font-bold tabular-nums">{fmt(r.meta)}</td>
+                        <td className="px-2 py-2 text-center text-sm font-bold tabular-nums" style={{ color: semaforoColorFromStatus(status) }}>
+                          {diferencia < 0 ? `(${fmt(Math.abs(diferencia))})` : fmt(diferencia)}
+                        </td>
                         <td className="px-2 py-2 text-center text-sm font-bold tabular-nums" style={{ color: semaforoColorFromStatus(status) }}>{r.pctAvance.toFixed(1)}%</td>
                         <td className="px-2 py-2 text-center"><Semaforo status={status} /></td>
                       </tr>
