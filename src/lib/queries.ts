@@ -1238,21 +1238,137 @@ export interface CompromisoRow {
 }
 export async function getCompromisos(anio: number, mes: number): Promise<CompromisoRow[] | null> {
   try {
-    const { data, error } = await supabase
-      .from("compromisos")
-      .select("vendedor, meta, prima_actual")
-      .eq("anio", anio)
-      .eq("mes", mes)
-      .order("meta", { ascending: false })
-    if (error || !data?.length) return null
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (data as any[]).map(r => ({
-      vendedor: r.vendedor,
-      meta: r.meta,
-      primaActual: r.prima_actual,
-      pctAvance: r.meta > 0 ? Math.round((r.prima_actual / r.meta) * 1000) / 10 : 0,
-    }))
-  } catch { return null }
+    const effTable = `efectuada_${anio}_drive`
+    const pptoTable = `presupuestos_${anio}_drive`
+
+    const parseNum = (v: unknown): number => {
+      if (v === null || v === undefined || v === "") return 0
+      if (typeof v === "number") return Number.isFinite(v) ? v : 0
+      let s = String(v).trim()
+      if (!s) return 0
+      s = s.replace(/[^\d,.-]/g, "")
+      if (!s || s === "-" || s === ".") return 0
+      const lc = s.lastIndexOf(",")
+      const ld = s.lastIndexOf(".")
+      if (lc !== -1 && ld !== -1) {
+        if (ld > lc) s = s.replace(/,/g, "")
+        else s = s.replace(/\./g, "").replace(",", ".")
+      } else if (lc !== -1) {
+        s = s.replace(",", ".")
+      }
+      const n = Number(s)
+      return Number.isFinite(n) ? n : 0
+    }
+
+    const monthFromDateLike = (v: unknown): number | null => {
+      if (v === null || v === undefined || v === "") return null
+      if (typeof v === "number") {
+        const d = new Date(Math.round((v - 25569) * 86400 * 1000))
+        return Number.isNaN(d.getTime()) ? null : d.getMonth() + 1
+      }
+      const s = String(v).trim()
+      const m1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/)
+      if (m1) {
+        const mm = parseInt(m1[1], 10)
+        return mm >= 1 && mm <= 12 ? mm : null
+      }
+      const m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+      if (m2) {
+        const mm = parseInt(m2[2], 10)
+        return mm >= 1 && mm <= 12 ? mm : null
+      }
+      return null
+    }
+
+    const normalizeText = (v: unknown): string =>
+      String(v ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase()
+
+    const catalogRows = await fetchAll(() =>
+      supabase
+        .from("catalogo_vendedores_drive")
+        .select("clave, nombre, estatus, gerencia")
+        .order("clave", { ascending: true })
+    )
+
+    const byClave = new Map<string, Record<string, unknown>>()
+    const byNombre = new Map<string, Record<string, unknown>>()
+
+    for (const r of catalogRows) {
+      const k = normalizeText(r.clave)
+      const n = normalizeText(r.nombre)
+      const estatus = normalizeText(r.estatus)
+      const isActive = estatus === "activo"
+      if (k && k !== "null" && k !== "0") {
+        const prev = byClave.get(k)
+        if (!prev || (normalizeText(prev.estatus) !== "activo" && isActive)) byClave.set(k, r)
+      }
+      if (n) {
+        const prev = byNombre.get(n)
+        if (!prev || (normalizeText(prev.estatus) !== "activo" && isActive)) byNombre.set(n, r)
+      }
+    }
+
+    const effRows = await fetchAll(() =>
+      supabase
+        .from(effTable)
+        .select("Clave_Enroller, VendNombre, GerenciaNombre, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo")
+        .order("IDDocto", { ascending: true })
+    )
+
+    const pptoRows = await fetchAll(() =>
+      supabase
+        .from(pptoTable)
+        .select("Vendedor, GerenciaNombre, Presupuesto, Fecha")
+        .order("Fecha", { ascending: true })
+    )
+
+    const acc = new Map<string, { vendedor: string; meta: number; primaActual: number }>()
+
+    const getKeyAndName = (clave: unknown, nombre: unknown): { key: string; display: string } => {
+      const kc = normalizeText(clave)
+      const nn = normalizeText(nombre)
+      const c = (kc && kc !== "null" && kc !== "0" ? byClave.get(kc) : null) || byNombre.get(nn)
+      const display = c ? String(c.nombre || nombre || "Sin vendedor") : String(nombre || "Sin vendedor")
+      const key = c ? `cat:${normalizeText(c.clave) || normalizeText(c.nombre)}` : `raw:${nn}`
+      return { key, display }
+    }
+
+    for (const r of effRows) {
+      const m = monthFromDateLike(r.FLiquidacion) ?? parseNum(r.Periodo)
+      if (m !== mes) continue
+      const { key, display } = getKeyAndName(r.Clave_Enroller, r.VendNombre)
+      const cur = acc.get(key) || { vendedor: display, meta: 0, primaActual: 0 }
+      cur.primaActual += (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
+      acc.set(key, cur)
+    }
+
+    for (const r of pptoRows) {
+      const m = monthFromDateLike(r.Fecha)
+      if (m !== mes) continue
+      const { key, display } = getKeyAndName(null, r.Vendedor)
+      const cur = acc.get(key) || { vendedor: display, meta: 0, primaActual: 0 }
+      cur.meta += parseNum(r.Presupuesto)
+      acc.set(key, cur)
+    }
+
+    const out: CompromisoRow[] = Array.from(acc.values())
+      .map((r) => ({
+        vendedor: r.vendedor,
+        meta: roundByFirstDecimal(r.meta),
+        primaActual: roundByFirstDecimal(r.primaActual),
+        pctAvance: r.meta > 0 ? Math.round((r.primaActual / r.meta) * 1000) / 10 : 0,
+      }))
+      .sort((a, b) => b.meta - a.meta)
+
+    return out.length ? out : null
+  } catch {
+    return null
+  }
 }
 
 /**
