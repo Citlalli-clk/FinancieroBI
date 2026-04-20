@@ -212,6 +212,7 @@ function TablaDetalleContent() {
   const drill = async (level: DrillLevel, label: string, newSel: typeof sel, opts?: { pushCrumb?: boolean }) => {
     const pushCrumb = opts?.pushCrumb ?? true
     setLoading(true)
+    if (level !== "grupo") setGroupBudgetOnlyTotal(false)
     setSel(newSel)
     if (pushCrumb) setCrumbs(prev => [...prev, { level: drillLevel, label }])
 
@@ -321,6 +322,7 @@ function TablaDetalleContent() {
         const hasBudgetOutsideSinGrupo = rowsData.some((d) => ((d.presupuesto ?? 0) > 0) && String(d.grupo || '').trim().toLowerCase() !== 'sin grupo')
         const groupBudgetOnlyInSinGrupo = rowsData.some((d) => String(d.grupo || '').trim().toLowerCase() === 'sin grupo' && (d.presupuesto ?? 0) > 0)
           && !hasBudgetOutsideSinGrupo
+        setGroupBudgetOnlyTotal(groupBudgetOnlyInSinGrupo)
 
         // If presupuesto only exists in "Sin grupo", keep it ONLY at total level (not in group rows)
         const visibleRows = groupBudgetOnlyInSinGrupo
@@ -539,9 +541,6 @@ function TablaDetalleContent() {
   const { rows: displayRows, otrosCount } = { rows: filteredRows, otrosCount: 0 }
   const filteredPolizas = filterSearch(polizas, "documento")
   const rowTotal = filteredRows.reduce((s, r) => s + r.primaNeta, 0)
-  const groupBudgetOnlyInSinGrupo = drillLevel === "grupo"
-    && filteredRows.some((r) => String(r.name || '').trim().toLowerCase() === 'sin grupo' && (r.presupuesto ?? 0) > 0)
-    && filteredRows.every((r) => String(r.name || '').trim().toLowerCase() === 'sin grupo' ? true : (r.presupuesto ?? 0) === 0)
   // Determine if table has many rows (for adaptive max-height)
   const manyRows = drillLevel === 'poliza'
     ? filteredPolizas.length > 15
