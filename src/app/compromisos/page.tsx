@@ -185,6 +185,7 @@ export default function CompromisosPage() {
   const [periodos, setPeriodos] = useState<number[]>([currentMonth])
   const [data, setData] = useState<CompromisoRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [vendorSearch, setVendorSearch] = useState("")
   // Bottom 5 removed per Angel's request
 
   const handleFilterChange = useCallback((newYear: string, newPeriodos: number[]) => { setYear(newYear); setPeriodos(newPeriodos) }, [])
@@ -200,20 +201,24 @@ export default function CompromisosPage() {
     getCompromisos(Number(year), periodos).then(r => { setData(r ?? []); setLoading(false) }).catch(() => setLoading(false))
   }, [year, periodos])
 
-  const totalMeta = data.reduce((s, r) => s + r.meta, 0)
-  const totalActual = data.reduce((s, r) => s + r.primaActual, 0)
+  const search = vendorSearch.trim().toLowerCase()
+
+  // TABLE shows ALL data (filtered by vendedor search when provided)
+  const tableRows = search
+    ? data.filter((r) => r.vendedor.toLowerCase().includes(search))
+    : data
+
+  const totalMeta = tableRows.reduce((s, r) => s + r.meta, 0)
+  const totalActual = tableRows.reduce((s, r) => s + r.primaActual, 0)
   const totalPct = totalMeta > 0 ? Math.round((totalActual / totalMeta) * 1000) / 10 : 0
 
-  // TABLE shows ALL data
-  const tableRows = data
-
-  // CHART shows Top 9 + Otros
-  const { rows: chartTop9, otrosRow } = computeTop9WithOtros(data)
+  // CHART shows Top 9 + Otros (based on filtered set)
+  const { rows: chartTop9, otrosRow } = computeTop9WithOtros(tableRows)
   const chartRows = otrosRow ? [...chartTop9, otrosRow] : chartTop9
   const barData = chartRows.map(r => ({ name: shortName(r.vendedor), value: r.primaActual, pct: r.pctAvance }))
 
   // Top 9 + Otros for second chart (same logic)
-  const sortedData = [...data].sort((a, b) => b.primaActual - a.primaActual)
+  const sortedData = [...tableRows].sort((a, b) => b.primaActual - a.primaActual)
   const top9ForChart = sortedData.slice(0, 9)
   const restForChart = sortedData.slice(9)
   const otrosForTop9 = restForChart.length > 0 ? {
@@ -232,7 +237,16 @@ export default function CompromisosPage() {
           <PageTabs />
           <PeriodFilter onFilterChange={handleFilterChange} />
         </div>
-        <h1 className="text-sm font-bold text-[#111] font-lato mt-3 mb-2">Vendedores — Compromisos</h1>
+        <div className="mt-3 mb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          <h1 className="text-sm font-bold text-[#111] font-lato">Vendedores — Compromisos</h1>
+          <input
+            type="text"
+            value={vendorSearch}
+            onChange={(e) => setVendorSearch(e.target.value)}
+            placeholder="Buscar vendedor..."
+            className="w-full md:w-72 h-8 px-2.5 text-xs border border-gray-300 rounded-md outline-none focus:border-[#041224]"
+          />
+        </div>
 
         {/* ROW-BASED LAYOUT */}
         <div className="flex flex-col gap-2">
@@ -266,7 +280,7 @@ export default function CompromisosPage() {
                     </div>
                   )
                 })}
-                {!loading && data.length > 0 && (() => {
+                {!loading && tableRows.length > 0 && (() => {
                   const totalStatus = semaforoStatus(totalActual, totalMeta * 0.8, totalMeta)
                   return (
                     <div className="bg-[#6B7280] rounded-lg px-3 py-1.5 flex justify-between items-center">
@@ -310,7 +324,7 @@ export default function CompromisosPage() {
                       </tr>
                     )
                   })}
-                  {!loading && data.length > 0 && (() => {
+                  {!loading && tableRows.length > 0 && (() => {
                     const totalStatus = semaforoStatus(totalActual, totalMeta * 0.8, totalMeta)
                     const totalDif = totalActual - totalMeta
                     return (
@@ -352,7 +366,7 @@ export default function CompromisosPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {[...data].sort((a,b) => b.primaActual - a.primaActual).slice(0, 10).map((r, i) => {
+                  {[...tableRows].sort((a,b) => b.primaActual - a.primaActual).slice(0, 10).map((r, i) => {
                     const status = semaforoStatus(r.primaActual, r.meta * 0.8, r.meta)
                     const diferencia = r.primaActual - r.meta
                     return (
