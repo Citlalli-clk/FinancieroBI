@@ -186,8 +186,8 @@ export default function CompromisosPage() {
   const [data, setData] = useState<CompromisoRow[]>([])
   const [loading, setLoading] = useState(true)
   const [vendorSearch, setVendorSearch] = useState("")
-  const [lineaFilter, setLineaFilter] = useState("Todas")
-  const [gerenciaFilter, setGerenciaFilter] = useState("Todas")
+  const [lineaFilter, setLineaFilter] = useState("")
+  const [gerenciaFilter, setGerenciaFilter] = useState("")
   const [filtros, setFiltros] = useState<CompromisosFiltros>({ lineas: [], gerenciasByLinea: {} })
   // Bottom 5 removed per Angel's request
 
@@ -197,18 +197,30 @@ export default function CompromisosPage() {
   useEffect(() => {
     getCompromisosFiltros().then(setFiltros).catch(() => setFiltros({ lineas: [], gerenciasByLinea: {} }))
   }, [])
-  const gerenciasDisponibles = lineaFilter !== "Todas"
+  const gerenciasDisponibles = lineaFilter
     ? (filtros.gerenciasByLinea[lineaFilter] || [])
-    : Array.from(new Set(Object.values(filtros.gerenciasByLinea).flat())).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }))
+    : []
 
   useEffect(() => {
-    if (lineaFilter !== "Todas" && gerenciaFilter !== "Todas" && !gerenciasDisponibles.includes(gerenciaFilter)) {
-      setGerenciaFilter("Todas")
+    if (!lineaFilter && filtros.lineas.length > 0) {
+      setLineaFilter(filtros.lineas[0])
     }
-  }, [lineaFilter, gerenciaFilter, gerenciasDisponibles])
+  }, [lineaFilter, filtros.lineas])
 
   useEffect(() => {
-    if (periodos.length === 0) {
+    if (!lineaFilter) return
+    const gerencias = filtros.gerenciasByLinea[lineaFilter] || []
+    if (gerencias.length === 0) {
+      if (gerenciaFilter) setGerenciaFilter("")
+      return
+    }
+    if (!gerencias.includes(gerenciaFilter)) {
+      setGerenciaFilter(gerencias[0])
+    }
+  }, [lineaFilter, gerenciaFilter, filtros.gerenciasByLinea])
+
+  useEffect(() => {
+    if (periodos.length === 0 || !lineaFilter) {
       setData([])
       setLoading(false)
       return
@@ -261,10 +273,9 @@ export default function CompromisosPage() {
           <div className="w-full md:w-auto grid grid-cols-1 md:grid-cols-3 gap-2">
             <select
               value={lineaFilter}
-              onChange={(e) => { setLineaFilter(e.target.value); setGerenciaFilter("Todas") }}
+              onChange={(e) => { setLineaFilter(e.target.value); setGerenciaFilter("") }}
               className="h-8 px-2.5 text-xs border border-gray-300 rounded-md outline-none focus:border-[#041224] bg-white"
             >
-              <option value="Todas">Línea de negocio</option>
               {filtros.lineas.map((l) => (
                 <option key={l} value={l}>{l}</option>
               ))}
@@ -274,7 +285,6 @@ export default function CompromisosPage() {
               onChange={(e) => setGerenciaFilter(e.target.value)}
               className="h-8 px-2.5 text-xs border border-gray-300 rounded-md outline-none focus:border-[#041224] bg-white"
             >
-              <option value="Todas">Gerencia</option>
               {gerenciasDisponibles.map((g) => (
                 <option key={g} value={g}>{g}</option>
               ))}
