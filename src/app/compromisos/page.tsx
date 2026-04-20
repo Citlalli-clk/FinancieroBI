@@ -189,18 +189,16 @@ export default function CompromisosPage() {
 
   const handleFilterChange = useCallback((newYear: string, newPeriodos: number[]) => { setYear(newYear); setPeriodos(newPeriodos) }, [])
   useEffect(() => { document.title = "Vendedores | CLK BI Dashboard" }, [])
-  const month = periodos.length > 0 ? Math.max(...periodos) : undefined
-
   useEffect(() => {
-    if (month === undefined) {
+    if (periodos.length === 0) {
       setData([])
       setLoading(false)
       return
     }
 
     setLoading(true)
-    getCompromisos(Number(year), month).then(r => { setData(r ?? []); setLoading(false) }).catch(() => setLoading(false))
-  }, [year, month])
+    getCompromisos(Number(year), periodos).then(r => { setData(r ?? []); setLoading(false) }).catch(() => setLoading(false))
+  }, [year, periodos])
 
   const totalMeta = data.reduce((s, r) => s + r.meta, 0)
   const totalActual = data.reduce((s, r) => s + r.primaActual, 0)
@@ -278,9 +276,10 @@ export default function CompromisosPage() {
                   )
                 })()}
               </div>
-              {/* Desktop: full table - shows ALL rows */}
-              <table className="hidden md:table w-full border-collapse text-xs">
-                <thead>
+              {/* Desktop: full table - shows ALL rows with scroll */}
+              <div className="hidden md:block max-h-[420px] overflow-y-auto">
+              <table className="w-full border-collapse text-xs">
+                <thead className="sticky top-0 z-10">
                   <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
                     <th className="px-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wider">Vendedor</th>
                     <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Prima Neta</th>
@@ -329,6 +328,7 @@ export default function CompromisosPage() {
                   })()}
                 </tbody>
               </table>
+              </div>
             </div>
             <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3 flex flex-col" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
               <p className="text-xs font-semibold uppercase tracking-wider text-[#041224] mb-2">Distribución — Top 9 + Otros</p>

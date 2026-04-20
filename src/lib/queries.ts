@@ -1236,9 +1236,11 @@ export async function globalSearch(
 export interface CompromisoRow {
   vendedor: string; meta: number; primaActual: number; pctAvance: number
 }
-export async function getCompromisos(anio: number, mes: number): Promise<CompromisoRow[] | null> {
+export async function getCompromisos(anio: number, meses: number[]): Promise<CompromisoRow[] | null> {
   try {
-    const url = `/api/compromisos?year=${anio}&mes=${mes}`
+    const validMeses = (meses || []).filter((m) => Number.isFinite(m) && m >= 1 && m <= 12)
+    const qMeses = validMeses.join(",")
+    const url = `/api/compromisos?year=${anio}&meses=${encodeURIComponent(qMeses)}`
     const res = await fetch(url, { cache: "no-store" })
     if (!res.ok) throw new Error(`API error: ${res.status}`)
     const data: CompromisoRow[] = await res.json()

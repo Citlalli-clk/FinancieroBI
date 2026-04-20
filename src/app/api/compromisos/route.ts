@@ -71,7 +71,11 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const year = parseInt(searchParams.get("year") || `${new Date().getFullYear()}`, 10)
-    const mes = parseInt(searchParams.get("mes") || `${new Date().getMonth() + 1}`, 10)
+    const mesesParam = (searchParams.get("meses") || "").trim()
+    const meses = (mesesParam ? mesesParam.split(",") : [`${new Date().getMonth() + 1}`])
+      .map((m) => parseInt(m, 10))
+      .filter((m) => Number.isFinite(m) && m >= 1 && m <= 12)
+    const mesesSet = new Set<number>(meses)
 
     const supabaseUrl = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL)
     const serviceRoleKey = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY)
@@ -81,40 +85,38 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, apiKey)
 
-    const effTable = `efectuada_${year}_drive`
+    const yearsForVendedores = [2024, 2025, 2026]
     const pptoTable = `presupuestos_${year}_drive`
 
-    const catalogRows = await fetchAll(() =>
-      supabase
-        .from("catalogo_vendedores_drive")
-        .select("clave, nombre, estatus, gerencia")
-        .order("clave", { ascending: true })
-    )
+    const acc = new Map<string, { vendedor: string; meta: number; primaActual: number }>()
 
-    const byClave = new Map<string, Record<string, unknown>>()
-    const byNombre = new Map<string, Record<string, unknown>>()
-
-    for (const r of catalogRows) {
-      const k = normalizeText(r.clave)
-      const n = normalizeText(r.nombre)
-      const estatus = normalizeText(r.estatus)
-      const isActive = estatus === "activo"
-      if (k && k !== "null" && k !== "0") {
-        const prev = byClave.get(k)
-        if (!prev || (normalizeText(prev.estatus) !== "activo" && isActive)) byClave.set(k, r)
-      }
-      if (n) {
-        const prev = byNombre.get(n)
-        if (!prev || (normalizeText(prev.estatus) !== "activo" && isActive)) byNombre.set(n, r)
-      }
+    const upsertVendor = (vendNombre: unknown): { key: string; row: { vendedor: string; meta: number; primaActual: number } } | null => {
+      const nn = normalizeText(vendNombre)
+      if (!nn) return null
+      const display = String(vendNombre || "Sin vendedor").trim()
+      const key = `vend:${nn}`
+      const row = acc.get(key) || { vendedor: display, meta: 0, primaActual: 0 }
+      if (!acc.has(key)) acc.set(key, row)
+      return { key, row }
     }
 
-    const effRows = await fetchAll(() =>
-      supabase
-        .from(effTable)
-        .select("Clave_Enroller, VendNombre, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo")
-        .order("IDDocto", { ascending: true })
-    )
+    for (const y of yearsForVendedores) {
+      const effTable = `efectuada_${y}_drive`
+      const effRows = await fetchAll(() =>
+        supabase
+          .from(effTable)
+          .select("VendNombre, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo")
+          .order("IDDocto", { ascending: true })
+      )
+
+      for (const r of effRows) {
+        const m = monthFromDateLike(r.FLiquidacion) ?? parseNum(r.Periodo)
+        if (!Number.isFinite(m) || !mesesSet.has(Number(m))) continue
+        const upsert = upsertVendor(r.VendNombre)
+        if (!upsert) continue
+        upsert.row.primaActual += (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
+      }
+    }
 
     const pptoRows = await fetchAll(() =>
       supabase
@@ -123,33 +125,12 @@ export async function GET(request: NextRequest) {
         .order("Fecha", { ascending: true })
     )
 
-    const acc = new Map<string, { vendedor: string; meta: number; primaActual: number }>()
-
-    const getKeyAndName = (clave: unknown, nombre: unknown): { key: string; display: string } => {
-      const kc = normalizeText(clave)
-      const nn = normalizeText(nombre)
-      const c = (kc && kc !== "null" && kc !== "0" ? byClave.get(kc) : null) || byNombre.get(nn)
-      const display = c ? String(c.nombre || nombre || "Sin vendedor") : String(nombre || "Sin vendedor")
-      const key = c ? `cat:${normalizeText(c.clave) || normalizeText(c.nombre)}` : `raw:${nn}`
-      return { key, display }
-    }
-
-    for (const r of effRows) {
-      const m = monthFromDateLike(r.FLiquidacion) ?? parseNum(r.Periodo)
-      if (m !== mes) continue
-      const { key, display } = getKeyAndName(r.Clave_Enroller, r.VendNombre)
-      const cur = acc.get(key) || { vendedor: display, meta: 0, primaActual: 0 }
-      cur.primaActual += (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
-      acc.set(key, cur)
-    }
-
     for (const r of pptoRows) {
       const m = monthFromDateLike(r.Fecha)
-      if (m !== mes) continue
-      const { key, display } = getKeyAndName(null, r.Vendedor)
-      const cur = acc.get(key) || { vendedor: display, meta: 0, primaActual: 0 }
-      cur.meta += parseNum(r.Presupuesto)
-      acc.set(key, cur)
+      if (!Number.isFinite(m) || !mesesSet.has(Number(m))) continue
+      const upsert = upsertVendor(r.Vendedor)
+      if (!upsert) continue
+      upsert.row.meta += parseNum(r.Presupuesto)
     }
 
     const out = Array.from(acc.values())
@@ -159,7 +140,8 @@ export async function GET(request: NextRequest) {
         primaActual: Math.round(r.primaActual),
         pctAvance: r.meta > 0 ? Math.round((r.primaActual / r.meta) * 1000) / 10 : 0,
       }))
-      .sort((a, b) => b.meta - a.meta)
+      .filter((r) => r.primaActual !== 0)
+      .sort((a, b) => b.primaActual - a.primaActual)
 
     return NextResponse.json(out, { headers: { "Cache-Control": "no-store" } })
   } catch {
