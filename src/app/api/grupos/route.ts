@@ -1,6 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
-import { roundByFirstDecimal } from "@/lib/rounding"
 
 function cleanEnv(value?: string): string {
   return (value || "").replace(/\n/g, "").trim()
@@ -213,9 +212,9 @@ async function loadGruposDrive(
     .map((v) => ({
       grupo: v.grupo,
       cliente: v.grupo,
-      primaNeta: roundByFirstDecimal(v.primaNeta),
-      pnAnioAnt: roundByFirstDecimal(v.pnAnioAnt),
-      presupuesto: roundByFirstDecimal(v.presupuesto),
+      primaNeta: v.primaNeta,
+      pnAnioAnt: v.pnAnioAnt,
+      presupuesto: v.presupuesto,
     }))
     .filter((r) => r.primaNeta > 0 || (r.presupuesto ?? 0) > 0)
     .sort((a, b) => a.grupo.localeCompare(b.grupo, "es", { sensitivity: "base" }))
