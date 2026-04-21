@@ -1150,7 +1150,7 @@ export async function getRankedAseguradoras(
       const m = monthFromDateLike(r.FLiquidacion) ?? parseNum(r.Periodo)
       if (!includeMonth(m)) continue
 
-      const prima = (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * parseNum(r.TCPago)
+      const prima = (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
       grouped[cia] = (grouped[cia] || 0) + prima
     }
 
