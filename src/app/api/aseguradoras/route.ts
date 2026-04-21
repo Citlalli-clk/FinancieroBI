@@ -39,6 +39,16 @@ function normalizeText(value: unknown): string {
     .trim()
 }
 
+function normalizeClas(value: unknown): "estrategica" | "importante" | "servicio" | "todas" | "" {
+  const t = normalizeText(value)
+  if (!t) return ""
+  if (t.includes("todas")) return "todas"
+  if (t.includes("estrateg")) return "estrategica"
+  if (t.includes("importante")) return "importante"
+  if (t.includes("servicio")) return "servicio"
+  return ""
+}
+
 function monthFromDateLike(value: unknown): number | null {
   if (!value) return null
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.getMonth() + 1
@@ -142,13 +152,13 @@ export async function GET(request: NextRequest) {
         .from("catalogo_compañias_drive")
         .select("CIA, ClasCIA")
 
-      const targetClas = normalizeText(clasificacion)
+      const targetClas = normalizeClas(clasificacion)
 
       for (const row of (ciaRows || []) as Record<string, unknown>[]) {
         const key = normalizeKey(row.CIA)
         const clasTxt = String(row.ClasCIA || "Sin clasificar")
         if (!key) continue
-        if (targetClas && targetClas !== "todas" && normalizeText(clasTxt) !== targetClas) continue
+        if (targetClas && targetClas !== "todas" && normalizeClas(clasTxt) !== targetClas) continue
         clasificacionMap.set(key, clasTxt)
       }
     }
