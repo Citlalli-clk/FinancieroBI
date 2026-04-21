@@ -22,6 +22,15 @@ function toNumber(value: unknown): number {
   return 0
 }
 
+function normalizeKey(value: unknown): string {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase()
+    .trim()
+}
+
 function monthFromDateLike(value: unknown): number | null {
   if (!value) return null
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.getMonth() + 1
@@ -132,7 +141,7 @@ export async function GET(request: NextRequest) {
       const { data: ciaRows } = await catalogoQuery
 
       for (const row of (ciaRows || []) as Record<string, unknown>[]) {
-        const key = String(row.CiaAbreviacion || "").trim()
+        const key = normalizeKey(row.CiaAbreviacion)
         if (key) clasificacionMap.set(key, String(row.ClasCia_TXT || "Sin clasificar"))
       }
     }
@@ -155,8 +164,9 @@ export async function GET(request: NextRequest) {
     for (const row of rows) {
       const cia = String(row.CiaAbreviacion || "").trim()
       if (!cia) continue
+      const ciaKey = normalizeKey(cia)
       const filteringByClasificacion = Boolean(clasificacion && clasificacion !== "Todas")
-      if (filteringByClasificacion && !clasificacionMap.has(cia)) continue
+      if (filteringByClasificacion && !clasificacionMap.has(ciaKey)) continue
 
       const month = monthFromDateLike(row.FLiquidacion) ?? monthFromDateLike(row.Periodo) ?? toNumber(row.Periodo)
       if (meses.length > 0 && meses.length < 12) {
@@ -171,7 +181,7 @@ export async function GET(request: NextRequest) {
       .map(([aseguradora, primaNeta]) => ({
         aseguradora,
         primaNeta,
-        clasificacion: clasificacionMap.get(aseguradora) || null,
+        clasificacion: clasificacionMap.get(normalizeKey(aseguradora)) || null,
       }))
       .filter((r) => r.primaNeta > 0)
       .sort((a, b) => a.aseguradora.localeCompare(b.aseguradora, "es", { sensitivity: "base" }))
