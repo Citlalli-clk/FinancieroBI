@@ -153,7 +153,10 @@ export default function AseguradorasPage() {
       <div className="max-w-[1200px] mx-auto w-full flex flex-col flex-1">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-2 pt-3 md:pt-5 w-full gap-2 md:gap-0">
           <PageTabs />
-          <PeriodFilter onFilterChange={handleFilterChange} />
+          <PeriodFilter
+            onFilterChange={handleFilterChange}
+            onClearAll={() => setClasificacionFilter("Todas")}
+          />
         </div>
 
         {/* Title + export buttons */}
