@@ -235,11 +235,10 @@ export default function AseguradorasPage() {
               <table className="hidden md:table w-full text-xs">
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                    <th className="px-2 py-1.5 text-center text-xs font-semibold uppercase tracking-wider w-8">#</th>
                     <th className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider">Aseguradora</th>
-                    <th className="px-3 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Clasificación</th>
                     <th className="px-3 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Prima Neta</th>
                     <th className="px-3 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">% Participación</th>
+                    <th className="px-3 py-1.5 text-center text-xs font-semibold uppercase tracking-wider">Clasificación</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -247,11 +246,10 @@ export default function AseguradorasPage() {
                     const isOtros = a.aseguradora.startsWith("Otros (")
                     return (
                       <tr key={a.aseguradora} className={`border-b border-[#E5E7EB] hover:bg-[#FFF5F5] transition-colors ${isOtros ? "bg-gray-100" : i % 2 === 1 ? "bg-[#E5E7E9]/30" : "bg-white"}`}>
-                        <td className="px-2 py-2 text-center text-sm text-gray-800 tabular-nums">{i + 1}</td>
                         <td className="px-3 py-2 text-sm font-semibold text-[#111] text-left">{a.aseguradora}</td>
-                        <td className="px-3 py-2 text-center">{a.clasificacion ? getClasificacionBadge(a.clasificacion) : <span className="text-gray-300">—</span>}</td>
                         <td className="px-3 py-2 text-center text-sm font-bold tabular-nums">{fmt(a.primaNeta)}</td>
                         <td className="px-3 py-2 text-center text-sm font-bold tabular-nums text-gray-800">{a.pct}%</td>
+                        <td className="px-3 py-2 text-center">{a.clasificacion ? getClasificacionBadge(a.clasificacion) : <span className="text-gray-300">—</span>}</td>
                       </tr>
                     )
                   })}
