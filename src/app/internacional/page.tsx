@@ -262,19 +262,14 @@ export default function AseguradorasPage() {
                       <span className="text-xs text-[#333] w-28 truncate shrink-0" title={a.aseguradora}>{a.aseguradora}</span>
                       <div className="flex-1 bg-gray-100 rounded h-5 overflow-hidden relative">
                         <div
-                          className="h-full rounded transition-all duration-500 flex items-center"
+                          className="h-full rounded transition-all duration-500 flex items-center justify-end pr-1"
                           style={{
                             width: `${maxAseguradora > 0 ? Math.max((a.primaNeta / maxAseguradora) * 100, 3) : 0}%`,
                             backgroundColor: isOtros ? "#9CA3AF" : (COLORS[i] || "#059669")
                           }}
                         >
-                          {(a.primaNeta / maxAseguradora) * 100 > 25 && (
-                            <span className="text-[10px] text-white font-medium px-1.5 whitespace-nowrap">{fmtShort(a.primaNeta)}</span>
-                          )}
+                          <span className="text-[10px] text-white font-medium whitespace-nowrap">{fmtShort(a.primaNeta)}</span>
                         </div>
-                        {(a.primaNeta / maxAseguradora) * 100 <= 25 && (
-                          <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] text-gray-600 font-medium">{fmtShort(a.primaNeta)}</span>
-                        )}
                       </div>
                       <span className="text-xs font-medium tabular-nums w-12 text-right shrink-0" style={{ color: isOtros ? "#6B7280" : "#041224" }}>{a.pct}%</span>
                     </div>
