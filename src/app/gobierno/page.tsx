@@ -34,7 +34,7 @@ export default function Home() {
 
   const [ready, setReady] = useState(false)
   const [year, setYear] = useState(currentYear)
-  const [periodos, setPeriodos] = useState<number[]>([currentMonth])
+  const [periodos, setPeriodos] = useState<number[]>(Array.from({ length: currentMonth }, (_, i) => i + 1))
   const [lineas, setLineas] = useState<LineaRow[]>([])
 
   const handleFilterChange = useCallback((newYear: string, newPeriodos: number[]) => {
