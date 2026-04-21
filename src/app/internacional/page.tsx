@@ -120,6 +120,8 @@ export default function AseguradorasPage() {
   const { rows: displayRows, otrosCount } = computeTop10WithOtros(filteredAseguradoras)
 
   const maxAseguradora = filteredAseguradoras.length > 0 ? Math.max(...filteredAseguradoras.map(a => a.primaNeta)) : 0
+  // Request (Citlali): first table in Aseguradoras must stay blank (no row content)
+  const tableRows: AseguradoraRow[] = []
   // Single uniform dark navy for all bars - length shows value, no need for color variation
   const COLORS = ["#041224", "#041224", "#041224", "#041224", "#041224", "#041224", "#041224", "#041224", "#041224", "#041224"]
 
@@ -208,7 +210,7 @@ export default function AseguradorasPage() {
             <div ref={tableRef} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {/* Mobile Card View */}
               <div className="md:hidden space-y-1.5 p-2">
-                {displayRows.map((a, i) => {
+                {tableRows.map((a, i) => {
                   const isOtros = a.aseguradora.startsWith("Otros (")
                   return (
                     <div key={a.aseguradora} className={`rounded-lg border border-gray-200 px-3 py-2 ${isOtros ? "bg-gray-100" : "bg-white"}`}>
@@ -226,10 +228,7 @@ export default function AseguradorasPage() {
                     </div>
                   )
                 })}
-                <div className="bg-[#041224] text-white rounded-lg px-3 py-2.5 flex justify-between items-center">
-                  <span className="font-bold text-sm">Total</span>
-                  <span className="font-bold text-sm">{fmt(totalPrima)}</span>
-                </div>
+                {/* Tabla móvil intencionalmente en blanco */}
               </div>
 
               {/* Desktop Table View */}
@@ -244,7 +243,7 @@ export default function AseguradorasPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayRows.map((a, i) => {
+                  {tableRows.map((a, i) => {
                     const isOtros = a.aseguradora.startsWith("Otros (")
                     return (
                       <tr key={a.aseguradora} className={`border-b border-[#E5E7EB] hover:bg-[#FFF5F5] transition-colors ${isOtros ? "bg-gray-100" : i % 2 === 1 ? "bg-[#E5E7E9]/30" : "bg-white"}`}>
@@ -256,13 +255,7 @@ export default function AseguradorasPage() {
                       </tr>
                     )
                   })}
-                  <tr className="bg-[#041224] text-white border-t-2 cursor-default">
-                    <td className="px-2 py-2"></td>
-                    <td className="px-3 py-2 text-sm font-bold text-left">Total</td>
-                    <td className="px-3 py-2"></td>
-                    <td className="px-3 py-2 text-center text-sm font-bold tabular-nums">{fmt(totalPrima)}</td>
-                    <td className="px-3 py-2 text-center text-sm font-bold tabular-nums">100%</td>
-                  </tr>
+                  {/* Tabla escritorio intencionalmente en blanco */}
                 </tbody>
               </table>
             </div>
