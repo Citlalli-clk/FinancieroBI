@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
-import { getLineasWithYoY } from "@/lib/queries"
 import type { LineaRow } from "@/lib/queries"
 import { Gauge } from "@/components/gauge"
 import { PageTabs } from "@/components/page-tabs"
@@ -56,17 +55,18 @@ export default function Home() {
     let cancelled = false
     setLineas([])
 
-    getLineasWithYoY(periodos, year)
-      .then((data) => {
+    const params = new URLSearchParams({ year })
+    if (periodos.length) params.set("meses", periodos.join(","))
+
+    fetch(`/api/gobierno-linea?${params.toString()}`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((row) => {
         if (!cancelled) {
-          const onlyGobierno = (data ?? []).filter((l) =>
-            String(l.nombre || "")
-              .normalize("NFD")
-              .replace(/[̀-ͯ]/g, "")
-              .toLowerCase()
-              .trim() === "gobierno"
-          )
-          setLineas(onlyGobierno)
+          if (row && typeof row === "object") {
+            setLineas([{ nombre: "Gobierno", primaNeta: Number(row.primaNeta) || 0, anioAnterior: Number(row.anioAnterior) || 0, presupuesto: Number(row.presupuesto) || 0 }])
+          } else {
+            setLineas([])
+          }
         }
       })
       .catch(() => {
