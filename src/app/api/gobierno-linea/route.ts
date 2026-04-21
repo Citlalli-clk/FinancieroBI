@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     const serviceRoleKey = envServiceRoleKey && envServiceRoleKey.length > 100 ? envServiceRoleKey : FALLBACK_SERVICE_ROLE_KEY
     const apiKey = serviceRoleKey || anonKey
     if (!supabaseUrl || !apiKey) {
-      return NextResponse.json({ nombre: "Gobierno", primaNeta: 0, anioAnterior: 0, presupuesto: 0 }, { headers: { "Cache-Control": "no-store" } })
+      return NextResponse.json({ nombre: "Gobierno", primaNeta: 0, anioAnterior: 0, presupuesto: 0 }, { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } })
     }
 
     const supabase = createClient(supabaseUrl, apiKey)
@@ -162,9 +162,9 @@ export async function GET(request: NextRequest) {
         anioAnterior: Math.round(anioAnterior),
         presupuesto: Math.round(presupuesto),
       },
-      { headers: { "Cache-Control": "no-store" } }
+      { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } }
     )
   } catch {
-    return NextResponse.json({ nombre: "Gobierno", primaNeta: 0, anioAnterior: 0, presupuesto: 0 }, { headers: { "Cache-Control": "no-store" } })
+    return NextResponse.json({ nombre: "Gobierno", primaNeta: 0, anioAnterior: 0, presupuesto: 0 }, { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } })
   }
 }

@@ -58,7 +58,7 @@ export default function Home() {
     const params = new URLSearchParams({ year })
     if (periodos.length) params.set("meses", periodos.join(","))
 
-    fetch(`/api/gobierno-linea?${params.toString()}`, { cache: "no-store" })
+    fetch(`/api/gobierno-linea?${params.toString()}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((row) => {
         if (!cancelled) {
