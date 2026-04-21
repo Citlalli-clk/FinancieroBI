@@ -93,15 +93,21 @@ export async function GET(request: NextRequest) {
     const supabase = createClient(supabaseUrl, apiKey)
 
     const clasificacionMap = new Map<string, string>()
-    if (clasificacion && clasificacion !== "Todas") {
-      const { data: ciaRows, error: ciaErr } = await supabase
+    {
+      let catalogoQuery = supabase
         .from("catalogos_cias")
         .select("CiaAbreviacion, ClasCia_TXT")
-        .eq("ClasCia_TXT", clasificacion)
+
+      if (clasificacion && clasificacion !== "Todas") {
+        catalogoQuery = catalogoQuery.eq("ClasCia_TXT", clasificacion)
+      }
+
+      const { data: ciaRows, error: ciaErr } = await catalogoQuery
       if (ciaErr) throw ciaErr
+
       for (const row of (ciaRows || []) as Record<string, unknown>[]) {
         const key = String(row.CiaAbreviacion || "").trim()
-        if (key) clasificacionMap.set(key, String(row.ClasCia_TXT || ""))
+        if (key) clasificacionMap.set(key, String(row.ClasCia_TXT || "Sin clasificar"))
       }
     }
 
@@ -118,7 +124,8 @@ export async function GET(request: NextRequest) {
     for (const row of rows) {
       const cia = String(row.CiaAbreviacion || "").trim()
       if (!cia) continue
-      if (clasificacionMap.size > 0 && !clasificacionMap.has(cia)) continue
+      const filteringByClasificacion = Boolean(clasificacion && clasificacion !== "Todas")
+      if (filteringByClasificacion && !clasificacionMap.has(cia)) continue
 
       const month = monthFromDateLike(row.FLiquidacion) ?? monthFromDateLike(row.Periodo) ?? toNumber(row.Periodo)
       if (meses.length > 0 && meses.length < 12) {
@@ -130,7 +137,11 @@ export async function GET(request: NextRequest) {
     }
 
     const result = Array.from(grouped.entries())
-      .map(([aseguradora, primaNeta]) => ({ aseguradora, primaNeta }))
+      .map(([aseguradora, primaNeta]) => ({
+        aseguradora,
+        primaNeta,
+        clasificacion: clasificacionMap.get(aseguradora) || null,
+      }))
       .filter((r) => r.primaNeta > 0)
       .sort((a, b) => a.aseguradora.localeCompare(b.aseguradora, "es", { sensitivity: "base" }))
 

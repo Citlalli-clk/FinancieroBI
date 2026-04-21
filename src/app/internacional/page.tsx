@@ -6,7 +6,6 @@ import { PageTabs } from "@/components/page-tabs"
 import { PageFooter } from "@/components/page-footer"
 import { PeriodFilter } from "@/components/period-filter"
 import { getRankedAseguradoras, getLastDataDate } from "@/lib/queries"
-import { supabase } from "@/lib/supabase"
 import { exportExcel, exportPDF } from "@/lib/export"
 import { roundByFirstDecimal } from "@/lib/rounding"
 
@@ -80,28 +79,12 @@ export default function AseguradorasPage() {
         const total = rawData.reduce((s, x) => s + x.primaNeta, 0)
         setTotalPrima(total)
 
-        // Fetch clasificación for each aseguradora from catalogos_cias
-        const aseguradoraNames = rawData.map(a => a.aseguradora)
-        const { data: ciaData } = await supabase
-          .from("catalogos_cias")
-          .select("CiaAbreviacion, ClasCia_TXT")
-          .in("CiaAbreviacion", aseguradoraNames)
-
-        // Map aseguradora -> clasificacion
-        const clasificacionMap: Record<string, string> = {}
-        if (ciaData) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          for (const cia of ciaData as any[]) {
-            clasificacionMap[cia.CiaAbreviacion] = cia.ClasCia_TXT || "Sin clasificar"
-          }
-        }
-
         // Build rows with clasificación and percentage
         const rows: AseguradoraRow[] = rawData.map(x => ({
           aseguradora: x.aseguradora,
           primaNeta: x.primaNeta,
           pct: total > 0 ? Math.round((x.primaNeta / total) * 1000) / 10 : 0,
-          clasificacion: clasificacionMap[x.aseguradora] || null
+          clasificacion: x.clasificacion || null
         }))
 
         setAllAseguradoras(rows)

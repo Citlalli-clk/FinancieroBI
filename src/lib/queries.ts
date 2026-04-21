@@ -1077,7 +1077,7 @@ export async function getRankedAseguradoras(
   periodo?: number,
   año?: string,
   _clasificacion?: string
-): Promise<{ aseguradora: string; primaNeta: number }[] | null> {
+): Promise<{ aseguradora: string; primaNeta: number; clasificacion?: string | null }[] | null> {
   try {
     const yearNum = parseInt(String(año || new Date().getFullYear()), 10)
     if (![2024, 2025, 2026].includes(yearNum)) return null
@@ -1100,7 +1100,7 @@ export async function getRankedAseguradoras(
     const data = await res.json()
     if (!Array.isArray(data)) return null
 
-    return data as { aseguradora: string; primaNeta: number }[]
+    return data as { aseguradora: string; primaNeta: number; clasificacion?: string | null }[]
   } catch {
     return null
   }
