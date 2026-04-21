@@ -1111,10 +1111,25 @@ export async function getRankedAseguradoras(
       }
       const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/)
       if (m) return parseInt(m[1], 10)
+
+      const monthMap: Record<string, number> = {
+        enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
+        julio: 7, agosto: 8, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12
+      }
+      const key = s
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim()
+      if (monthMap[key]) return monthMap[key]
+
       return null
     }
 
-    const includeMonth = (m: number | null) => monthNums.length === 0 || (m !== null && monthNums.includes(m))
+    const includeMonth = (m: number | null) => {
+      if (monthNums.length === 0 || monthNums.length >= 12) return true
+      return m !== null && monthNums.includes(m)
+    }
 
     let clasificacionMap: Record<string, string> | null = null
     const clasif = String(_clasificacion || "").trim()
@@ -1147,7 +1162,7 @@ export async function getRankedAseguradoras(
       if (!cia) continue
       if (clasificacionMap && !clasificacionMap[cia]) continue
 
-      const m = monthFromDateLike(r.FLiquidacion) ?? parseNum(r.Periodo)
+      const m = monthFromDateLike(r.FLiquidacion) ?? monthFromDateLike(r.Periodo) ?? parseNum(r.Periodo)
       if (!includeMonth(m)) continue
 
       const prima = (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
