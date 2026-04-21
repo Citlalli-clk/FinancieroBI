@@ -120,8 +120,10 @@ export default function AseguradorasPage() {
   const { rows: displayRows, otrosCount } = computeTop10WithOtros(filteredAseguradoras)
 
   const maxAseguradora = filteredAseguradoras.length > 0 ? Math.max(...filteredAseguradoras.map(a => a.primaNeta)) : 0
-  // Request (Citlali): first table in Aseguradoras must stay blank (no row content)
-  const tableRows: AseguradoraRow[] = []
+  // Tabla 1: mostrar todas las aseguradoras en orden alfabético
+  const tableRows: AseguradoraRow[] = [...filteredAseguradoras].sort((a, b) =>
+    a.aseguradora.localeCompare(b.aseguradora, "es", { sensitivity: "base" })
+  )
   // Single uniform dark navy for all bars - length shows value, no need for color variation
   const COLORS = ["#041224", "#041224", "#041224", "#041224", "#041224", "#041224", "#041224", "#041224", "#041224", "#041224"]
 
@@ -228,7 +230,10 @@ export default function AseguradorasPage() {
                     </div>
                   )
                 })}
-                {/* Tabla móvil intencionalmente en blanco */}
+                <div className="bg-[#041224] text-white rounded-lg px-3 py-2.5 flex justify-between items-center">
+                  <span className="font-bold text-sm">Total</span>
+                  <span className="font-bold text-sm">{fmt(totalPrima)}</span>
+                </div>
               </div>
 
               {/* Desktop Table View */}
@@ -253,7 +258,12 @@ export default function AseguradorasPage() {
                       </tr>
                     )
                   })}
-                  {/* Tabla escritorio intencionalmente en blanco */}
+                  <tr className="bg-[#041224] text-white border-t-2 cursor-default">
+                    <td className="px-3 py-2 text-sm font-bold text-left">Total</td>
+                    <td className="px-3 py-2 text-center text-sm font-bold tabular-nums">{fmt(totalPrima)}</td>
+                    <td className="px-3 py-2 text-center text-sm font-bold tabular-nums">100%</td>
+                    <td className="px-3 py-2"></td>
+                  </tr>
                 </tbody>
               </table>
             </div>
