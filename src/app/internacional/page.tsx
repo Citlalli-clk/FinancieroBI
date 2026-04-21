@@ -14,6 +14,9 @@ function fmt(v: number) {
 }
 
 function fmtShort(v: number) {
+  const m = v / 1_000_000
+  // Keep values in millions; only fallback when it would display as 0.0M
+  if (Math.abs(m) >= 0.1) return `$${m.toFixed(1)}M`
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(roundByFirstDecimal(v))
 }
 
