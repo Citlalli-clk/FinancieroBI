@@ -14,7 +14,6 @@ function fmt(v: number) {
 }
 
 function fmtShort(v: number) {
-  if (Math.abs(v) >= 1e6) return `$${(v / 1e6).toFixed(1)}M`
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(roundByFirstDecimal(v))
 }
 
