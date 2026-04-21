@@ -39,7 +39,7 @@ export async function GET() {
     const supabaseUrl = envUrl.includes("ktqelgafkywncetxiosd") ? envUrl : FALLBACK_SUPABASE_URL
     const serviceRoleKey = envServiceRoleKey && envServiceRoleKey.length > 100 ? envServiceRoleKey : FALLBACK_SERVICE_ROLE_KEY
     const apiKey = serviceRoleKey || anonKey
-    if (!supabaseUrl || !apiKey) return NextResponse.json({ lineas: [], gerenciasByLinea: {} }, { headers: { "Cache-Control": "no-store" } })
+    if (!supabaseUrl || !apiKey) return NextResponse.json({ lineas: [], gerenciasByLinea: {} }, { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } })
 
     const supabase = createClient(supabaseUrl, apiKey)
 
@@ -64,8 +64,8 @@ export async function GET() {
       gerenciasByLinea[l] = Array.from(gerByLinea.get(l) || []).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }))
     }
 
-    return NextResponse.json({ lineas, gerenciasByLinea }, { headers: { "Cache-Control": "no-store" } })
+    return NextResponse.json({ lineas, gerenciasByLinea }, { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } })
   } catch {
-    return NextResponse.json({ lineas: [], gerenciasByLinea: {} }, { headers: { "Cache-Control": "no-store" } })
+    return NextResponse.json({ lineas: [], gerenciasByLinea: {} }, { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } })
   }
 }

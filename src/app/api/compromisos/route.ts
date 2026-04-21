@@ -171,8 +171,12 @@ export async function GET(request: NextRequest) {
       .filter((r) => r.primaActual !== 0)
       .sort((a, b) => b.primaActual - a.primaActual)
 
-    return NextResponse.json(out, { headers: { "Cache-Control": "no-store" } })
+    return NextResponse.json(out, {
+      headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=120" },
+    })
   } catch {
-    return NextResponse.json([], { headers: { "Cache-Control": "no-store" } })
+    return NextResponse.json([], {
+      headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=120" },
+    })
   }
 }
