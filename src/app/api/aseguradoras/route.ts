@@ -66,6 +66,33 @@ async function fetchAllRows(queryFactory: () => any, pageSize = 1000): Promise<R
   return rows
 }
 
+function isTableMissing(message: string): boolean {
+  return (
+    message.includes("PGRST205") ||
+    message.includes("Could not find the table") ||
+    message.includes("relation")
+  )
+}
+
+async function fetchAllRowsFromCandidates(
+  queryFactory: (table: string) => any,
+  candidates: string[],
+  pageSize = 1000
+): Promise<Record<string, unknown>[]> {
+  for (const table of candidates) {
+    try {
+      return await fetchAllRows(() => queryFactory(table), pageSize)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (isTableMissing(msg)) continue
+      throw err
+    }
+  }
+  return []
+}
+
+
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const fallbackYear = new Date().getFullYear().toString()
@@ -102,8 +129,7 @@ export async function GET(request: NextRequest) {
         catalogoQuery = catalogoQuery.eq("ClasCia_TXT", clasificacion)
       }
 
-      const { data: ciaRows, error: ciaErr } = await catalogoQuery
-      if (ciaErr) throw ciaErr
+      const { data: ciaRows } = await catalogoQuery
 
       for (const row of (ciaRows || []) as Record<string, unknown>[]) {
         const key = String(row.CiaAbreviacion || "").trim()
@@ -111,12 +137,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const table = `efectuada_${year}_drive`
-    const rows = await fetchAllRows(() =>
+    const tableCandidates = [
+      `efectuada_${year}_drive`,
+      `Efectuada ${year}`,
+    ]
+
+    const rows = await fetchAllRowsFromCandidates((table) =>
       supabase
         .from(table)
         .select("CiaAbreviacion, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo")
-        .not("CiaAbreviacion", "is", null)
+        .not("CiaAbreviacion", "is", null),
+      tableCandidates
     )
 
     const grouped = new Map<string, number>()
@@ -147,7 +178,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error"
+    const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: "Failed to fetch aseguradoras", detail: message }, { status: 500 })
   }
 }
