@@ -31,6 +31,14 @@ function normalizeKey(value: unknown): string {
     .trim()
 }
 
+function normalizeText(value: unknown): string {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+}
+
 function monthFromDateLike(value: unknown): number | null {
   if (!value) return null
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.getMonth() + 1
@@ -130,19 +138,18 @@ export async function GET(request: NextRequest) {
 
     const clasificacionMap = new Map<string, string>()
     {
-      let catalogoQuery = supabase
-        .from("catalogos_cias")
-        .select("CiaAbreviacion, ClasCia_TXT")
+      const { data: ciaRows } = await supabase
+        .from("catalogo_compañias_drive")
+        .select("CIA, ClasCIA")
 
-      if (clasificacion && clasificacion !== "Todas") {
-        catalogoQuery = catalogoQuery.eq("ClasCia_TXT", clasificacion)
-      }
-
-      const { data: ciaRows } = await catalogoQuery
+      const targetClas = normalizeText(clasificacion)
 
       for (const row of (ciaRows || []) as Record<string, unknown>[]) {
-        const key = normalizeKey(row.CiaAbreviacion)
-        if (key) clasificacionMap.set(key, String(row.ClasCia_TXT || "Sin clasificar"))
+        const key = normalizeKey(row.CIA)
+        const clasTxt = String(row.ClasCIA || "Sin clasificar")
+        if (!key) continue
+        if (targetClas && targetClas !== "todas" && normalizeText(clasTxt) !== targetClas) continue
+        clasificacionMap.set(key, clasTxt)
       }
     }
 
