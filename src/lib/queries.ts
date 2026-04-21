@@ -1071,8 +1071,7 @@ export async function getRankedVendedores(
 }
 
 /**
- * Fetch aseguradoras by prima from raw Drive tables using CiaAbreviacion
- * Source tables: efectuada_2024_drive | efectuada_2025_drive | efectuada_2026_drive
+ * Fetch aseguradoras by prima using server API (service-role path)
  */
 export async function getRankedAseguradoras(
   periodo?: number,
@@ -1083,96 +1082,25 @@ export async function getRankedAseguradoras(
     const yearNum = parseInt(String(año || new Date().getFullYear()), 10)
     if (![2024, 2025, 2026].includes(yearNum)) return null
 
-    const table = `efectuada_${yearNum}_drive`
-    const monthNums = Number.isFinite(periodo) && (periodo as number) > 0
+    const meses = Number.isFinite(periodo)
       ? Array.from({ length: Math.min(Math.max(Math.trunc(periodo as number), 1), 12) }, (_, i) => i + 1)
       : []
 
-    const parseNum = (v: unknown): number => {
-      if (v === null || v === undefined || v === "") return 0
-      if (typeof v === "number") return Number.isFinite(v) ? v : 0
-      const s = String(v).replace(/,/g, "").trim()
-      const n = Number(s)
-      return Number.isFinite(n) ? n : 0
-    }
+    const params = new URLSearchParams({
+      year: String(yearNum),
+      meses: meses.join(","),
+    })
 
-    const monthFromDateLike = (v: unknown): number | null => {
-      if (!v) return null
-      if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v.getMonth() + 1
-      const s = String(v).trim()
-      const iso = new Date(s)
-      if (!Number.isNaN(iso.getTime())) return iso.getMonth() + 1
-      if (/^\d+(\.\d+)?$/.test(s)) {
-        const serial = Number(s)
-        if (Number.isFinite(serial) && serial > 20000) {
-          const d = new Date(Math.round((serial - 25569) * 86400 * 1000))
-          return Number.isNaN(d.getTime()) ? null : d.getMonth() + 1
-        }
-      }
-      const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/)
-      if (m) return parseInt(m[1], 10)
-
-      const monthMap: Record<string, number> = {
-        enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
-        julio: 7, agosto: 8, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12
-      }
-      const key = s
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .trim()
-      if (monthMap[key]) return monthMap[key]
-
-      return null
-    }
-
-    const includeMonth = (m: number | null) => {
-      if (monthNums.length === 0 || monthNums.length >= 12) return true
-      return m !== null && monthNums.includes(m)
-    }
-
-    let clasificacionMap: Record<string, string> | null = null
     const clasif = String(_clasificacion || "").trim()
-    if (clasif && clasif !== "Todas") {
-      const { data: ciaData } = await supabase
-        .from("catalogos_cias")
-        .select("CiaAbreviacion, ClasCia_TXT")
-        .eq("ClasCia_TXT", clasif)
+    if (clasif && clasif !== "Todas") params.set("clasificacion", clasif)
 
-      clasificacionMap = {}
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const row of (ciaData || []) as any[]) {
-        const key = String(row.CiaAbreviacion || "").trim()
-        if (key) clasificacionMap[key] = String(row.ClasCia_TXT || "")
-      }
-    }
+    const res = await fetch(`/api/aseguradoras?${params.toString()}`, { cache: "no-store" })
+    if (!res.ok) return null
 
-    const rows = await fetchAll(() =>
-      supabase
-        .from(table)
-        .select("CiaAbreviacion, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo")
-        .not("CiaAbreviacion", "is", null)
-    )
+    const data = await res.json()
+    if (!Array.isArray(data)) return null
 
-    if (!rows.length) return null
-
-    const grouped: Record<string, number> = {}
-    for (const r of rows) {
-      const cia = String(r.CiaAbreviacion ?? "").trim()
-      if (!cia) continue
-      if (clasificacionMap && !clasificacionMap[cia]) continue
-
-      const m = monthFromDateLike(r.FLiquidacion) ?? monthFromDateLike(r.Periodo) ?? parseNum(r.Periodo)
-      if (!includeMonth(m)) continue
-
-      const prima = (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
-      grouped[cia] = (grouped[cia] || 0) + prima
-    }
-
-    return Object.entries(grouped)
-      .map(([aseguradora, prima]) => ({ aseguradora, primaNeta: roundByFirstDecimal(prima) }))
-      .filter((r) => r.primaNeta > 0)
-      .sort((a, b) => a.aseguradora.localeCompare(b.aseguradora, "es", { sensitivity: "base" }))
+    return data as { aseguradora: string; primaNeta: number }[]
   } catch {
     return null
   }
