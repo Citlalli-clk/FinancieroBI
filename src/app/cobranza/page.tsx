@@ -170,7 +170,6 @@ export default function CobranzaPage() {
   }, [periodo, year, clasificacion])
 
   const totalPN = ramos.reduce((s, r) => s + r.pnEfectuada, 0)
-  const totalPOL = ramos.reduce((s, r) => s + r.polizas, 0)
 
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -303,72 +302,12 @@ export default function CobranzaPage() {
         )
       })()}
 
-      {/* Resumen por ramo — MOBILE: cards */}
-      <div className="md:hidden space-y-2 mb-4">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-[#041224] mb-2">Resumen por Ramo</h3>
-        {ramos.map(r => {
-          const pctVal = totalPN > 0 ? ((r.pnEfectuada / totalPN) * 100) : 0
-          return (
-            <div key={r.nombre} className="bg-white rounded-lg border border-gray-200 px-3 py-3">
-              <div className="flex justify-between items-center mb-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{backgroundColor: ramoColor(r.nombre)}} />
-                  <span className="font-medium text-xs text-[#111]">{r.nombre}</span>
-                </div>
-                <span className="text-xs font-normal tabular-nums text-[#3983F6]">{pctVal.toFixed(1)}%</span>
-              </div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-normal tabular-nums text-[#041224]">{fmtM(r.pnEfectuada)}</span>
-                <span className="text-xs text-gray-400 tabular-nums">{new Intl.NumberFormat("es-MX").format(r.polizas)} pólizas</span>
-              </div>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-500" style={{width: `${Math.min(pctVal, 100)}%`, backgroundColor: ramoColor(r.nombre)}} />
-              </div>
-            </div>
-          )
-        })}
-        <div className="bg-[#041224] rounded-lg px-3 py-3">
-          <div className="flex justify-between items-center">
-            <span className="font-bold text-xs text-white">Total</span>
-            <span className="text-xs font-bold text-white tabular-nums">{fmtM(totalPN)}</span>
-          </div>
-          <span className="text-xs text-gray-400 tabular-nums">{new Intl.NumberFormat("es-MX").format(totalPOL)} pólizas</span>
+      {/* Resumen por ramo — en blanco (líneas de negocio removidas) */}
+      <div className="bg-white rounded-lg border border-gray-200 mb-4">
+        <div className="px-3 py-2.5 bg-[#041224] border-b-2 border-b-[#E62800]">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-white">Resumen por ramo</h3>
         </div>
-      </div>
-
-      {/* Resumen por ramo — DESKTOP: table */}
-      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden overflow-x-auto mb-4">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-[#041224] border-b-2 border-b-[#E62800]">
-              <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white">Resumen por ramo</th>
-              {ramos.map(r => <th key={r.nombre} className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white">{r.nombre}</th>)}
-              <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-white">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-b border-[#E5E7EB] bg-white hover:bg-[#FFF5F5] transition-colors">
-              <td className="px-3 py-2 text-sm font-semibold text-[#041224]">PN efectuada</td>
-              {ramos.map(r => <td key={r.nombre} className="px-3 py-2 text-center text-sm font-bold tabular-nums">{fmt(r.pnEfectuada)}</td>)}
-              <td className="px-3 py-2 text-center text-sm font-bold tabular-nums">{fmt(totalPN)}</td>
-            </tr>
-            <tr className="border-b border-[#E5E7EB] bg-[#E5E7E9]/30 hover:bg-[#FFF5F5] transition-colors">
-              <td className="px-3 py-2 text-sm font-semibold text-[#041224]">% PN efectuada</td>
-              {ramos.map(r => <td key={r.nombre} className="px-3 py-2 text-center text-sm font-bold text-[#6B7280] tabular-nums">{totalPN > 0 ? ((r.pnEfectuada / totalPN) * 100).toFixed(2) : 0}%</td>)}
-              <td className="px-3 py-2 text-center text-sm font-bold tabular-nums">100%</td>
-            </tr>
-            <tr className="border-b border-[#E5E7EB] bg-white hover:bg-[#FFF5F5] transition-colors">
-              <td className="px-3 py-2 text-sm font-semibold text-[#041224]">No. polizas</td>
-              {ramos.map(r => <td key={r.nombre} className="px-3 py-2 text-center text-sm font-bold tabular-nums">{new Intl.NumberFormat("es-MX").format(r.polizas)}</td>)}
-              <td className="px-3 py-2 text-center text-sm font-bold tabular-nums">{new Intl.NumberFormat("es-MX").format(totalPOL)}</td>
-            </tr>
-            <tr className="bg-[#041224] text-white">
-              <td className="px-3 py-2 text-sm font-bold">Total</td>
-              {ramos.map(r => <td key={r.nombre} className="px-3 py-2 text-center text-sm font-bold tabular-nums">{fmt(r.pnEfectuada)}</td>)}
-              <td className="px-3 py-2 text-center text-sm font-bold tabular-nums">{fmt(totalPN)}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="h-20" />
       </div>
 
       {/* Distribucion por ramo — stacked bar (works on all sizes) */}
