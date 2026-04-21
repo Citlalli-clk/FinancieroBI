@@ -193,7 +193,7 @@ export default function AseguradorasPage() {
         ) : filteredAseguradoras.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {/* Left: Table */}
-            <div ref={tableRef} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div ref={tableRef} className="bg-white rounded-lg border border-gray-200 overflow-hidden max-h-[620px] overflow-y-auto">
               {/* Mobile Card View */}
               <div className="md:hidden space-y-1.5 p-2">
                 {tableRows.map((a, i) => {
