@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     const rows = await fetchByRange(() =>
       supabase
         .from("pendiente_drive")
-        .select("LBussinesNombre, GerenciaNombre, VendNombre, Grupo, NombreCompleto, PrimaNeta, Descuento, TCPago, FLiquidacion, Fecha, Periodo")
+        .select("LBussinesNombre, GerenciaNombre, VendNombre, Grupo, NombreCompleto, PrimaNeta, Descuento, TCDocto, Periodo")
     )
 
     // Business decision: pendiente uses full Pendiente sheet (not month-limited)
