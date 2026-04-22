@@ -166,6 +166,14 @@ export default function CorporatePage() {
 
 
 
+  const normalizeKey = (v: unknown): string =>
+    String(v ?? "")
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase()
+
   const getPendienteMap = async (level: DrillLevel, filterSel: typeof sel): Promise<Record<string, number>> => {
     try {
       const params = new URLSearchParams({ level, year })
@@ -178,7 +186,7 @@ export default function CorporatePage() {
       const data = await res.json()
       if (!Array.isArray(data)) return {}
       const map: Record<string, number> = {}
-      for (const r of data) map[String(r.name || "")] = Number(r.pendiente) || 0
+      for (const r of data) map[normalizeKey(r.name)] = Number(r.pendiente) || 0
       return map
     } catch {
       return {}
@@ -194,7 +202,7 @@ export default function CorporatePage() {
       getPendienteMap("gerencia", {}),
     ]).then(([data, pendMap]) => {
       const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
-      setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, d.presupuesto ?? null, pendMap[d.gerencia] ?? null)))
+      setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, d.presupuesto ?? null, pendMap[normalizeKey(d.gerencia)] ?? null)))
       setLoading(false)
     }).catch(() => { setRows([]); setLoading(false) })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -211,21 +219,21 @@ export default function CorporatePage() {
           getPendienteMap("vendedor", newSel),
         ])
         const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
-        setRows((data ?? []).map(d => toRowWithYoY(d.vendedor, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, null, pendMap[d.vendedor] ?? null)))
+        setRows((data ?? []).map(d => toRowWithYoY(d.vendedor, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, null, pendMap[normalizeKey(d.vendedor)] ?? null)))
       } else if (level === "grupo") {
         const [data, pendMap] = await Promise.all([
           getGrupos(newSel.vendedor!, newSel.gerencia!, LINEA, periodo, year),
           getPendienteMap("grupo", newSel),
         ])
         const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
-        setRows((data ?? []).map(d => toRowWithYoY(d.grupo, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, null, pendMap[d.grupo] ?? null)))
+        setRows((data ?? []).map(d => toRowWithYoY(d.grupo, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, null, pendMap[normalizeKey(d.grupo)] ?? null)))
       } else if (level === "cliente") {
         const [data, pendMap] = await Promise.all([
           getClientes(newSel.grupo!, newSel.vendedor!, newSel.gerencia!, LINEA, periodo, year),
           getPendienteMap("cliente", newSel),
         ])
         const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
-        setRows((data ?? []).map(d => toRowWithYoY(d.cliente, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, null, pendMap[d.cliente] ?? null)))
+        setRows((data ?? []).map(d => toRowWithYoY(d.cliente, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, null, pendMap[normalizeKey(d.cliente)] ?? null)))
       } else if (level === "poliza") {
         const data = await getPolizas(newSel.cliente!, newSel.grupo!, newSel.vendedor!, newSel.gerencia!, LINEA, periodo, year)
         setPolizas(data ?? [])
@@ -262,28 +270,28 @@ export default function CorporatePage() {
             getPendienteMap("gerencia", newSel),
           ])
           const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
-          setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, d.presupuesto ?? null, pendMap[d.gerencia] ?? null)))
+          setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, d.presupuesto ?? null, pendMap[normalizeKey(d.gerencia)] ?? null)))
         } else if (prev.level === "vendedor") {
           const [data, pendMap] = await Promise.all([
             getVendedores(newSel.gerencia!, LINEA, periodo, year),
             getPendienteMap("vendedor", newSel),
           ])
           const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
-          setRows((data ?? []).map(d => toRowWithYoY(d.vendedor, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, null, pendMap[d.vendedor] ?? null)))
+          setRows((data ?? []).map(d => toRowWithYoY(d.vendedor, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, null, pendMap[normalizeKey(d.vendedor)] ?? null)))
         } else if (prev.level === "grupo") {
           const [data, pendMap] = await Promise.all([
             getGrupos(newSel.vendedor!, newSel.gerencia!, LINEA, periodo, year),
             getPendienteMap("grupo", newSel),
           ])
           const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
-          setRows((data ?? []).map(d => toRowWithYoY(d.grupo, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, null, pendMap[d.grupo] ?? null)))
+          setRows((data ?? []).map(d => toRowWithYoY(d.grupo, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, null, pendMap[normalizeKey(d.grupo)] ?? null)))
         } else if (prev.level === "cliente") {
           const [data, pendMap] = await Promise.all([
             getClientes(newSel.grupo!, newSel.vendedor!, newSel.gerencia!, LINEA, periodo, year),
             getPendienteMap("cliente", newSel),
           ])
           const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
-          setRows((data ?? []).map(d => toRowWithYoY(d.cliente, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, null, pendMap[d.cliente] ?? null)))
+          setRows((data ?? []).map(d => toRowWithYoY(d.cliente, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, null, pendMap[normalizeKey(d.cliente)] ?? null)))
         }
       } catch { setRows([]) }
       setDrillLevel(prev.level)
@@ -363,7 +371,7 @@ export default function CorporatePage() {
             <ChevronLeft className="w-4 h-4" /> Atrás
           </button>
           <div className="flex items-center gap-1 text-xs text-[#888] flex-wrap">
-            <button onClick={() => { setDrillLevel("gerencia"); setCrumbs([]); setSel({}); setLoading(true); Promise.all([getGerencias(LINEA, periodo, year), getPendienteMap("gerencia", {})]).then(([data, pendMap]) => { const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0); setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, d.presupuesto ?? null, pendMap[d.gerencia] ?? null))); setLoading(false) }) }} className="hover:text-[#041224] underline">Corporate</button>
+            <button onClick={() => { setDrillLevel("gerencia"); setCrumbs([]); setSel({}); setLoading(true); Promise.all([getGerencias(LINEA, periodo, year), getPendienteMap("gerencia", {})]).then(([data, pendMap]) => { const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0); setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, d.presupuesto ?? null, pendMap[normalizeKey(d.gerencia)] ?? null))); setLoading(false) }) }} className="hover:text-[#041224] underline">Corporate</button>
             {crumbs.map((c, i) => (
               <span key={i} className="flex items-center gap-1">
                 <ChevronRight className="w-3 h-3" />
