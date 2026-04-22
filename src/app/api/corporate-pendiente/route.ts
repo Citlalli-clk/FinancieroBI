@@ -94,15 +94,12 @@ export async function GET(request: NextRequest) {
         .select("LBussinesNombre, GerenciaNombre, VendNombre, Grupo, NombreCompleto, PrimaNeta, Descuento, TCPago, FLiquidacion, Fecha, Periodo")
     )
 
-    const inMonth = (m: number | null) => mesesSet.size === 0 || (m !== null && mesesSet.has(m))
+    // Business decision: pendiente uses full Pendiente sheet (not month-limited)
     const isCorporate = (v: unknown) => normalizeText(v) === "corporate"
 
     const grouped = new Map<string, number>()
     for (const r of rows) {
       if (!isCorporate(r.LBussinesNombre)) continue
-      const m = monthFromDateLike(r.FLiquidacion) ?? monthFromDateLike(r.Fecha) ?? parseNum(r.Periodo)
-      if (!inMonth(m)) continue
-
       const g = normalizeText(r.GerenciaNombre)
       const v = normalizeText(r.VendNombre)
       const gr = normalizeText(r.Grupo)
@@ -116,7 +113,7 @@ export async function GET(request: NextRequest) {
       else if (level === "grupo") key = String(r.Grupo || "Sin grupo").trim()
       else if (level === "cliente") key = String(r.NombreCompleto || "Sin cliente").trim()
 
-      const pendiente = (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCPago) || 1)
+      const pendiente = (parseNum(r.PrimaNeta) - parseNum(r.Descuento)) * (parseNum(r.TCDocto) || parseNum(r.TCPago) || 1)
       grouped.set(key, (grouped.get(key) || 0) + pendiente)
     }
 
