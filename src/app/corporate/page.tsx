@@ -137,11 +137,12 @@ export default function CorporatePage() {
     name: string,
     primaNeta: number,
     pnAnioAnt: number,
-    pnAnioAntTotal: number
+    pnAnioAntTotal: number,
+    presupuestoOverride?: number | null
   ): DrillRow => {
-    // Allocate presupuesto based on PRIOR YEAR share
+    // Gerencia-level should use direct presupuesto from Presupuestos 2026 when available.
     const priorShare = pnAnioAntTotal > 0 ? pnAnioAnt / pnAnioAntTotal : 0
-    const ppto = Math.round(lineaPpto * priorShare)
+    const ppto = presupuestoOverride != null ? Math.round(presupuestoOverride) : Math.round(lineaPpto * priorShare)
     const dif = ppto > 0 ? primaNeta - ppto : null
     const pctDif = ppto > 0 && dif !== null ? Math.round((dif / ppto) * 1000) / 10 : null
     const difY = pnAnioAnt > 0 ? primaNeta - pnAnioAnt : (pnAnioAnt === 0 && primaNeta > 0 ? primaNeta : null)
@@ -166,7 +167,7 @@ export default function CorporatePage() {
     setDrillLevel("gerencia"); setCrumbs([]); setSel({})
     getGerencias(LINEA, periodo, year).then(data => {
       const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
-      setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal)))
+      setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, d.presupuesto ?? null)))
       setLoading(false)
     }).catch(() => { setRows([]); setLoading(false) })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -222,7 +223,7 @@ export default function CorporatePage() {
         if (prev.level === "gerencia") {
           const data = await getGerencias(LINEA, periodo, year)
           const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
-          setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal)))
+          setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, d.presupuesto ?? null)))
         } else if (prev.level === "vendedor") {
           const data = await getVendedores(newSel.gerencia!, LINEA, periodo, year)
           const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
@@ -314,7 +315,7 @@ export default function CorporatePage() {
             <ChevronLeft className="w-4 h-4" /> Atrás
           </button>
           <div className="flex items-center gap-1 text-xs text-[#888] flex-wrap">
-            <button onClick={() => { setDrillLevel("gerencia"); setCrumbs([]); setSel({}); setLoading(true); getGerencias(LINEA, periodo, year).then(data => { const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0); setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal))); setLoading(false) }) }} className="hover:text-[#041224] underline">Corporate</button>
+            <button onClick={() => { setDrillLevel("gerencia"); setCrumbs([]); setSel({}); setLoading(true); getGerencias(LINEA, periodo, year).then(data => { const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0); setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, d.presupuesto ?? null))); setLoading(false) }) }} className="hover:text-[#041224] underline">Corporate</button>
             {crumbs.map((c, i) => (
               <span key={i} className="flex items-center gap-1">
                 <ChevronRight className="w-3 h-3" />
