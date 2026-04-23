@@ -187,6 +187,15 @@ async function loadVendedoresDrive(
 const CACHE_HEADERS = { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" }
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" }
 
+function closedMesesForYear(year: number, meses: number[]): number[] {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Mexico_City", year: "numeric", month: "numeric" }).formatToParts(new Date())
+  const currentYear = Number.parseInt(parts.find((p) => p.type === "year")?.value || "0", 10)
+  const currentMonth = Number.parseInt(parts.find((p) => p.type === "month")?.value || "0", 10)
+  const base = (meses.length > 0 ? meses : Array.from({ length: 12 }, (_, i) => i + 1)).filter((m) => Number.isFinite(m) && m >= 1 && m <= 12)
+  if (year !== currentYear) return base
+  return base.filter((m) => m < currentMonth)
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -208,7 +217,8 @@ export async function GET(request: NextRequest) {
     if (!supabaseUrl || !apiKey) return NextResponse.json([], { headers: NO_STORE_HEADERS })
 
     const supabase = createClient(supabaseUrl, apiKey)
-    const rows = await loadVendedoresDrive(supabase, linea, gerencia, year, meses)
+    const mesesClosed = closedMesesForYear(year, meses)
+    const rows = await loadVendedoresDrive(supabase, linea, gerencia, year, mesesClosed)
     return NextResponse.json(rows, { headers: CACHE_HEADERS })
   } catch (err) {
     const detail = err instanceof Error ? err.message : "unknown"

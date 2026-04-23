@@ -75,6 +75,32 @@ function isTableMissing(message: string): boolean {
   )
 }
 
+
+function mexicoDateParts(): { year: number; month: number; day: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(new Date())
+
+  const pick = (type: string) => Number.parseInt(parts.find((p) => p.type === type)?.value || "0", 10)
+  return { year: pick("year"), month: pick("month"), day: pick("day") }
+}
+
+function normalizeMesesSelection(year: number, meses: number[], todayMx: { year: number; month: number }): number[] {
+  const base = (meses.length > 0 ? meses : Array.from({ length: 12 }, (_, i) => i + 1))
+    .filter((m) => Number.isFinite(m) && m >= 1 && m <= 12)
+  if (year !== todayMx.year) return base
+  return base.filter((m) => m <= todayMx.month)
+}
+
+function closedMeses(year: number, meses: number[], todayMx: { year: number; month: number }): number[] {
+  const base = normalizeMesesSelection(year, meses, todayMx)
+  if (year !== todayMx.year) return base
+  return base.filter((m) => m < todayMx.month)
+}
+
 function corporateBudgetCorrection(year: number, meses: number[]): number {
   // Temporary business correction validated by stakeholder for 2026 data
   // Applies when April is in scope (or full-year request).
@@ -86,7 +112,8 @@ function corporateBudgetCorrection(year: number, meses: number[]): number {
 async function loadFromSummaryTable(
   supabase: SupabaseClient,
   year: number,
-  meses: number[]
+  meses: number[],
+  pendingOverrideByLine?: Map<string, number>
 ): Promise<LineaResult[] | null> {
   let currentQuery = supabase
     .from("lineas_resumen")
@@ -143,6 +170,7 @@ async function loadFromSummaryTable(
   const lineas = new Set<string>([
     ...Array.from(currentByLine.keys()),
     ...Array.from(priorByLine.keys()),
+    ...Array.from((pendingOverrideByLine || new Map<string, number>()).keys()),
   ])
 
   const rows = Array.from(lineas)
@@ -153,7 +181,7 @@ async function loadFromSummaryTable(
         primaNeta: c.primaNeta,
         anioAnterior: priorByLine.get(nombre) || 0,
         presupuesto: c.presupuesto,
-        pendiente: c.pendiente,
+        pendiente: pendingOverrideByLine?.get(nombre) ?? c.pendiente,
       }
     })
 
@@ -259,38 +287,95 @@ async function accumulatePresupuesto(
   return true
 }
 
+function parseFDesdeDate(value: unknown): Date | null {
+  if (value === null || value === undefined || value === "") return null
+
+  if (typeof value === "number") {
+    const d = new Date(Math.round((value - 25569) * 86400 * 1000))
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+
+  const txt = String(value).trim()
+  if (!txt) return null
+
+  if (/^\d+(\.\d+)?$/.test(txt)) {
+    const n = Number(txt)
+    if (Number.isFinite(n)) {
+      const d = new Date(Math.round((n - 25569) * 86400 * 1000))
+      return Number.isNaN(d.getTime()) ? null : d
+    }
+  }
+
+  const mdy = txt.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
+  if (mdy) {
+    const mm = Number.parseInt(mdy[1], 10)
+    const dd = Number.parseInt(mdy[2], 10)
+    let yy = Number.parseInt(mdy[3], 10)
+    if (yy < 100) yy += 2000
+    const d = new Date(Date.UTC(yy, mm - 1, dd))
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+
+  const iso = new Date(txt)
+  return Number.isNaN(iso.getTime()) ? null : iso
+}
+
+function mexicoTodayParts(): { year: number; month: number; day: number } {
+  const now = new Date()
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(now)
+
+  const get = (type: string) => Number.parseInt(parts.find((p) => p.type === type)?.value || "0", 10)
+  return { year: get("year"), month: get("month"), day: get("day") }
+}
+
 async function accumulatePendiente(
   supabase: SupabaseClient,
+  year: number,
   meses: number[],
   target: Map<string, number>
 ): Promise<boolean> {
   const PAGE_SIZE = 5000
+  const todayMx = mexicoTodayParts()
+  const cutoffDateUtc = new Date(Date.UTC(todayMx.year, todayMx.month - 1, todayMx.day, 23, 59, 59, 999))
 
   for (let from = 0; from < 1_000_000; from += PAGE_SIZE) {
-    let query = supabase
-      .from("Pendiente")
-      .select("LBussinesNombre, PrimaNeta, Periodo, Documento")
-      .order("Documento", { ascending: true })
+    const { data, error } = await supabase
+      .from("pendiente_drive")
+      .select("LBussinesNombre, PrimaNeta, Descuento, TCDocto, FDesde")
       .order("LBussinesNombre", { ascending: true })
       .range(from, from + PAGE_SIZE - 1)
 
-    if (meses.length > 0) {
-      query = query.in("Periodo", meses)
-    }
-
-    const { data, error } = await query
-
     if (error) {
       if (isTableMissing(error.message)) return false
-      throw new Error(`Pendiente error: ${error.message}`)
+      throw new Error(`pendiente_drive error: ${error.message}`)
     }
 
     const rows = (data || []) as Record<string, unknown>[]
     if (rows.length === 0) return true
 
     for (const row of rows) {
+      const fecha = parseFDesdeDate(row.FDesde)
+      if (!fecha) continue
+
+      const yyyy = fecha.getUTCFullYear()
+      const mm = fecha.getUTCMonth() + 1
+      if (yyyy !== year) continue
+      if (meses.length > 0 && !meses.includes(mm)) continue
+
+      // Business rule: for current year, accumulate only up to today's date (MX timezone)
+      if (year === todayMx.year && fecha > cutoffDateUtc) continue
+
       const linea = lineaName(row)
-      const pendiente = toNumber(row.PrimaNeta)
+      const prima = toNumber(row.PrimaNeta)
+      const desc = toNumber(row.Descuento)
+      const tcDocto = toNumber(row.TCDocto)
+      const pendiente = (prima - desc) * tcDocto
+
       target.set(linea, (target.get(linea) || 0) + pendiente)
     }
 
@@ -328,13 +413,20 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, apiKey)
 
+    const todayMx = mexicoDateParts()
+    const mesesSelected = normalizeMesesSelection(year, meses, todayMx)
+    const mesesClosed = closedMeses(year, meses, todayMx)
+
+    const pendingByLine = new Map<string, number>()
+    await accumulatePendiente(supabase, year, mesesSelected, pendingByLine)
+
     // Fast path: pre-aggregated summary table
-    const summary = await loadFromSummaryTable(supabase, year, meses)
+    const summary = await loadFromSummaryTable(supabase, year, mesesClosed, pendingByLine)
     if (summary && summary.length > 0) {
       return NextResponse.json(summary, {
         headers: {
           "Cache-Control": "no-store",
-          "x-lineas-source": "summary",
+          "x-lineas-source": "summary+pendiente-fdesde",
         },
       })
     }
@@ -343,7 +435,6 @@ export async function GET(request: NextRequest) {
     const currentByLine = new Map<string, number>()
     const priorByLine = new Map<string, number>()
     const budgetByLine = new Map<string, number>()
-    const pendingByLine = new Map<string, number>()
 
     const currentTableCandidates =
       year === 2026 ? ["efectuada_2026_drive", `Efectuada ${year}`] : [`Efectuada ${year}`]
@@ -353,22 +444,17 @@ export async function GET(request: NextRequest) {
     const currentSource = await accumulateEfectuadaFromCandidates(
       supabase,
       currentTableCandidates,
-      meses,
+      mesesClosed,
       currentByLine
     )
     if (!currentSource) {
       throw new Error(`Missing source table for year ${year}: ${currentTableCandidates.join(" | ")}`)
     }
 
-    await accumulateEfectuadaFromCandidates(supabase, priorTableCandidates, meses, priorByLine)
+    await accumulateEfectuadaFromCandidates(supabase, priorTableCandidates, mesesClosed, priorByLine)
 
     // Budget table is currently expected mostly for 2026, but keep dynamic naming.
-    await accumulatePresupuesto(supabase, budgetTable, meses, budgetByLine)
-
-    // Pendiente table reflects current operational backlog; avoid projecting it to historical years.
-    if (year === new Date().getFullYear()) {
-      await accumulatePendiente(supabase, meses, pendingByLine)
-    }
+    await accumulatePresupuesto(supabase, budgetTable, mesesClosed, budgetByLine)
 
     const lineas = new Set<string>([
       ...Array.from(currentByLine.keys()),
