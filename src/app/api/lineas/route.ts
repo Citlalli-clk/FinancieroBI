@@ -415,13 +415,12 @@ export async function GET(request: NextRequest) {
 
     const todayMx = mexicoDateParts()
     const mesesSelected = normalizeMesesSelection(year, meses, todayMx)
-    const mesesClosed = closedMeses(year, meses, todayMx)
 
     const pendingByLine = new Map<string, number>()
     await accumulatePendiente(supabase, year, mesesSelected, pendingByLine)
 
     // Fast path: pre-aggregated summary table
-    const summary = await loadFromSummaryTable(supabase, year, mesesClosed, pendingByLine)
+    const summary = await loadFromSummaryTable(supabase, year, mesesSelected, pendingByLine)
     if (summary && summary.length > 0) {
       return NextResponse.json(summary, {
         headers: {
@@ -444,17 +443,17 @@ export async function GET(request: NextRequest) {
     const currentSource = await accumulateEfectuadaFromCandidates(
       supabase,
       currentTableCandidates,
-      mesesClosed,
+      mesesSelected,
       currentByLine
     )
     if (!currentSource) {
       throw new Error(`Missing source table for year ${year}: ${currentTableCandidates.join(" | ")}`)
     }
 
-    await accumulateEfectuadaFromCandidates(supabase, priorTableCandidates, mesesClosed, priorByLine)
+    await accumulateEfectuadaFromCandidates(supabase, priorTableCandidates, mesesSelected, priorByLine)
 
     // Budget table is currently expected mostly for 2026, but keep dynamic naming.
-    await accumulatePresupuesto(supabase, budgetTable, mesesClosed, budgetByLine)
+    await accumulatePresupuesto(supabase, budgetTable, mesesSelected, budgetByLine)
 
     const lineas = new Set<string>([
       ...Array.from(currentByLine.keys()),
