@@ -277,7 +277,26 @@ function TablaDetalleContent() {
         const data = await getGerencias(newSel.linea!, periodos, year, clasificacionAseguradoras)
         const pnAnioAntTotal = (data ?? []).reduce((s, d) => s + d.pnAnioAnt, 0)
         const currentTotal = (data ?? []).reduce((s, d) => s + d.primaNeta, 0)
-        setRows((data ?? []).map(d => toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, lineaPpto, lineaPendiente, currentTotal, d.presupuesto ?? null)))
+        const mapped = (data ?? []).map(d => {
+          const row = toRowWithYoY(d.gerencia, d.primaNeta, d.pnAnioAnt, pnAnioAntTotal, lineaPpto, lineaPendiente, currentTotal, d.presupuesto ?? null)
+          return { ...row, pendiente: (d as any).pendiente ?? row.pendiente }
+        })
+
+        // Consistency rule: when a línea has a single gerencia row (or explicit Call Center case),
+        // force it to equal línea totals so row and footer never diverge.
+        if ((mapped.length === 1 || (newSel.linea || "") === "Call Center") && mapped.length > 0 && lineaBase) {
+          const pn = lineaBase.primaNeta
+          const ppto = lineaBase.presupuesto
+          const pnAA = lineaBase.pnAnioAnt
+          const pend = lineaBase.pendiente
+          const dif = pn - ppto
+          const pctDif = ppto > 0 ? Math.round((dif / ppto) * 1000) / 10 : 0
+          const difY = pn - pnAA
+          const pctDifY = pnAA > 0 ? Math.round((difY / pnAA) * 10000) / 100 : 0
+          mapped[0] = { ...mapped[0], primaNeta: pn, presupuesto: ppto, diferencia: dif, pctDifPpto: pctDif, pnAnioAnt: pnAA, difYoY: difY, pctDifYoY: pctDifY, pendiente: pend }
+        }
+
+        setRows(mapped)
       } else if (level === "vendedor") {
         const selectedGer = String(newSel.gerencia ?? '').trim().toLowerCase()
         const parentFromRows = rows.find((r) => String(r.name ?? '').trim().toLowerCase() === selectedGer)

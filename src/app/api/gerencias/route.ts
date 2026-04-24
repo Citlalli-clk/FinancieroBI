@@ -14,31 +14,48 @@ function toNumber(value: unknown): number {
   return 0
 }
 
-function monthFromDateLike(v: unknown): number | null {
+function parseDateLike(v: unknown): Date | null {
   if (v === null || v === undefined || v === "") return null
   if (typeof v === "number") {
     const d = new Date(Math.round((v - 25569) * 86400 * 1000))
-    return Number.isNaN(d.getTime()) ? null : d.getMonth() + 1
+    return Number.isNaN(d.getTime()) ? null : d
   }
   const s = String(v).trim()
   if (/^\d+(\.\d+)?$/.test(s)) {
     const serial = Number(s)
     if (Number.isFinite(serial) && serial > 20000) {
       const d = new Date(Math.round((serial - 25569) * 86400 * 1000))
-      return Number.isNaN(d.getTime()) ? null : d.getMonth() + 1
+      return Number.isNaN(d.getTime()) ? null : d
     }
   }
   const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/)
   if (m) {
     const mm = parseInt(m[1], 10)
-    return mm >= 1 && mm <= 12 ? mm : null
+    const dd = parseInt(m[2], 10)
+    let yy = parseInt(m[3], 10)
+    if (yy < 100) yy += 2000
+    const d = new Date(Date.UTC(yy, mm - 1, dd))
+    return Number.isNaN(d.getTime()) ? null : d
   }
   const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
   if (iso) {
+    const yy = parseInt(iso[1], 10)
     const mm = parseInt(iso[2], 10)
-    return mm >= 1 && mm <= 12 ? mm : null
+    const dd = parseInt(iso[3], 10)
+    const d = new Date(Date.UTC(yy, mm - 1, dd))
+    return Number.isNaN(d.getTime()) ? null : d
   }
   return null
+}
+
+function monthFromDateLike(v: unknown): number | null {
+  const d = parseDateLike(v)
+  return d ? d.getUTCMonth() + 1 : null
+}
+
+function yearFromDateLike(v: unknown): number | null {
+  const d = parseDateLike(v)
+  return d ? d.getUTCFullYear() : null
 }
 
 function normalizeLinea(v: unknown): string {
@@ -64,19 +81,32 @@ async function fetchAll(queryFactory: () => any, pageSize = 1000): Promise<Recor
 }
 
 async function loadGerenciasDrive(supabase: SupabaseClient, linea: string, yearNum: number, months: number[]) {
+  const mxParts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Mexico_City", year: "numeric", month: "numeric" }).formatToParts(new Date())
+  const mxYear = Number.parseInt(mxParts.find((p) => p.type === "year")?.value || "0", 10)
+  const mxMonth = Number.parseInt(mxParts.find((p) => p.type === "month")?.value || "0", 10)
   const includeMonth = (m: number | null) => months.length === 0 || (m !== null && months.includes(m))
+  const includeMonthPnAA = (m: number | null) => {
+    if (!(months.length === 0 || (m !== null && months.includes(m)))) return false
+    if (yearNum === mxYear && m !== null) return m <= mxMonth
+    return true
+  }
 
   const effTable = `efectuada_${yearNum}_drive`
   const pptoTable = `presupuestos_${yearNum}_drive`
   const prevEffTable = yearNum > 2024 ? `efectuada_${yearNum - 1}_drive` : null
 
   const effRows = await fetchAll(() => {
+    const effSelect = yearNum === 2026
+      ? "LBussinesNombre, GerenciaNombre, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo, IDDocto, _row_id"
+      : "LBussinesNombre, GerenciaNombre, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo, IDDocto"
     let q = supabase
       .from(effTable)
-      .select("LBussinesNombre, GerenciaNombre, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo, IDDocto")
+      .select(effSelect)
     if (linea === "Click Promotorías") q = q.in("LBussinesNombre", ["Click Promotorías", "Click Promotorias"])
     else q = q.eq("LBussinesNombre", linea)
-    q = q.order("IDDocto", { ascending: true })
+    q = yearNum === 2026
+      ? q.order("_row_id", { ascending: true })
+      : q.order("IDDocto", { ascending: true }).order("FLiquidacion", { ascending: true }).order("GerenciaNombre", { ascending: true })
     return q
   })
 
@@ -102,19 +132,31 @@ async function loadGerenciasDrive(supabase: SupabaseClient, linea: string, yearN
           .select("LBussinesNombre, GerenciaNombre, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo, IDDocto")
         if (linea === "Click Promotorías") q = q.in("LBussinesNombre", ["Click Promotorías", "Click Promotorias"])
         else q = q.eq("LBussinesNombre", linea)
+        q = q.order("IDDocto", { ascending: true }).order("FLiquidacion", { ascending: true }).order("GerenciaNombre", { ascending: true })
         return q
       })
     : []
 
-  const map = new Map<string, { primaNeta: number; pnAnioAnt: number; presupuesto: number }>()
+  const pendingRows = await fetchAll(() => {
+    let q = supabase
+      .from("pendiente_drive")
+      .select("LBussinesNombre, GerenciaNombre, PrimaNeta, Descuento, TCDocto, FDesde")
+    if (linea === "Click Promotorías") q = q.in("LBussinesNombre", ["Click Promotorías", "Click Promotorias"])
+    else q = q.eq("LBussinesNombre", linea)
+    return q
+  })
+
+  const map = new Map<string, { primaNeta: number; pnAnioAnt: number; presupuesto: number; pendiente: number }>()
 
   for (const r of effRows) {
     if (normalizeLinea(r.LBussinesNombre) !== linea) continue
     const ger = String(r.GerenciaNombre ?? "").trim() || "Sin gerencia"
+    const y = yearFromDateLike(r.FLiquidacion)
+    if (y !== null && y !== yearNum) continue
     const m = monthFromDateLike(r.FLiquidacion) ?? toNumber(r.Periodo)
     if (!includeMonth(m)) continue
-    const pn = (toNumber(r.PrimaNeta) - toNumber(r.Descuento)) * (toNumber(r.TCPago) || 1)
-    const cur = map.get(ger) || { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0 }
+    const pn = (toNumber(r.PrimaNeta) - toNumber(r.Descuento)) * toNumber(r.TCPago)
+    const cur = map.get(ger) || { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0, pendiente: 0 }
     cur.primaNeta += pn
     map.set(ger, cur)
   }
@@ -124,7 +166,7 @@ async function loadGerenciasDrive(supabase: SupabaseClient, linea: string, yearN
     const ger = String(r.GerenciaNombre ?? "").trim() || "Sin gerencia"
     const m = monthFromDateLike(r.Fecha)
     if (!includeMonth(m)) continue
-    const cur = map.get(ger) || { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0 }
+    const cur = map.get(ger) || { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0, pendiente: 0 }
     cur.presupuesto += toNumber(r.Presupuesto)
     map.set(ger, cur)
   }
@@ -132,11 +174,39 @@ async function loadGerenciasDrive(supabase: SupabaseClient, linea: string, yearN
   for (const r of prevRows) {
     if (normalizeLinea(r.LBussinesNombre) !== linea) continue
     const ger = String(r.GerenciaNombre ?? "").trim() || "Sin gerencia"
+    const y = yearFromDateLike(r.FLiquidacion)
+    if (y !== null && y !== yearNum - 1) continue
     const m = monthFromDateLike(r.FLiquidacion) ?? toNumber(r.Periodo)
-    if (!includeMonth(m)) continue
-    const pnAA = (toNumber(r.PrimaNeta) - toNumber(r.Descuento)) * (toNumber(r.TCPago) || 1)
-    const cur = map.get(ger) || { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0 }
+    if (!includeMonthPnAA(m)) continue
+    const tcPagoRaw = r.TCPago as unknown
+    const tcPago = tcPagoRaw === null || tcPagoRaw === undefined || String(tcPagoRaw).trim() === "" ? 1 : toNumber(tcPagoRaw)
+    const pnAA = (toNumber(r.PrimaNeta) - toNumber(r.Descuento)) * tcPago
+    const cur = map.get(ger) || { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0, pendiente: 0 }
     cur.pnAnioAnt += pnAA
+    map.set(ger, cur)
+  }
+
+  const todayParts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Mexico_City", year: "numeric", month: "numeric", day: "numeric" }).formatToParts(new Date())
+  const tYear = Number.parseInt(todayParts.find((p) => p.type === "year")?.value || "0", 10)
+  const tMonth = Number.parseInt(todayParts.find((p) => p.type === "month")?.value || "0", 10)
+  const tDay = Number.parseInt(todayParts.find((p) => p.type === "day")?.value || "0", 10)
+  const cutoff = new Date(Date.UTC(tYear, tMonth - 1, tDay, 23, 59, 59, 999))
+
+  for (const r of pendingRows) {
+    if (normalizeLinea(r.LBussinesNombre) !== linea) continue
+    const ger = String(r.GerenciaNombre ?? "").trim() || "Sin gerencia"
+    const d = parseDateLike(r.FDesde)
+    if (!d) continue
+    const yy = d.getUTCFullYear()
+    const mm = d.getUTCMonth() + 1
+    if (yy !== yearNum) continue
+    if (!includeMonth(mm)) continue
+    if (yearNum === tYear && d > cutoff) continue
+    const tcDoctoRaw = r.TCDocto as unknown
+    const tcDocto = tcDoctoRaw === null || tcDoctoRaw === undefined || String(tcDoctoRaw).trim() === "" ? 1 : toNumber(tcDoctoRaw)
+    const pend = (toNumber(r.PrimaNeta) - toNumber(r.Descuento)) * tcDocto
+    const cur = map.get(ger) || { primaNeta: 0, pnAnioAnt: 0, presupuesto: 0, pendiente: 0 }
+    cur.pendiente += pend
     map.set(ger, cur)
   }
 
@@ -146,6 +216,7 @@ async function loadGerenciasDrive(supabase: SupabaseClient, linea: string, yearN
       primaNeta: v.primaNeta,
       pnAnioAnt: v.pnAnioAnt,
       presupuesto: v.presupuesto,
+      pendiente: v.pendiente,
     }))
     .filter((r) => r.primaNeta > 0 || r.presupuesto > 0)
     .sort((a, b) => a.gerencia.localeCompare(b.gerencia, "es", { sensitivity: "base" }))
@@ -153,15 +224,6 @@ async function loadGerenciasDrive(supabase: SupabaseClient, linea: string, yearN
 
 const CACHE_HEADERS = { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" }
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" }
-
-function closedMesesForYear(year: number, meses: number[]): number[] {
-  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Mexico_City", year: "numeric", month: "numeric" }).formatToParts(new Date())
-  const currentYear = Number.parseInt(parts.find((p) => p.type === "year")?.value || "0", 10)
-  const currentMonth = Number.parseInt(parts.find((p) => p.type === "month")?.value || "0", 10)
-  const base = (meses.length > 0 ? meses : Array.from({ length: 12 }, (_, i) => i + 1)).filter((m) => Number.isFinite(m) && m >= 1 && m <= 12)
-  if (year !== currentYear) return base
-  return base.filter((m) => m < currentMonth)
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -183,8 +245,7 @@ export async function GET(request: NextRequest) {
     if (!supabaseUrl || !apiKey) return NextResponse.json([], { headers: NO_STORE_HEADERS })
 
     const supabase = createClient(supabaseUrl, apiKey)
-    const mesesClosed = closedMesesForYear(year, meses)
-    const rows = await loadGerenciasDrive(supabase, linea, year, mesesClosed)
+    const rows = await loadGerenciasDrive(supabase, linea, year, meses)
     return NextResponse.json(rows, { headers: CACHE_HEADERS })
   } catch (err) {
     const detail = err instanceof Error ? err.message : "unknown"

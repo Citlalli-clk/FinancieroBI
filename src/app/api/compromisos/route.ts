@@ -29,9 +29,16 @@ function monthFromDateLike(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null
   if (typeof v === "number") {
     const d = new Date(Math.round((v - 25569) * 86400 * 1000))
-    return Number.isNaN(d.getTime()) ? null : d.getMonth() + 1
+    return Number.isNaN(d.getTime()) ? null : d.getUTCMonth() + 1
   }
   const s = String(v).trim()
+  if (/^\d+(\.\d+)?$/.test(s)) {
+    const serial = Number(s)
+    if (Number.isFinite(serial) && serial > 20000) {
+      const d = new Date(Math.round((serial - 25569) * 86400 * 1000))
+      return Number.isNaN(d.getTime()) ? null : d.getUTCMonth() + 1
+    }
+  }
   const m1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/)
   if (m1) {
     const mm = parseInt(m1[1], 10)
@@ -107,7 +114,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, apiKey)
 
-    const pptoTable = `presupuestos_${year}_drive`
+    const pptoTable = `presupuestos_2026_drive`
     const lineaFilter = normalizeText(searchParams.get("linea"))
     const gerenciaFilter = normalizeText(searchParams.get("gerencia"))
 
@@ -148,13 +155,19 @@ export async function GET(request: NextRequest) {
     const pptoRows = await fetchByRange(() =>
       supabase
         .from(pptoTable)
-        .select("Vendedor, Presupuesto, Fecha")
+        .select("Vendedor, Presupuesto, Fecha, LBussinesNombre, GerenciaNombre")
         .order("Fecha", { ascending: true })
     )
 
     for (const r of pptoRows) {
       const m = monthFromDateLike(r.Fecha)
       if (!Number.isFinite(m) || !mesesSet.has(Number(m))) continue
+
+      const lineaNormPpto = normalizeText(r.LBussinesNombre)
+      const gerNormPpto = normalizeText(r.GerenciaNombre)
+      if (lineaFilter && lineaNormPpto !== lineaFilter) continue
+      if (gerenciaFilter && gerNormPpto !== gerenciaFilter) continue
+
       const upsert = upsertVendor(r.Vendedor)
       if (!upsert) continue
       if ((lineaFilter || gerenciaFilter) && !vendorsPassingFilters.has(upsert.key)) continue

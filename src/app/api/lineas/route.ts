@@ -16,43 +16,72 @@ function cleanEnv(value?: string): string {
 function toNumber(value: unknown): number {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0
   if (typeof value === "string") {
-    const trimmed = value.trim()
-    if (!trimmed) return 0
+    const raw = value.trim()
+    if (!raw) return 0
 
-    // Keep digits, sign, separators. Handle formats like:
-    // "$ 17,545.167", "-$ 5,668.322", "1,234", "1234.56"
-    let normalized = trimmed.replace(/[^\d,.-]/g, "")
-    if (!normalized || normalized === "-" || normalized === ".") return 0
+    let s = raw.replace(/[^\d,.-]/g, "")
+    if (!s || s === "-" || s === ".") return 0
 
-    const hasComma = normalized.includes(",")
-    const hasDot = normalized.includes(".")
+    const lastComma = s.lastIndexOf(",")
+    const lastDot = s.lastIndexOf(".")
 
-    if (hasComma && hasDot) {
-      // Assume comma is thousands separator
-      normalized = normalized.replace(/,/g, "")
-    } else if (hasComma && !hasDot) {
-      // Assume decimal comma
-      normalized = normalized.replace(/,/g, ".")
+    if (lastComma !== -1 && lastDot !== -1) {
+      // Use the rightmost separator as decimal marker
+      if (lastDot > lastComma) {
+        s = s.replace(/,/g, "")
+      } else {
+        s = s.replace(/\./g, "").replace(/,/g, ".")
+      }
+    } else if (lastComma !== -1) {
+      const decimals = s.length - lastComma - 1
+      if (decimals === 3) s = s.replace(/,/g, "")
+      else s = s.replace(/,/g, ".")
+    } else if (lastDot !== -1) {
+      const dots = (s.match(/\./g) || []).length
+      const decimals = s.length - lastDot - 1
+      if (dots > 1 || decimals === 3) s = s.replace(/\./g, "")
     }
 
-    const parsed = Number.parseFloat(normalized)
-    return Number.isFinite(parsed) ? parsed : 0
+    const n = Number(s)
+    return Number.isFinite(n) ? n : 0
   }
   return 0
 }
 
 function monthFromFecha(fecha: unknown): number | null {
-  if (typeof fecha !== "string" || !fecha.trim()) return null
+  if (fecha === null || fecha === undefined || fecha === "") return null
+
+  if (typeof fecha === "number") {
+    const d = new Date(Math.round((fecha - 25569) * 86400 * 1000))
+    return Number.isNaN(d.getTime()) ? null : d.getUTCMonth() + 1
+  }
+
+  const raw = String(fecha).trim()
+  if (!raw) return null
+
+  if (/^\d+(\.\d+)?$/.test(raw)) {
+    const serial = Number(raw)
+    if (Number.isFinite(serial) && serial > 20000) {
+      const d = new Date(Math.round((serial - 25569) * 86400 * 1000))
+      return Number.isNaN(d.getTime()) ? null : d.getUTCMonth() + 1
+    }
+  }
 
   // ISO: YYYY-MM-DD...
-  const iso = fecha.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/)
   if (iso) {
     const m = Number.parseInt(iso[2], 10)
     return m >= 1 && m <= 12 ? m : null
   }
 
+  const mdy = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/)
+  if (mdy) {
+    const m = Number.parseInt(mdy[1], 10)
+    return m >= 1 && m <= 12 ? m : null
+  }
+
   // Fallback using Date parsing
-  const dt = new Date(fecha)
+  const dt = new Date(raw)
   if (Number.isFinite(dt.getTime())) {
     const m = dt.getMonth() + 1
     return m >= 1 && m <= 12 ? m : null
@@ -61,10 +90,24 @@ function monthFromFecha(fecha: unknown): number | null {
   return null
 }
 
+function normalizeLineaName(value: unknown): string {
+  const v = String(value ?? "").trim()
+  if (!v) return "Sin línea"
+  if (/^Click Promotor/i.test(v)) return "Click Promotorías"
+  return v
+}
+
+function normKey(value: unknown): string {
+  return normalizeLineaName(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+}
+
 function lineaName(row: Record<string, unknown>): string {
-  const raw = row.LBussinesNombre
-  const value = typeof raw === "string" ? raw.trim() : ""
-  return value || "Sin línea"
+  return normalizeLineaName(row.LBussinesNombre)
 }
 
 function isTableMissing(message: string): boolean {
@@ -167,23 +210,42 @@ async function loadFromSummaryTable(
     priorByLine.set(linea, (priorByLine.get(linea) || 0) + toNumber(row.prima_neta))
   }
 
+  // Safety: if summary presupuesto is zeroed, rebuild presupuesto from Drive table by month.
+  const presupuestoSum = Array.from(currentByLine.values()).reduce((s, v) => s + (v.presupuesto || 0), 0)
+  if (year >= 2024 && presupuestoSum === 0) {
+    const budgetByLine = new Map<string, number>()
+    const ok = await accumulatePresupuesto(supabase, `presupuestos_${year}_drive`, meses, budgetByLine)
+    if (ok) {
+      budgetByLine.forEach((presupuesto, linea) => {
+        const cur = currentByLine.get(linea) || { primaNeta: 0, presupuesto: 0, pendiente: 0 }
+        cur.presupuesto = presupuesto
+        currentByLine.set(linea, cur)
+      })
+    }
+  }
+
   const lineas = new Set<string>([
     ...Array.from(currentByLine.keys()),
     ...Array.from(priorByLine.keys()),
     ...Array.from((pendingOverrideByLine || new Map<string, number>()).keys()),
   ])
 
+  const pendingByNorm = new Map<string, number>()
+  pendingOverrideByLine?.forEach((v, k) => pendingByNorm.set(normKey(k), v))
+
   const rows = Array.from(lineas)
     .map((nombre) => {
       const c = currentByLine.get(nombre) || { primaNeta: 0, presupuesto: 0, pendiente: 0 }
+      const pendingOverride = pendingByNorm.get(normKey(nombre))
       return {
         nombre,
         primaNeta: c.primaNeta,
         anioAnterior: priorByLine.get(nombre) || 0,
         presupuesto: c.presupuesto,
-        pendiente: pendingOverrideByLine?.get(nombre) ?? c.pendiente,
+        pendiente: pendingOverride ?? c.pendiente,
       }
     })
+    .filter((r) => normalizeLineaName(r.nombre) !== "Gobierno")
 
   return rows.sort((a, b) => b.primaNeta - a.primaNeta)
 }
@@ -199,13 +261,9 @@ async function accumulateEfectuada(
   for (let from = 0; from < 1_000_000; from += PAGE_SIZE) {
     let query = supabase
       .from(tableName)
-      .select("LBussinesNombre, PrimaNeta, Descuento, TCPago, Periodo")
+      .select("LBussinesNombre, PrimaNeta, Descuento, TCPago, FLiquidacion, Periodo, IDDocto")
       .order("IDDocto", { ascending: true })
       .range(from, from + PAGE_SIZE - 1)
-
-    if (meses.length > 0) {
-      query = query.in("Periodo", meses)
-    }
 
     const { data, error } = await query
 
@@ -218,6 +276,9 @@ async function accumulateEfectuada(
     if (rows.length === 0) return true
 
     for (const row of rows) {
+      const m = monthFromFecha(row.FLiquidacion) ?? toNumber(row.Periodo)
+      if (meses.length > 0 && m !== null && !meses.includes(m)) continue
+
       const linea = lineaName(row)
       const prima = toNumber(row.PrimaNeta)
       const descuento = toNumber(row.Descuento)
@@ -308,12 +369,23 @@ function parseFDesdeDate(value: unknown): Date | null {
 
   const mdy = txt.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
   if (mdy) {
-    const mm = Number.parseInt(mdy[1], 10)
-    const dd = Number.parseInt(mdy[2], 10)
+    const a = Number.parseInt(mdy[1], 10)
+    const b = Number.parseInt(mdy[2], 10)
     let yy = Number.parseInt(mdy[3], 10)
     if (yy < 100) yy += 2000
-    const d = new Date(Date.UTC(yy, mm - 1, dd))
-    return Number.isNaN(d.getTime()) ? null : d
+
+    const makeUtc = (mm: number, dd: number) => {
+      if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null
+      const d = new Date(Date.UTC(yy, mm - 1, dd))
+      return Number.isNaN(d.getTime()) ? null : d
+    }
+
+    // Support both MM/DD/YYYY and DD/MM/YYYY safely.
+    if (a > 12 && b <= 12) return makeUtc(b, a)
+    if (b > 12 && a <= 12) return makeUtc(a, b)
+
+    // Ambiguous dates default to MM/DD/YYYY to keep current behavior.
+    return makeUtc(a, b)
   }
 
   const iso = new Date(txt)
@@ -373,7 +445,7 @@ async function accumulatePendiente(
       const linea = lineaName(row)
       const prima = toNumber(row.PrimaNeta)
       const desc = toNumber(row.Descuento)
-      const tcDocto = toNumber(row.TCDocto)
+      const tcDocto = toNumber(row.TCDocto) || 1
       const pendiente = (prima - desc) * tcDocto
 
       target.set(linea, (target.get(linea) || 0) + pendiente)
@@ -416,29 +488,28 @@ export async function GET(request: NextRequest) {
     const todayMx = mexicoDateParts()
     const mesesSelected = normalizeMesesSelection(year, meses, todayMx)
 
-    const pendingByLine = new Map<string, number>()
-    await accumulatePendiente(supabase, year, mesesSelected, pendingByLine)
-
-    // Fast path: pre-aggregated summary table
-    const summary = await loadFromSummaryTable(supabase, year, mesesSelected, pendingByLine)
+    // Fast path: pre-aggregated summary table (Tacómetro source of truth).
+    const summary = await loadFromSummaryTable(supabase, year, mesesSelected)
     if (summary && summary.length > 0) {
       return NextResponse.json(summary, {
         headers: {
           "Cache-Control": "no-store",
-          "x-lineas-source": "summary+pendiente-fdesde",
+          "x-lineas-source": "summary",
         },
       })
     }
+
+    const pendingByLine = new Map<string, number>()
+    await accumulatePendiente(supabase, year, mesesSelected, pendingByLine)
 
     // Fallback path: aggregate from raw year tables
     const currentByLine = new Map<string, number>()
     const priorByLine = new Map<string, number>()
     const budgetByLine = new Map<string, number>()
 
-    const currentTableCandidates =
-      year === 2026 ? ["efectuada_2026_drive", `Efectuada ${year}`] : [`Efectuada ${year}`]
-    const priorTableCandidates = [`Efectuada ${year - 1}`]
-    const budgetTable = `Presupuestos ${year}`
+    const currentTableCandidates = [`efectuada_${year}_drive`, `Efectuada ${year}`]
+    const priorTableCandidates = [`efectuada_${year - 1}_drive`, `Efectuada ${year - 1}`]
+    const budgetTable = `presupuestos_${year}_drive`
 
     const currentSource = await accumulateEfectuadaFromCandidates(
       supabase,
@@ -470,6 +541,7 @@ export async function GET(request: NextRequest) {
         presupuesto: budgetByLine.get(nombre) || 0,
         pendiente: pendingByLine.get(nombre) || 0,
       }))
+      .filter((r) => normalizeLineaName(r.nombre) !== "Gobierno")
 
     result.sort((a, b) => b.primaNeta - a.primaNeta)
 

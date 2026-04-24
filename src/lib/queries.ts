@@ -200,6 +200,7 @@ export interface GerenciaRow {
   primaNeta: number
   pnAnioAnt: number
   presupuesto?: number
+  pendiente?: number
 }
 
 export async function getGerencias(
