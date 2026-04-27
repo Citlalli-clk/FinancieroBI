@@ -174,7 +174,7 @@ function TablaDetalleContent() {
         const mapped: LineaFull[] = (result ?? []).map((item) => {
           const dif = item.primaNeta - item.presupuesto
           const pctDif = item.presupuesto > 0 ? Math.round((dif / item.presupuesto) * 1000) / 10 : 0
-          const difY = item.primaNeta - item.anioAnterior
+          const difY = item.anioAnterior > 0 ? (item.primaNeta - item.anioAnterior) : 0
           const pctDifY = item.anioAnterior > 0 ? Math.round((difY / item.anioAnterior) * 10000) / 100 : 0
 
           return {
@@ -250,7 +250,7 @@ function TablaDetalleContent() {
       const ppto = explicitPpto != null ? explicitPpto : pptoProporcional
       const dif = primaNeta - ppto
       const pctDif = ppto > 0 ? Math.round((dif / ppto) * 1000) / 10 : 0
-      const difY = primaNeta - pnAnioAnt
+      const difY = pnAnioAnt > 0 ? (primaNeta - pnAnioAnt) : 0
       const pctDifY = pnAnioAnt > 0 ? Math.round((difY / pnAnioAnt) * 10000) / 100 : 0
       // Pendiente allocated by effectiveShare
       const pend = Math.round(lineaPendiente * effectiveShare)
@@ -291,7 +291,7 @@ function TablaDetalleContent() {
           const pend = lineaBase.pendiente
           const dif = pn - ppto
           const pctDif = ppto > 0 ? Math.round((dif / ppto) * 1000) / 10 : 0
-          const difY = pn - pnAA
+          const difY = pnAA > 0 ? (pn - pnAA) : 0
           const pctDifY = pnAA > 0 ? Math.round((difY / pnAA) * 10000) / 100 : 0
           mapped[0] = { ...mapped[0], primaNeta: pn, presupuesto: ppto, diferencia: dif, pctDifPpto: pctDif, pnAnioAnt: pnAA, difYoY: difY, pctDifYoY: pctDifY, pendiente: pend }
         }
@@ -744,7 +744,7 @@ function TablaDetalleContent() {
               {searchResults.map((r, i) => (
                 <button
                   key={`${r.type}-${r.value}-${i}`}
-                  className="w-full text-left px-3 py-2 text-xs hover:bg-[#FFF5F5] border-b border-[#F0F0F0] last:border-0"
+                  className="w-full text-center px-3 py-2 text-xs hover:bg-[#FFF5F5] border-b border-[#F0F0F0] last:border-0"
                   onMouseDown={() => navigateToResult(r)}
                 >
                   <span className={`inline-block w-16 text-[9px] font-bold uppercase rounded px-1 py-0.5 mr-2 ${
@@ -966,12 +966,12 @@ function TablaDetalleContent() {
               </tr>
             ) : drillLevel === "poliza" ? (
               <tr className="bg-[#041224] text-white border-b-2 border-b-[#E62800]">
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap sticky left-0 z-30 bg-[#041224]">Documento</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap bg-[#041224]">Aseguradora</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap bg-[#041224]">Ramo</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap bg-[#041224]">Subramo</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap bg-[#041224]">F. Liquidación</th>
-                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap bg-[#041224]">F. Lím. Pago</th>
+                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap sticky left-0 z-30 bg-[#041224]">Documento</th>
+                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap bg-[#041224]">Aseguradora</th>
+                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap bg-[#041224]">Ramo</th>
+                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap bg-[#041224]">Subramo</th>
+                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap bg-[#041224]">F. Liquidación</th>
+                <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap bg-[#041224]">F. Lím. Pago</th>
                 <th className="text-center px-3 py-2.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap bg-[#041224]">Prima neta</th>
               </tr>
             ) : (
@@ -1029,14 +1029,14 @@ function TablaDetalleContent() {
                 <tr className="bg-[#041224] text-white border-t-2 cursor-default sticky bottom-0 z-10">
                   <td className="px-1 py-3 sticky left-0 z-10 bg-[#041224]"></td>
                   <td className="px-3 py-3 text-sm font-bold text-left sticky left-6 z-10 bg-[#041224]">Total</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{fmt(totalLineas.primaNeta)}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalLineas.presupuesto ? fmt(totalLineas.presupuesto) : ""}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalLineas.presupuesto ? (totalDif < 0 ? `(${fmt(Math.abs(totalDif))})` : fmt(totalDif)) : ""}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalDifPct ? `${totalDifPct}%` : ""}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalLineas.pnAnioAnt ? fmt(totalLineas.pnAnioAnt) : ""}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalLineas.pnAnioAnt ? (totalDifYoy < 0 ? `(${fmt(Math.abs(totalDifYoy))})` : fmt(totalDifYoy)) : ""}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalDifYoyPct ? `${totalDifYoyPct}%` : ""}</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalLineas.pendiente ? fmt(totalLineas.pendiente) : ""}</td>
+                  <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(totalLineas.primaNeta)}</td>
+                  <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalLineas.presupuesto ? fmt(totalLineas.presupuesto) : ""}</td>
+                  <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalLineas.presupuesto ? (totalDif < 0 ? `(${fmt(Math.abs(totalDif))})` : fmt(totalDif)) : ""}</td>
+                  <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalDifPct ? `${totalDifPct}%` : ""}</td>
+                  <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalLineas.pnAnioAnt ? fmt(totalLineas.pnAnioAnt) : ""}</td>
+                  <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalLineas.pnAnioAnt ? (totalDifYoy < 0 ? `(${fmt(Math.abs(totalDifYoy))})` : fmt(totalDifYoy)) : ""}</td>
+                  <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalDifYoyPct ? `${totalDifYoyPct}%` : ""}</td>
+                  <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalLineas.pendiente ? fmt(totalLineas.pendiente) : ""}</td>
                 </tr>
               </>
 
@@ -1049,19 +1049,19 @@ function TablaDetalleContent() {
                   const rowBg = idx % 2 === 1 ? "bg-[#E5E7E9]/30" : "bg-white"
                   return (
                     <tr key={`${p.documento}-${idx}`} className={`group border-b border-[#F0F0F0] hover:bg-[#FFF5F5] ${rowBg}`}>
-                      <td className={`px-3 py-3 font-medium text-sm text-[#111] text-left sticky left-0 z-10 ${rowBg} group-hover:bg-[#FFF5F5]`}>{p.documento}</td>
-                      <td className="px-3 py-3 text-sm text-[#333] text-left">{p.aseguradora}</td>
-                      <td className="px-3 py-3 text-sm text-[#333] text-left">{p.ramo}</td>
-                      <td className="px-3 py-3 text-sm text-[#666] text-left">{p.subramo}</td>
-                      <td className="px-3 py-3 text-sm text-[#666] text-left tabular-nums">{fmtDate(p.fechaLiquidacion)}</td>
-                      <td className="px-3 py-3 text-sm text-[#666] text-left tabular-nums">{fmtDate(p.fechaLimPago)}</td>
+                      <td className={`px-3 py-3 font-medium text-sm text-[#111] text-center sticky left-0 z-10 ${rowBg} group-hover:bg-[#FFF5F5]`}>{p.documento}</td>
+                      <td className="px-3 py-3 text-sm text-[#333] text-center">{p.aseguradora}</td>
+                      <td className="px-3 py-3 text-sm text-[#333] text-center">{p.ramo}</td>
+                      <td className="px-3 py-3 text-sm text-[#666] text-center">{p.subramo}</td>
+                      <td className="px-3 py-3 text-sm text-[#666] text-center tabular-nums">{fmtDate(p.fechaLiquidacion)}</td>
+                      <td className="px-3 py-3 text-sm text-[#666] text-center tabular-nums">{fmtDate(p.fechaLimPago)}</td>
                       <td className={`px-3 py-3 text-center text-sm font-medium tabular-nums ${p.primaNeta < 0 ? "text-[#E62800]" : ""}`}>{p.primaNeta < 0 ? `(${fmt(Math.abs(p.primaNeta))})` : fmt(p.primaNeta)}</td>
                     </tr>
                   )
                 })}
                 <tr className="bg-[#041224] text-white border-t-2 cursor-default sticky bottom-0 z-10">
                   <td className="px-3 py-3 text-sm font-bold sticky left-0 z-10 bg-[#041224]" colSpan={6}>Total</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{fmt(polizaTotal)}</td>
+                  <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(polizaTotal)}</td>
                 </tr>
               </>
 
@@ -1191,14 +1191,14 @@ function TablaDetalleContent() {
                     <tr className="bg-[#041224] text-white border-t-2 cursor-default sticky bottom-0 z-10">
                       <td className="px-1 py-3 w-6 sticky left-0 z-10 bg-[#041224]"></td>
                       <td className="px-3 py-3 text-sm font-bold text-left sticky left-6 z-10 bg-[#041224]">Total</td>
-                      <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{fmt(grandTotalPN)}</td>
-                      <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{grandTotalPpto > 0 && fmt(grandTotalPpto)}</td>
-                      <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{grandDif !== null && (grandDif < 0 ? `(${fmt(Math.abs(grandDif))})` : fmt(grandDif))}</td>
-                      <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{grandPctDif !== null && `${grandPctDif > 0 ? "+" : ""}${grandPctDif}%`}</td>
-                      <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{grandTotalPnAA > 0 && fmt(grandTotalPnAA)}</td>
-                      <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{grandDifYoY !== null && (grandDifYoY < 0 ? `(${fmt(Math.abs(grandDifYoY))})` : fmt(grandDifYoY))}</td>
-                      <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{grandPctDifYoY !== null && `${grandPctDifYoY > 0 ? "+" : ""}${grandPctDifYoY}%`}</td>
-                      <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{grandTotalPend > 0 && fmt(grandTotalPend)}</td>
+                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(grandTotalPN)}</td>
+                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{grandTotalPpto > 0 && fmt(grandTotalPpto)}</td>
+                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{grandDif !== null && (grandDif < 0 ? `(${fmt(Math.abs(grandDif))})` : fmt(grandDif))}</td>
+                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{grandPctDif !== null && `${grandPctDif > 0 ? "+" : ""}${grandPctDif}%`}</td>
+                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{grandTotalPnAA > 0 && fmt(grandTotalPnAA)}</td>
+                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{grandDifYoY !== null && (grandDifYoY < 0 ? `(${fmt(Math.abs(grandDifYoY))})` : fmt(grandDifYoY))}</td>
+                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{grandPctDifYoY !== null && `${grandPctDifYoY > 0 ? "+" : ""}${grandPctDifYoY}%`}</td>
+                      <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{grandTotalPend > 0 && fmt(grandTotalPend)}</td>
                     </tr>
                   )
                 })()}
@@ -1265,14 +1265,14 @@ function TablaDetalleContent() {
                 <tr className="bg-[#041224] text-white border-t-2 cursor-default sticky bottom-0 z-10">
                   <td className="px-1 py-3 w-6 sticky left-0 z-10 bg-[#041224]"></td>
                   <td className="px-3 py-3 text-sm font-bold text-left sticky left-6 z-10 bg-[#041224]">Total</td>
-                  <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{fmt(totalRows.primaNeta)}</td>
-                  {hasPresupuesto && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.presupuesto ? fmt(totalRows.presupuesto) : ""}</td>}
-                  {hasDiferencia && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.presupuesto ? (totalRowsDif < 0 ? `(${fmt(Math.abs(totalRowsDif))})` : fmt(totalRowsDif)) : ""}</td>}
-                  {hasPctDifPpto && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRowsDifPct ? `${totalRowsDifPct}%` : ""}</td>}
-                  {hasPnAnioAnt && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.pnAnioAnt ? fmt(totalRows.pnAnioAnt) : ""}</td>}
-                  {hasDifYoY && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.pnAnioAnt ? (totalRowsDifYoy < 0 ? `(${fmt(Math.abs(totalRowsDifYoy))})` : fmt(totalRowsDifYoy)) : ""}</td>}
-                  {hasPctDifYoY && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRowsDifYoyPct ? `${totalRowsDifYoyPct}%` : ""}</td>}
-                  {hasPendiente && <td className="px-3 py-3 text-right text-sm font-bold tabular-nums">{totalRows.pendiente ? fmt(totalRows.pendiente) : ""}</td>}
+                  <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{fmt(totalRows.primaNeta)}</td>
+                  {hasPresupuesto && <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalRows.presupuesto ? fmt(totalRows.presupuesto) : ""}</td>}
+                  {hasDiferencia && <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalRows.presupuesto ? (totalRowsDif < 0 ? `(${fmt(Math.abs(totalRowsDif))})` : fmt(totalRowsDif)) : ""}</td>}
+                  {hasPctDifPpto && <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalRowsDifPct ? `${totalRowsDifPct}%` : ""}</td>}
+                  {hasPnAnioAnt && <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalRows.pnAnioAnt ? fmt(totalRows.pnAnioAnt) : ""}</td>}
+                  {hasDifYoY && <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalRows.pnAnioAnt ? (totalRowsDifYoy < 0 ? `(${fmt(Math.abs(totalRowsDifYoy))})` : fmt(totalRowsDifYoy)) : ""}</td>}
+                  {hasPctDifYoY && <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalRowsDifYoyPct ? `${totalRowsDifYoyPct}%` : ""}</td>}
+                  {hasPendiente && <td className="px-3 py-3 text-center text-sm font-bold tabular-nums">{totalRows.pendiente ? fmt(totalRows.pendiente) : ""}</td>}
                 </tr>
               </>
             )}

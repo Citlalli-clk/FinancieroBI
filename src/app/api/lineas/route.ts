@@ -76,8 +76,12 @@ function monthFromFecha(fecha: unknown): number | null {
 
   const mdy = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/)
   if (mdy) {
-    const m = Number.parseInt(mdy[1], 10)
-    return m >= 1 && m <= 12 ? m : null
+    const a = Number.parseInt(mdy[1], 10)
+    const b = Number.parseInt(mdy[2], 10)
+    // Support both MM/DD and DD/MM
+    if (a > 12 && b >= 1 && b <= 12) return b
+    if (b > 12 && a >= 1 && a <= 12) return a
+    return a >= 1 && a <= 12 ? a : null
   }
 
   // Fallback using Date parsing
@@ -210,19 +214,6 @@ async function loadFromSummaryTable(
     priorByLine.set(linea, (priorByLine.get(linea) || 0) + toNumber(row.prima_neta))
   }
 
-  // Safety: if summary presupuesto is zeroed, rebuild presupuesto from Drive table by month.
-  const presupuestoSum = Array.from(currentByLine.values()).reduce((s, v) => s + (v.presupuesto || 0), 0)
-  if (year >= 2024 && presupuestoSum === 0) {
-    const budgetByLine = new Map<string, number>()
-    const ok = await accumulatePresupuesto(supabase, `presupuestos_${year}_drive`, meses, budgetByLine)
-    if (ok) {
-      budgetByLine.forEach((presupuesto, linea) => {
-        const cur = currentByLine.get(linea) || { primaNeta: 0, presupuesto: 0, pendiente: 0 }
-        cur.presupuesto = presupuesto
-        currentByLine.set(linea, cur)
-      })
-    }
-  }
 
   const lineas = new Set<string>([
     ...Array.from(currentByLine.keys()),
@@ -380,11 +371,8 @@ function parseFDesdeDate(value: unknown): Date | null {
       return Number.isNaN(d.getTime()) ? null : d
     }
 
-    // Support both MM/DD/YYYY and DD/MM/YYYY safely.
-    if (a > 12 && b <= 12) return makeUtc(b, a)
-    if (b > 12 && a <= 12) return makeUtc(a, b)
-
-    // Ambiguous dates default to MM/DD/YYYY to keep current behavior.
+    // Pendiente sheet uses MM/DD/YYYY.
+    // If source carries DD/MM-like values (e.g. 19/05/2026), they are excluded as invalid month.
     return makeUtc(a, b)
   }
 
@@ -488,7 +476,7 @@ export async function GET(request: NextRequest) {
     const todayMx = mexicoDateParts()
     const mesesSelected = normalizeMesesSelection(year, meses, todayMx)
 
-    // Fast path: pre-aggregated summary table (Tacómetro source of truth).
+    // Fast path: pre-aggregated summary table (Tacómetro/primer drill source of truth).
     const summary = await loadFromSummaryTable(supabase, year, mesesSelected)
     if (summary && summary.length > 0) {
       return NextResponse.json(summary, {
